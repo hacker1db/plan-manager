@@ -1,7 +1,7 @@
 {
   "name": "plan-manager",
   "version": "0.2.0",
-  "description": "Local Markdown plan library and CLI",
+  "description": "Local Markdown plan library, CLI, dashboard, and private hosted app",
   "type": "module",
   "packageManager": "pnpm@10.17.1",
   "engines": {
@@ -11,22 +11,40 @@
     "plan": "./bin/plan"
   },
   "scripts": {
-    "build": "tsc --project tsconfig.json && node scripts/copy-dashboard-assets.mjs",
+    "build": "pnpm build:cli && pnpm build:web",
+    "build:cli": "tsc --project tsconfig.cli.json && node scripts/copy-dashboard-assets.mjs",
+    "build:web": "node scripts/sync-dashboard-style.mjs && next build",
     "dev": "tsx watch scripts/dev.mts serve --foreground",
-    "typecheck": "tsc --project tsconfig.json --noEmit",
-    "test": "pnpm build && node --test 'test/lib/*.js' 'test/cli/*.js'",
-    "test:lib": "pnpm build && node --test 'test/lib/*.js'",
-    "test:cli": "pnpm build && node --test 'test/cli/*.js'"
+    "dev:web": "node scripts/sync-dashboard-style.mjs && next dev",
+    "start:web": "next start",
+    "typecheck": "pnpm typecheck:cli && pnpm typecheck:web",
+    "typecheck:cli": "tsc --project tsconfig.cli.json --noEmit",
+    "typecheck:web": "node scripts/sync-dashboard-style.mjs && next typegen && tsc --noEmit",
+    "test": "pnpm build:cli && node --test 'test/lib/*.js' 'test/cli/*.js' && pnpm test:web",
+    "test:web": "node scripts/sync-dashboard-style.mjs && node --import tsx --test 'test/hosted/**/*.test.ts' 'test/hosted/**/*.test.tsx'",
+    "test:lib": "pnpm build:cli && node --test 'test/lib/*.js'",
+    "test:cli": "pnpm build:cli && node --test 'test/cli/*.js'",
+    "db:migrate": "node --env-file=.env.local --import tsx scripts/migrate-hosted.ts"
   },
   "dependencies": {
+    "@clerk/nextjs": "^7.0.0",
+    "@neondatabase/serverless": "^1.0.2",
+    "@vercel/blob": "^2.1.0",
     "js-yaml": "^4.1.0",
+    "next": "^16.0.0",
     "nanoid": "^5.0.7",
-    "proper-lockfile": "4.1.2"
+    "proper-lockfile": "4.1.2",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1"
   },
   "devDependencies": {
     "@types/js-yaml": "4.0.9",
     "@types/node": "24.3.1",
     "@types/proper-lockfile": "4.1.4",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
     "tsx": "4.20.6",
     "typescript": "5.9.2"
   }

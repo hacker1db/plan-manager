@@ -7,6 +7,7 @@ const state = {
   fingerprint: null,
   searchTimer: null,
 }
+const hosted = document.documentElement.dataset.dashboardEnvironment === 'hosted'
 
 const listElement = document.querySelector('#plan-list')
 const searchElement = document.querySelector('#search')
@@ -185,26 +186,28 @@ function planCard(plan, index) {
   }
   article.append(metadata)
 
-  const actions = document.createElement('div')
-  actions.className = 'plan-actions'
-  const status = document.createElement('select')
-  status.className = 'status-select'
-  status.setAttribute('aria-label', `Status for ${plan.title}`)
-  for (const value of ['active', 'completed', 'archived']) {
-    const option = document.createElement('option')
-    option.value = value
-    option.textContent = value
-    option.selected = value === plan.status
-    status.append(option)
+  if (!hosted) {
+    const actions = document.createElement('div')
+    actions.className = 'plan-actions'
+    const status = document.createElement('select')
+    status.className = 'status-select'
+    status.setAttribute('aria-label', `Status for ${plan.title}`)
+    for (const value of ['active', 'completed', 'archived']) {
+      const option = document.createElement('option')
+      option.value = value
+      option.textContent = value
+      option.selected = value === plan.status
+      status.append(option)
+    }
+    status.addEventListener('change', () => changeStatus(plan, status.value))
+    actions.append(
+      status,
+      button('Copy path', () => copyPath(plan)),
+      button('Open in editor', () => openInEditor(plan)),
+    )
+    if (!plan.isArchived) actions.append(button('Archive', () => archivePlan(plan), 'btn danger'))
+    article.append(actions)
   }
-  status.addEventListener('change', () => changeStatus(plan, status.value))
-  actions.append(
-    status,
-    button('Copy path', () => copyPath(plan)),
-    button('Open in editor', () => openInEditor(plan)),
-  )
-  if (!plan.isArchived) actions.append(button('Archive', () => archivePlan(plan), 'btn danger'))
-  article.append(actions)
   return article
 }
 
@@ -239,7 +242,7 @@ function render() {
 }
 
 async function loadPlans() {
-  const pathname = state.query ? `/api/search?q=${encodeURIComponent(state.query)}` : '/api/plans'
+  const pathname = state.query ? `/api/plans?q=${encodeURIComponent(state.query)}` : '/api/plans'
   const value = await request(pathname)
   state.plans = value.plans
   state.fingerprint = value.fingerprint
@@ -248,9 +251,20 @@ async function loadPlans() {
     ? 'One malformed Markdown file was skipped.'
     : `${value.malformed.length} malformed Markdown files were skipped.`
   render()
+  if (hosted) {
+    for (const footer of document.querySelectorAll('footer span:last-child')) {
+      footer.textContent = 'Private · Owner access'
+    }
+  }
 }
 
 function connectEvents() {
+  if (hosted) {
+    liveDot.classList.remove('disconnected')
+    liveLabel.textContent = 'Checking for updates'
+    setInterval(() => loadPlans().catch(() => {}), 15000)
+    return
+  }
   const events = new EventSource('/_events')
   events.addEventListener('open', () => {
     liveDot.classList.remove('disconnected')
@@ -300,8 +314,10 @@ document.addEventListener('visibilitychange', () => {
 
 async function start() {
   try {
-    const session = await request('/_session')
-    state.csrfToken = session.csrfToken
+    if (!hosted) {
+      const session = await request('/_session')
+      state.csrfToken = session.csrfToken
+    }
     await loadPlans()
     connectEvents()
   } catch (requestError) {

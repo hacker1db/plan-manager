@@ -3,6 +3,7 @@ const state = {
   plan: null,
   csrfToken: null,
 }
+const hosted = document.documentElement.dataset.dashboardEnvironment === 'hosted'
 
 const detailElement = document.querySelector('#detail')
 const liveDot = document.querySelector('#live-dot')
@@ -216,6 +217,17 @@ async function loadPlan() {
   render()
 }
 
+async function reconcileHostedRevision() {
+  if (!state.plan) return
+  try {
+    const latest = await request(`/api/plans/${encodeURIComponent(state.id)}`)
+    if (latest.revision !== state.plan.revision) window.location.reload()
+  } catch {
+    liveDot.classList.add('disconnected')
+    liveLabel.textContent = 'Unavailable'
+  }
+}
+
 async function reconcileRevision() {
   if (!state.plan) return
   try {
@@ -227,6 +239,12 @@ async function reconcileRevision() {
 }
 
 function connectEvents() {
+  if (hosted) {
+    liveDot.classList.remove('disconnected')
+    liveLabel.textContent = 'Checking for updates'
+    setInterval(reconcileHostedRevision, 15000)
+    return
+  }
   const events = new EventSource('/_events')
   events.addEventListener('open', () => {
     liveDot.classList.remove('disconnected')
@@ -255,6 +273,15 @@ document.addEventListener('visibilitychange', () => {
 
 async function start() {
   try {
+    if (hosted) {
+      state.plan = { revision: detailElement.dataset.revision }
+      document.title = `${detailElement.querySelector('h1')?.textContent ?? 'Plan'} · Plan Library`
+      for (const footer of document.querySelectorAll('footer span:last-child')) {
+        footer.textContent = 'Private · Owner access'
+      }
+      connectEvents()
+      return
+    }
     const session = await request('/_session')
     state.csrfToken = session.csrfToken
     await loadPlan()

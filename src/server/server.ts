@@ -543,8 +543,16 @@ export async function startServer(options = {}) {
 
     if (method === 'GET' && pathname === '/api/plans') {
       const { plans, malformed } = await indexPlans()
+      const query = (url.searchParams.get('q') ?? '').trim().toLowerCase()
+      const matches = query
+        ? plans.filter(plan =>
+            plan.meta.title.toLowerCase().includes(query) ||
+            plan.meta.tags.some(tag => tag.toLowerCase().includes(query)) ||
+            plan.body.toLowerCase().includes(query)
+          )
+        : plans
       json(res, 200, {
-        plans: plans.map(plan => ({
+        plans: matches.map(plan => ({
           id: plan.meta.id,
           title: plan.meta.title,
           status: plan.meta.status,

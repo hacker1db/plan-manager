@@ -402,6 +402,8 @@ test('search covers title, tags, and Markdown body', async () => {
   ]) {
     const result = await fetch(`${base}/api/search?q=${query}`).then(response => response.json())
     assert.deepEqual(result.plans.map(plan => plan.id), [expected])
+    const sharedContract = await fetch(`${base}/api/plans?q=${query}`).then(response => response.json())
+    assert.deepEqual(sharedContract.plans.map(plan => plan.id), [expected])
   }
 })
 

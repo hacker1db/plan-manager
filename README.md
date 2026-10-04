@@ -17,7 +17,7 @@ A local-first library for Markdown plans. Plans are plain `.md` files with YAML 
 - **Safe writes.** Writes are atomic and use a lock. Paths that escape the plan home are rejected, and `--if-revision` guards against overwriting someone else's changes.
 - **Local dashboard.** Browse, search, filter by status, and check off tasks at `http://plans.localhost:4173`. The page refreshes live when files change on disk.
 - **Capture.** Turn an existing Markdown or HTML file into a plan. HTML is converted with Pandoc. Capturing the same source again updates the existing plan instead of creating a duplicate.
-- **Optional hosted viewer.** `plan push` uploads plans to a private Next.js app (see [`hosted/`](hosted/README.md)). Your local Markdown stays the source of truth.
+- **Optional hosted viewer.** `plan push` uploads plans to the private Next.js app in `src/app` (see [`docs/hosting.md`](docs/hosting.md)). Your local Markdown stays the source of truth.
 
 ## Requirements
 
@@ -112,7 +112,7 @@ plan push --all --remote personal
 plan remote status personal
 ```
 
-The remote configuration is saved in `~/.config/plan-manager/remotes.json`. If the remote copy changed since your last push, `plan push` refuses to overwrite it and exits with code 5. See [`hosted/README.md`](hosted/README.md) for deployment, authentication, and token management.
+The remote configuration is saved in `~/.config/plan-manager/remotes.json`. If the remote copy changed since your last push, `plan push` refuses to overwrite it and exits with code 5. See [`docs/hosting.md`](docs/hosting.md) for deployment, authentication, and token management.
 
 ## Configuration
 
@@ -133,17 +133,22 @@ bin/plan            CLI entry point (runs dist/cli/index.js)
 src/cli/            Argument parsing and one module per command
 src/lib/            Storage, frontmatter, IDs, revisions, locking, service management
 src/server/         Local dashboard HTTP server and JSON API
-src/dashboard/      Static dashboard assets (HTML, JS, CSS)
+src/dashboard/      Canonical static dashboard assets (HTML, JS, CSS)
+src/app/            Next.js routes for the same private hosted service
+src/components/     Shared and hosted dashboard React components
+src/hosted/         Hosted-only auth, storage, database, and migrations
 test/               node:test suites for lib and CLI
-hosted/             Optional Next.js hosted viewer (Clerk, Neon, Vercel Blob)
+docs/hosting.md     Hosted deployment and authentication guide
 ```
 
 ## Development
 
 ```sh
-pnpm dev          # run the dashboard from source and reload on changes
-pnpm typecheck
-pnpm test         # builds, then runs lib and CLI tests
+pnpm dev           # local dashboard at plans.localhost:4173
+pnpm dev:web       # Next.js app used by Vercel, locally
+pnpm typecheck     # local CLI and hosted web app
+pnpm test          # CLI/lib and hosted security/dashboard tests
+pnpm build         # CLI and Vercel Next.js production builds
 pnpm test:lib
 pnpm test:cli
 ```

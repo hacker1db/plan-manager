@@ -1,4 +1,14 @@
 node_modules/
 dist/
-.env
+.next/
+.vercel/
+*.tsbuildinfo
+next-env.d.ts
+.env*
+!.env.example
 *.local
+public/app.js
+public/plan.js
+public/dashboard-icon.png
+src/app/globals.css
+src/components/generated-dashboard.ts
