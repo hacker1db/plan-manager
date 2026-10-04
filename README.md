@@ -3,7 +3,7 @@
 A local-first library for Markdown plans. Plans are plain `.md` files with YAML frontmatter, stored in one directory you own. A `plan` CLI and a local web dashboard sit on top of that directory. You can also push plans to an optional private hosted viewer.
 
 ```
-~/Developer/plans/
+~/notes/SecondBrain/4.Resources/plans/
 ├── migrate-auth-service.md
 ├── q4-roadmap.md
 └── archive/
@@ -118,7 +118,7 @@ The remote configuration is saved in `~/.config/plan-manager/remotes.json`. If t
 
 | Variable                         | Default               | Purpose                                     |
 | -------------------------------- | --------------------- | ------------------------------------------- |
-| `PLAN_HOME`                      | `~/Developer/plans`   | Directory where plans are stored            |
+| `PLAN_HOME`                      | `~/notes/SecondBrain/4.Resources/plans` | Directory where plans are stored  |
 | `PLAN_PORT`                      | `4173`                | Dashboard port                              |
 | `PLAN_HOST`                      | `127.0.0.1`           | Address the dashboard listens on            |
 | `PLAN_PANDOC`                    | `pandoc`              | Pandoc executable used by `capture`         |

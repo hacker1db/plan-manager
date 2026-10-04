@@ -1,6 +1,6 @@
 # Hosted Plan Manager
 
-The Next.js application in `src/app` serves the private plan library at `https://planmanager.hacker1db.dev`. The CLI, local server, and hosted app share the root pnpm package and `src/` source tree. Canonical local Markdown remains in `~/Developer/plans`; uploads are explicit.
+The Next.js application in `src/app` serves the private plan library at `https://planmanager.hacker1db.dev`. The CLI, local server, and hosted app share the root pnpm package and `src/` source tree. Canonical local Markdown remains in `~/notes/SecondBrain/4.Resources/plans`; uploads are explicit.
 
 ## GitHub and Vercel
 
