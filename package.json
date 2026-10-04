@@ -1,0 +1,33 @@
+{
+  "name": "plan-manager",
+  "version": "0.2.0",
+  "description": "Local Markdown plan library and CLI",
+  "type": "module",
+  "packageManager": "pnpm@10.17.1",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "bin": {
+    "plan": "./bin/plan"
+  },
+  "scripts": {
+    "build": "tsc --project tsconfig.json && node scripts/copy-dashboard-assets.mjs",
+    "dev": "tsx watch scripts/dev.mts serve --foreground",
+    "typecheck": "tsc --project tsconfig.json --noEmit",
+    "test": "pnpm build && node --test 'test/lib/*.js' 'test/cli/*.js'",
+    "test:lib": "pnpm build && node --test 'test/lib/*.js'",
+    "test:cli": "pnpm build && node --test 'test/cli/*.js'"
+  },
+  "dependencies": {
+    "js-yaml": "^4.1.0",
+    "nanoid": "^5.0.7",
+    "proper-lockfile": "4.1.2"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "4.0.9",
+    "@types/node": "24.3.1",
+    "@types/proper-lockfile": "4.1.4",
+    "tsx": "4.20.6",
+    "typescript": "5.9.2"
+  }
+}

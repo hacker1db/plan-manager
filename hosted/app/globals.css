@@ -1,0 +1,9 @@
+:root { color-scheme: dark; font-family: ui-sans-serif, system-ui, sans-serif; background: #090d18; color: #eef2ff; }
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; }
+main { max-width: 960px; margin: 0 auto; padding: 4rem 1.5rem; }
+a { color: #9db7ff; }
+.card { display: block; border: 1px solid #293657; border-radius: 12px; background: #111a2e; color: inherit; margin: .75rem 0; padding: 1rem 1.25rem; text-decoration: none; }
+.card:hover { border-color: #7c9cff; }
+.muted { color: #aebad4; }
+pre { white-space: pre-wrap; overflow-wrap: anywhere; border: 1px solid #293657; border-radius: 12px; background: #0c1324; padding: 1.25rem; }
