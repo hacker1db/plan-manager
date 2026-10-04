@@ -186,28 +186,28 @@ function planCard(plan, index) {
   }
   article.append(metadata)
 
+  const actions = document.createElement('div')
+  actions.className = 'plan-actions'
+  const status = document.createElement('select')
+  status.className = 'status-select'
+  status.setAttribute('aria-label', `Status for ${plan.title}`)
+  for (const value of ['active', 'completed', 'archived']) {
+    const option = document.createElement('option')
+    option.value = value
+    option.textContent = value
+    option.selected = value === plan.status
+    status.append(option)
+  }
+  status.addEventListener('change', () => changeStatus(plan, status.value))
+  actions.append(status)
   if (!hosted) {
-    const actions = document.createElement('div')
-    actions.className = 'plan-actions'
-    const status = document.createElement('select')
-    status.className = 'status-select'
-    status.setAttribute('aria-label', `Status for ${plan.title}`)
-    for (const value of ['active', 'completed', 'archived']) {
-      const option = document.createElement('option')
-      option.value = value
-      option.textContent = value
-      option.selected = value === plan.status
-      status.append(option)
-    }
-    status.addEventListener('change', () => changeStatus(plan, status.value))
     actions.append(
-      status,
       button('Copy path', () => copyPath(plan)),
       button('Open in editor', () => openInEditor(plan)),
     )
     if (!plan.isArchived) actions.append(button('Archive', () => archivePlan(plan), 'btn danger'))
-    article.append(actions)
   }
+  article.append(actions)
   return article
 }
 

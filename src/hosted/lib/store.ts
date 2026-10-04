@@ -1,7 +1,11 @@
 import { del, get, put } from "@vercel/blob"
+import yaml from "js-yaml"
 import { getHostedEnvironment } from "./env"
 import { getSql } from "./db"
 import { requirePlanId, requireRevision, safeTags, safeText, sanitizeMarkdown } from "./sanitize"
+import { computeRevision } from "@/lib/ids"
+import { isPlanStatus, type PlanStatus } from "@/lib/types"
+import { createStatusVersion } from "./status-version"
 import type { CliToken, HostedPlan, HostedPlanInput, PlanScope, TokenRecord } from "./types"
 
 type PlanRow = {
@@ -106,6 +110,25 @@ export async function writePlan(input: HostedPlanInput): Promise<{ plan: HostedP
     await del(objectKey, { token: getHostedEnvironment().blobReadWriteToken }).catch(() => undefined)
     throw error
   }
+}
+
+export async function updatePlanStatus(id: string, status: PlanStatus): Promise<{ plan: HostedPlan | null; conflict: boolean }> {
+  if (!isPlanStatus(status)) throw new Error("Invalid plan status")
+  const existing = await findPlan(id)
+  if (!existing) return { plan: null, conflict: false }
+  if (existing.status === status) return { plan: existing, conflict: false }
+
+  const markdown = await readMarkdown(existing)
+  const updated = new Date().toISOString()
+  const { markdown: nextMarkdown, revision } = await createStatusVersion(markdown, existing, status, updated)
+  return writePlan({
+    ...existing,
+    status,
+    updated,
+    markdown: nextMarkdown,
+    revision,
+    expectedRevision: existing.revision,
+  })
 }
 
 export async function findToken(id: string): Promise<TokenRecord | null> {

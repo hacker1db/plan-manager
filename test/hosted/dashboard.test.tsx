@@ -42,7 +42,9 @@ test("hosted shells and browser assets are generated from the canonical local da
   }
   const libraryScript = await readFile(resolve(root, "public", "app.js"), "utf8")
   const detailScript = await readFile(resolve(root, "public", "plan.js"), "utf8")
-  assert.match(libraryScript, /if \(!hosted\) \{\s+const actions = document\.createElement\('div'\)/)
+  assert.match(libraryScript, /status\.className = 'status-select'/)
+  assert.match(libraryScript, /for \(const value of \['active', 'completed', 'archived'\]\)/)
+  assert.match(libraryScript, /if \(!hosted\) \{\s+actions\.append\(/)
   assert.match(libraryScript, /setInterval\(\(\) => loadPlans\(\)/)
   assert.match(detailScript, /if \(hosted\) \{[\s\S]*?setInterval\(reconcileHostedRevision, 15000\)/)
   assert.equal(await readFile(resolve(root, "src", "app", "globals.css"), "utf8"), await readFile(resolve(dashboard, "style.css"), "utf8"))

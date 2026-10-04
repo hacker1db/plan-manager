@@ -1,3 +1,5 @@
+import type { PlanStatus } from "@/lib/types"
+
 export const PLAN_SCOPES = ["plans:read", "plans:write"] as const
 
 export type PlanScope = (typeof PLAN_SCOPES)[number]
@@ -5,7 +7,7 @@ export type PlanScope = (typeof PLAN_SCOPES)[number]
 export type HostedPlanInput = {
   id: string
   title: string
-  status: "active" | "completed" | "archived"
+  status: PlanStatus
   tags: string[]
   created: string
   updated: string

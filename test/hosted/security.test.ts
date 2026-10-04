@@ -4,6 +4,8 @@ import { HostedConfigurationError, getHostedEnvironment } from "../../src/hosted
 import { publicPlan } from "../../src/hosted/lib/api"
 import { requirePlanId, requireRevision, sanitizeMarkdown } from "../../src/hosted/lib/sanitize"
 import { generateToken, hashSecret, parseBearer, tokenAuthorizes, verifySecret } from "../../src/hosted/lib/token"
+import { isSameOriginRequest } from "../../src/hosted/lib/security"
+import { isPlanStatus } from "../../src/lib/types"
 
 test("hosted configuration fails closed when a required key is absent", () => {
   assert.throws(() => getHostedEnvironment({}), HostedConfigurationError)
@@ -50,4 +52,20 @@ test("plan IDs, revisions, and markdown reject malformed input", () => {
 test("dashboard API plan records never expose hosted storage object keys", () => {
   const value = { id: "plan_1234", title: "Plan", objectKey: "private/plans/plan_1234/revision.md" }
   assert.deepEqual(publicPlan(value), { id: value.id, title: value.title })
+})
+
+test("dashboard mutations require an exact same-origin Origin header", () => {
+  const makeRequest = (origin?: string) => new Request("https://plans.example/api/plans/plan_1234/status", {
+    method: "POST",
+    headers: origin ? { Origin: origin } : {},
+  })
+  assert.equal(isSameOriginRequest(makeRequest("https://plans.example")), true)
+  assert.equal(isSameOriginRequest(makeRequest("https://attacker.example")), false)
+  assert.equal(isSameOriginRequest(makeRequest()), false)
+})
+
+test("all supported plan statuses are accepted and unknown statuses are rejected", () => {
+  for (const status of ["active", "completed", "archived"] as const) assert.equal(isPlanStatus(status), true)
+  assert.equal(isPlanStatus("in-progress"), false)
+  assert.equal(isPlanStatus(null), false)
 })
