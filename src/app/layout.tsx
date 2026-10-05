@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import { ClerkProvider } from "@clerk/nextjs"
+import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
 
 export const metadata: Metadata = {
@@ -10,5 +11,5 @@ export const metadata: Metadata = {
 }
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <ClerkProvider><html lang="en" data-dashboard-environment="hosted"><body>{children}</body></html></ClerkProvider>
+  return <ClerkProvider><html lang="en" data-dashboard-environment="hosted"><body>{children}<Analytics /></body></html></ClerkProvider>
 }

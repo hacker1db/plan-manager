@@ -12,3 +12,4 @@ public/plan.js
 public/dashboard-icon.png
 src/app/globals.css
 src/components/generated-dashboard.ts
+.vercel
