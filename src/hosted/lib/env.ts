@@ -31,8 +31,11 @@ export function isAllowedOwner(userId: string | null | undefined, source: Readon
   return typeof userId === "string" && getOwnerClerkUserIds(source).includes(userId)
 }
 
-export function oauthTokenCanAccess(userId: string | null, scopes: readonly string[], scope: string, source: Readonly<Record<string, string | undefined>> = process.env): boolean {
-  return isAllowedOwner(userId, source) && scopes.includes("openid") && scopes.includes(scope)
+// Clerk custom scopes can only be created in the dashboard, so CLI access is bound to the
+// Plan Manager CLI OAuth application instead: tokens minted for any other client are rejected.
+export function oauthTokenCanAccess(userId: string | null, clientId: string | null, scopes: readonly string[], source: Readonly<Record<string, string | undefined>> = process.env): boolean {
+  const cliClientId = source.PLAN_MANAGER_OAUTH_CLIENT_ID?.trim()
+  return isAllowedOwner(userId, source) && Boolean(cliClientId) && clientId === cliClientId && scopes.includes("openid")
 }
 
 export function getHostedEnvironment(source: Readonly<Record<string, string | undefined>> = process.env): HostedEnvironment {

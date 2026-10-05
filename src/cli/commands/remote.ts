@@ -148,7 +148,7 @@ async function requestDeviceToken(site: Site): Promise<void> {
   const deviceResponse = await fetch(metadata.device_authorization_endpoint!, {
     method: 'POST',
     headers: { 'content-type': 'application/x-www-form-urlencoded', accept: 'application/json' },
-    body: new URLSearchParams({ client_id: config.clientId, scope: 'openid offline_access plans:write' }),
+    body: new URLSearchParams({ client_id: config.clientId, scope: 'openid offline_access' }),
   })
   const device = await responseJson<{ device_code: string; user_code: string; verification_uri: string; expires_in: number; interval: number }>(deviceResponse, 'Clerk device authorization')
   if (!device.device_code || !device.user_code || !device.verification_uri || !Number.isFinite(device.expires_in) || device.expires_in <= 0 || !Number.isFinite(device.interval) || device.interval <= 0) throw new Error('Clerk returned an invalid device authorization response')

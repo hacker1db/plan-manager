@@ -60,7 +60,7 @@ test("Clerk device login polls until approved and stores the OAuth pair in Keych
         grant_types_supported: ["urn:ietf:params:oauth:grant-type:device_code"],
       })
       if (url === "https://clerk.example/oauth/device_authorization") {
-        assert.equal(new URLSearchParams(String(init?.body)).get("scope"), "openid offline_access plans:write")
+        assert.equal(new URLSearchParams(String(init?.body)).get("scope"), "openid offline_access")
         return Response.json({ device_code: "private-device-code", user_code: "ABCD-EFGH", verification_uri: "https://clerk.example/device", expires_in: 60, interval: 0.001 })
       }
       if (url === "https://clerk.example/oauth/token") {

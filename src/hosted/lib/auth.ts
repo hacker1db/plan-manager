@@ -1,6 +1,6 @@
 import { auth } from "@clerk/nextjs/server"
 import { NextResponse } from "next/server"
-import { getHostedEnvironment, HostedConfigurationError, isAllowedOwner, oauthTokenCanAccess } from "./env"
+import { getHostedEnvironment, HostedConfigurationError, oauthTokenCanAccess } from "./env"
 import { forbidden, unauthorized } from "./api"
 import { findToken } from "./store"
 import { parseBearer, tokenAuthorizes } from "./token"
@@ -29,7 +29,7 @@ export async function requireWriteToken(request: Request, scope: PlanScope): Pro
     try {
       const authState = await auth({ acceptsToken: "oauth_token" })
       if (!authState.isAuthenticated || !authState.userId) return unauthorized()
-      if (!oauthTokenCanAccess(authState.userId, authState.scopes, scope)) return forbidden()
+      if (!oauthTokenCanAccess(authState.userId, authState.clientId, authState.scopes)) return forbidden()
       return null
     } catch (error) {
       if (error instanceof HostedConfigurationError) return NextResponse.json({ error: "Hosted service is unavailable" }, { status: 503 })

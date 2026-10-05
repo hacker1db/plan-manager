@@ -67,18 +67,15 @@ test("expired, revoked, and insufficient-scope credentials cannot write", async 
   assert.equal(await tokenAuthorizes({ ...base, expiresAt: new Date(Date.now() + 60_000), revokedAt: null }, "A".repeat(43), "pepper", "plans:write"), false)
 })
 
-test("OAuth credentials require both an allowlisted Clerk owner and the requested scope", () => {
-  const previous = process.env.PLAN_MANAGER_OWNER_CLERK_USER_IDS
-  process.env.PLAN_MANAGER_OWNER_CLERK_USER_IDS = "user_owner,user_second"
-  try {
-    assert.equal(oauthTokenCanAccess("user_owner", ["openid", "plans:write"], "plans:write"), true)
-    assert.equal(oauthTokenCanAccess("user_owner", ["openid", "plans:read"], "plans:write"), false)
-    assert.equal(oauthTokenCanAccess("user_other", ["openid", "plans:write"], "plans:write"), false)
-    assert.equal(oauthTokenCanAccess("user_owner", ["plans:write"], "plans:write"), false)
-  } finally {
-    if (previous === undefined) delete process.env.PLAN_MANAGER_OWNER_CLERK_USER_IDS
-    else process.env.PLAN_MANAGER_OWNER_CLERK_USER_IDS = previous
-  }
+test("OAuth credentials require an allowlisted Clerk owner and a token issued to the CLI app", () => {
+  const env = { PLAN_MANAGER_OWNER_CLERK_USER_IDS: "user_owner,user_second", PLAN_MANAGER_OAUTH_CLIENT_ID: "cli_client" }
+  assert.equal(oauthTokenCanAccess("user_owner", "cli_client", ["openid", "offline_access"], env), true)
+  assert.equal(oauthTokenCanAccess("user_second", "cli_client", ["openid"], env), true)
+  assert.equal(oauthTokenCanAccess("user_other", "cli_client", ["openid"], env), false)
+  assert.equal(oauthTokenCanAccess("user_owner", "other_client", ["openid"], env), false)
+  assert.equal(oauthTokenCanAccess("user_owner", null, ["openid"], env), false)
+  assert.equal(oauthTokenCanAccess("user_owner", "cli_client", ["offline_access"], env), false)
+  assert.equal(oauthTokenCanAccess("user_owner", "cli_client", ["openid"], { PLAN_MANAGER_OWNER_CLERK_USER_IDS: "user_owner" }), false)
 })
 
 test("plan IDs, revisions, and markdown reject malformed input", () => {
