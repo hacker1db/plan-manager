@@ -14,7 +14,7 @@ import { cmdArchive } from './commands/archive.js'
 import { cmdServe } from './commands/serve.js'
 import { cmdDoctor } from './commands/doctor.js'
 import { cmdOpen } from './commands/open.js'
-import { cmdRemote, cmdAuth, cmdPush } from './commands/remote.js'
+import { cmdAuth, cmdPush } from './commands/remote.js'
 import { EXIT } from './exit.js'
 
 function parseArgs(argv) {
@@ -26,7 +26,6 @@ function parseArgs(argv) {
     if (a === '--json') { opts.json = true }
     else if (a === '--stdin') { opts.stdin = true }
     else if (a === '--foreground') { opts.foreground = true }
-    else if (a === '--remote') { opts.remote = argv[++i] ?? true }
     else if (a === '--token') { opts.token = argv[++i] }
     else if (a === '--title') { opts.title = argv[++i] }
     else if (a === '--file') { opts.file = argv[++i] }
@@ -61,9 +60,10 @@ Usage:
   plan archive <id-or-slug>
   plan serve [--foreground] [--json]
   plan doctor [--json]
-  plan remote <add|list|status>
-  plan auth <login|logout> <remote>
-  plan push <id-or-slug|--all> [--remote <name>]
+  plan auth login                Sign in to the hosted site with a device code
+  plan auth <logout|status>
+  plan push <id-or-slug|--all>   Upload plans to the hosted site
+                                 (PLAN_MANAGER_URL overrides the site URL)
 
 Exit codes:
   0  success
@@ -98,7 +98,6 @@ export async function run(argv) {
     case 'archive': return cmdArchive(args, opts)
     case 'serve': return cmdServe(args, opts)
     case 'doctor': return cmdDoctor(args, opts)
-    case 'remote': return cmdRemote(args, opts)
     case 'auth': return cmdAuth(args, opts)
     case 'push': return cmdPush(args, opts)
     default: process.stderr.write(`Unknown command: ${cmd}\n\n${USAGE}`); process.exit(EXIT.INVALID_INPUT)

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict"
 import { test } from "node:test"
-import { HostedConfigurationError, getHostedEnvironment } from "../../src/hosted/lib/env"
+import { HostedConfigurationError, getCliOAuthConfiguration, getClerkIssuerUrl, getHostedEnvironment, getOwnerClerkUserIds, isAllowedOwner, oauthTokenCanAccess, ownerConfigured } from "../../src/hosted/lib/env"
 import { publicPlan } from "../../src/hosted/lib/api"
 import { requirePlanId, requireRevision, sanitizeMarkdown } from "../../src/hosted/lib/sanitize"
 import { generateToken, hashSecret, parseBearer, tokenAuthorizes, verifySecret } from "../../src/hosted/lib/token"
@@ -15,12 +15,39 @@ test("hosted configuration accepts only a complete server environment", () => {
   const environment = getHostedEnvironment({
     NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_value",
     CLERK_SECRET_KEY: "sk_test_value",
-    PLAN_MANAGER_OWNER_CLERK_USER_ID: "user_owner",
+    PLAN_MANAGER_OWNER_CLERK_USER_IDS: "user_owner, user_second, user_owner",
     DATABASE_URL: "postgres://example",
     BLOB_READ_WRITE_TOKEN: "blob_value",
     PLAN_MANAGER_TOKEN_PEPPER: "pepper_value",
   })
-  assert.equal(environment.ownerClerkUserId, "user_owner")
+  assert.deepEqual(environment.ownerClerkUserIds, ["user_owner", "user_second"])
+})
+
+test("owner allowlist supports the legacy single-owner variable during migration", () => {
+  assert.deepEqual(getOwnerClerkUserIds({ PLAN_MANAGER_OWNER_CLERK_USER_ID: "user_owner" }), ["user_owner"])
+  assert.deepEqual(getOwnerClerkUserIds({ PLAN_MANAGER_OWNER_CLERK_USER_IDS: "user_new", PLAN_MANAGER_OWNER_CLERK_USER_ID: "user_old" }), ["user_new"])
+  assert.equal(isAllowedOwner("user_new", { PLAN_MANAGER_OWNER_CLERK_USER_IDS: "user_new,user_other" }), true)
+  assert.equal(isAllowedOwner("user_old", { PLAN_MANAGER_OWNER_CLERK_USER_IDS: "user_new,user_other" }), false)
+  assert.equal(isAllowedOwner(null, { PLAN_MANAGER_OWNER_CLERK_USER_ID: "user_old" }), false)
+  assert.equal(ownerConfigured({ CLERK_SECRET_KEY: "sk", NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk", PLAN_MANAGER_OWNER_CLERK_USER_IDS: "user_one,user_two" }), true)
+  assert.equal(ownerConfigured({ CLERK_SECRET_KEY: "sk", NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk" }), false)
+  assert.throws(() => getHostedEnvironment({
+    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_value",
+    CLERK_SECRET_KEY: "sk_test_value",
+    DATABASE_URL: "postgres://example",
+    BLOB_READ_WRITE_TOKEN: "blob_value",
+    PLAN_MANAGER_TOKEN_PEPPER: "pepper_value",
+  }), HostedConfigurationError)
+})
+
+test("CLI OAuth config exposes the Clerk issuer and requires a public client ID", () => {
+  const publishableKey = `pk_test_${Buffer.from("example.clerk.accounts.dev$").toString("base64url")}`
+  assert.equal(getClerkIssuerUrl({ NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: publishableKey }), "https://example.clerk.accounts.dev")
+  assert.deepEqual(getCliOAuthConfiguration({ NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: publishableKey, PLAN_MANAGER_OAUTH_CLIENT_ID: "oauthapp_public" }), {
+    clientId: "oauthapp_public",
+    issuerUrl: "https://example.clerk.accounts.dev",
+  })
+  assert.throws(() => getCliOAuthConfiguration({ NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: publishableKey }), HostedConfigurationError)
 })
 
 test("token verifier accepts the generated bearer only for the correct secret", async () => {
@@ -38,6 +65,17 @@ test("expired, revoked, and insufficient-scope credentials cannot write", async 
   assert.equal(await tokenAuthorizes({ ...base, expiresAt: new Date(Date.now() - 1), revokedAt: null }, "A".repeat(43), "pepper", "plans:write"), false)
   assert.equal(await tokenAuthorizes({ ...base, expiresAt: new Date(Date.now() + 60_000), revokedAt: new Date() }, "A".repeat(43), "pepper", "plans:read"), false)
   assert.equal(await tokenAuthorizes({ ...base, expiresAt: new Date(Date.now() + 60_000), revokedAt: null }, "A".repeat(43), "pepper", "plans:write"), false)
+})
+
+test("OAuth credentials require an allowlisted Clerk owner and a token issued to the CLI app", () => {
+  const env = { PLAN_MANAGER_OWNER_CLERK_USER_IDS: "user_owner,user_second", PLAN_MANAGER_OAUTH_CLIENT_ID: "cli_client" }
+  assert.equal(oauthTokenCanAccess("user_owner", "cli_client", ["openid", "offline_access"], env), true)
+  assert.equal(oauthTokenCanAccess("user_second", "cli_client", ["openid"], env), true)
+  assert.equal(oauthTokenCanAccess("user_other", "cli_client", ["openid"], env), false)
+  assert.equal(oauthTokenCanAccess("user_owner", "other_client", ["openid"], env), false)
+  assert.equal(oauthTokenCanAccess("user_owner", null, ["openid"], env), false)
+  assert.equal(oauthTokenCanAccess("user_owner", "cli_client", ["offline_access"], env), false)
+  assert.equal(oauthTokenCanAccess("user_owner", "cli_client", ["openid"], { PLAN_MANAGER_OWNER_CLERK_USER_IDS: "user_owner" }), false)
 })
 
 test("plan IDs, revisions, and markdown reject malformed input", () => {
