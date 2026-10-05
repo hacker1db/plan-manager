@@ -211,15 +211,27 @@ test('plan init creates directories', async () => {
   })
 })
 
-test('plan remote add saves an HTTPS remote without credentials', async () => {
+test('plan auth status reports the single hosted site', async () => {
   await withHome(async dir => {
-    const r = planCmd(['remote', 'add', 'prod', 'https://example.com'], { HOME: dir })
+    const r = planCmd(['auth', 'status', '--json'], { HOME: dir, PLAN_MANAGER_URL: 'https://example.com', PLAN_MANAGER_SECURITY_COMMAND: '/usr/bin/false' })
     assert.equal(r.status, 0, r.stderr)
-    const list = planCmd(['remote', 'list', '--json'], { HOME: dir })
-    assert.equal(list.status, 0, list.stderr)
-    assert.deepEqual(JSON.parse(list.stdout).remotes, [{ name: 'prod', url: 'https://example.com' }])
-    const config = await import('node:fs/promises').then(fs => fs.readFile(join(dir, '.config', 'plan-manager', 'remotes.json'), 'utf8'))
-    assert.doesNotMatch(config, /pm_/)
+    assert.deepEqual(JSON.parse(r.stdout), { version: 1, site: 'https://example.com', credential: 'missing' })
+  })
+})
+
+test('plan rejects a non-https site URL', async () => {
+  await withHome(async dir => {
+    const r = planCmd(['auth', 'status'], { HOME: dir, PLAN_MANAGER_URL: 'http://example.com' })
+    assert.equal(r.status, 2)
+    assert.match(r.stderr, /PLAN_MANAGER_URL must be a bare https URL/)
+  })
+})
+
+test('legacy pasted-token login explains the Clerk device-login replacement', async () => {
+  await withHome(async dir => {
+    const login = planCmd(['auth', 'login', '--token', 'not-a-plan-manager-token'], { HOME: dir })
+    assert.equal(login.status, 2)
+    assert.match(login.stderr, /Token format is invalid.*plan auth login/)
   })
 })
 

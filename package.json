@@ -20,7 +20,7 @@
     "typecheck": "pnpm typecheck:cli && pnpm typecheck:web",
     "typecheck:cli": "tsc --project tsconfig.cli.json --noEmit",
     "typecheck:web": "node scripts/sync-dashboard-style.mjs && next typegen && tsc --noEmit",
-    "test": "pnpm build:cli && node --test 'test/lib/*.js' 'test/cli/*.js' && pnpm test:web",
+    "test": "pnpm build:cli && node --test 'test/lib/*.js' 'test/cli/*.js' && node --import tsx --test 'test/cli/**/*.test.ts' && pnpm test:web",
     "test:web": "node scripts/sync-dashboard-style.mjs && node --import tsx --test 'test/hosted/**/*.test.ts' 'test/hosted/**/*.test.tsx'",
     "test:lib": "pnpm build:cli && node --test 'test/lib/*.js'",
     "test:cli": "pnpm build:cli && node --test 'test/cli/*.js'",

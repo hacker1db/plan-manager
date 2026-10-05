@@ -25,23 +25,24 @@ pnpm test
 pnpm dev:web
 ```
 
-Every key listed in `.env.example` is required at runtime. Keep its template values empty. The owner ID and token pepper must be configured as well as the Clerk, Neon, and private Blob integration variables. Environment pulls can overwrite an existing local file; preserve local-only values before pulling.
+All required keys in `.env.example` must be configured at runtime; `PLAN_MANAGER_OAUTH_CLIENT_ID` is needed only for CLI device authorization. Keep template values empty. The owner ID and token pepper must be configured as well as the Clerk, Neon, and private Blob integration variables. Environment pulls can overwrite an existing local file; preserve local-only values before pulling.
 
 After linking and verifying environment configuration, apply the initial database schema with `pnpm db:migrate`. It loads root `.env.local` and runs an idempotent transaction. Run migrations intentionally rather than as part of every deployment.
 
 ## Access and uploads
 
-Clerk authenticates browser sessions; only `PLAN_MANAGER_OWNER_CLERK_USER_ID` may view plans. Disable public sign-up in Clerk. The current deployment uses a Clerk development instance; production Clerk setup remains a separate deployment task.
+Clerk authenticates browser sessions; only IDs listed in `PLAN_MANAGER_OWNER_CLERK_USER_IDS` may view or manage plans. Set it to a comma-separated allowlist of Clerk user IDs. The legacy `PLAN_MANAGER_OWNER_CLERK_USER_ID` remains supported as a single-user fallback. Disable public sign-up in Clerk and invite only the accounts that should share this plan library. The current deployment uses a Clerk development instance; production Clerk setup remains a separate deployment task.
 
 Every browser API checks owner authorization. Uploads require scoped, expiring, revocable CLI tokens with salted server-side hashes. Markdown uses private Vercel Blob access; API responses exclude storage locators. Hosted pages render Markdown safely and refresh when uploaded revisions change. Filesystem actions and task editing remain available in the local dashboard.
 
 ```sh
-plan remote add personal https://planmanager.hacker1db.dev
-pbpaste | plan auth login personal --stdin
-plan push --all --remote personal
+plan auth login
+plan push --all
 ```
 
-Create CLI tokens through the owner-authorized `POST /api/v1/tokens` endpoint. The plaintext bearer is returned once. `plan auth login` stores it in macOS Keychain. Revoke a token using `DELETE /api/v1/tokens/:id`, then remove its local credential with `plan auth logout personal`. Deployment Protection credentials are separate from plan-manager credentials.
+Configure a public Clerk OAuth application named `Plan Manager CLI` in the same Clerk instance used by the hosted dashboard. Enable Device Authorization Grant, add the `plans:write` custom scope, and assign `openid`, `offline_access`, and `plans:write` to the application. Set its public Client ID as `PLAN_MANAGER_OAUTH_CLIENT_ID` in the hosted environment and redeploy. The public `GET /api/v1` endpoint exposes only that Client ID and the Clerk issuer derived from the publishable key.
+
+The CLI targets `https://planmanager.hacker1db.dev` by default; set `PLAN_MANAGER_URL` to use another deployment. Run `plan auth login`. The CLI displays a one-time code, opens Clerk's verification page when possible, polls for approval, and stores the access and refresh tokens in macOS Keychain. It refreshes the access token as needed. `plan auth logout` removes the local credential; revoke the app grant in Clerk as well when you want to invalidate its long-lived refresh token. Clerk OAuth tokens are verified by Clerk; the API still enforces both the owner allowlist and the requested `plans:write` scope. Existing `pm_...` Plan Manager tokens remain supported during migration; `plan auth login --stdin` is only for those legacy tokens. Deployment Protection credentials are separate from plan-manager credentials.
 
 ## Checks and recovery
 
