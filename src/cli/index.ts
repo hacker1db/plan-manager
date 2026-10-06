@@ -60,7 +60,7 @@ Usage:
   plan archive <id-or-slug>
   plan serve [--foreground] [--json]
   plan doctor [--json]
-  plan auth login                Sign in to the hosted site with a device code
+  plan auth login                Sign in to the hosted site in your browser
   plan auth <logout|status>
   plan push <id-or-slug|--all>   Upload plans to the hosted site
                                  (PLAN_MANAGER_URL overrides the site URL)

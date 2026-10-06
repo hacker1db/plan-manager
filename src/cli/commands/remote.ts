@@ -2,6 +2,8 @@ import { mkdir, readFile, writeFile, chmod } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { spawn, spawnSync } from 'node:child_process'
+import { createHash, randomBytes, timingSafeEqual } from 'node:crypto'
+import { createServer } from 'node:http'
 import { initStorage, listPlanFiles, resolveByIdOrSlug } from '../../lib/storage.js'
 import { readPlan } from '../../lib/metadata.js'
 import { buildEnvelope } from '../../lib/envelope.js'
@@ -10,7 +12,7 @@ import { EXIT } from '../exit.js'
 type Site = { url: string }
 type SiteConfig = { version: 1; revisions: Record<string, string> }
 type OAuthConfig = { clientId: string; issuerUrl: string }
-type OAuthMetadata = { device_authorization_endpoint?: string; token_endpoint?: string; grant_types_supported?: string[] }
+type OAuthMetadata = { authorization_endpoint?: string; token_endpoint?: string }
 type OAuthTokenResponse = { access_token?: string; refresh_token?: string; token_type?: string; expires_in?: number; error?: string; error_description?: string }
 type StoredOAuthCredential = { version: 1; accessToken: string; refreshToken: string; accessTokenExpiresAt: number; tokenEndpoint: string; clientId: string }
 
@@ -119,13 +121,12 @@ async function getOAuthMetadata(issuerUrl: string): Promise<OAuthMetadata> {
   const metadataUrl = new URL('/.well-known/oauth-authorization-server', issuerUrl)
   const response = await fetch(metadataUrl, { headers: { accept: 'application/json' } })
   const metadata = await responseJson<OAuthMetadata>(response, 'Clerk OAuth metadata')
-  if (!metadata.device_authorization_endpoint || !metadata.token_endpoint || !metadata.grant_types_supported?.includes('urn:ietf:params:oauth:grant-type:device_code')) {
-    throw new Error('This Clerk instance does not advertise OAuth Device Authorization Grant. Enable it for the Plan Manager CLI application in Clerk.')
+  if (!metadata.authorization_endpoint || !metadata.token_endpoint) {
+    throw new Error('This Clerk instance does not advertise Authorization Code with PKCE. Enable it for the Plan Manager CLI application in Clerk.')
   }
   return {
-    device_authorization_endpoint: validateHttpsEndpoint(metadata.device_authorization_endpoint, 'Device authorization endpoint'),
+    authorization_endpoint: validateHttpsEndpoint(metadata.authorization_endpoint, 'Authorization endpoint'),
     token_endpoint: validateHttpsEndpoint(metadata.token_endpoint, 'Token endpoint'),
-    grant_types_supported: metadata.grant_types_supported,
   }
 }
 
@@ -138,58 +139,87 @@ function openVerificationUrl(value: string): void {
   child.unref()
 }
 
-function delay(milliseconds: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, milliseconds))
+function base64Url(value: Buffer): string {
+  return value.toString('base64url')
 }
 
-async function requestDeviceToken(site: Site): Promise<void> {
-  const config = await getOAuthConfiguration(site)
-  const metadata = await getOAuthMetadata(config.issuerUrl)
-  const deviceResponse = await fetch(metadata.device_authorization_endpoint!, {
-    method: 'POST',
-    headers: { 'content-type': 'application/x-www-form-urlencoded', accept: 'application/json' },
-    body: new URLSearchParams({ client_id: config.clientId, scope: 'openid offline_access' }),
-  })
-  const device = await responseJson<{ device_code: string; user_code: string; verification_uri: string; expires_in: number; interval: number }>(deviceResponse, 'Clerk device authorization')
-  if (!device.device_code || !device.user_code || !device.verification_uri || !Number.isFinite(device.expires_in) || device.expires_in <= 0 || !Number.isFinite(device.interval) || device.interval <= 0) throw new Error('Clerk returned an invalid device authorization response')
-  const verificationUrl = validateHttpsEndpoint(device.verification_uri, 'Verification URL')
-  process.stdout.write(`Sign in to Plan Manager\nOpen: ${verificationUrl}\nCode: ${device.user_code}\nWaiting for approval...\n`)
-  openVerificationUrl(verificationUrl)
+function sameState(expected: string, received: string): boolean {
+  const left = Buffer.from(expected)
+  const right = Buffer.from(received)
+  return left.length === right.length && timingSafeEqual(left, right)
+}
 
-  const deadline = Date.now() + device.expires_in * 1000
-  let interval = device.interval * 1000
-  while (Date.now() < deadline) {
-    await delay(interval)
-    let tokenResponse: Response
-    try {
-      tokenResponse = await fetch(metadata.token_endpoint!, {
-        method: 'POST',
-        headers: { 'content-type': 'application/x-www-form-urlencoded', accept: 'application/json' },
-        body: new URLSearchParams({ client_id: config.clientId, grant_type: 'urn:ietf:params:oauth:grant-type:device_code', device_code: device.device_code }),
-      })
-    } catch {
-      continue
-    }
-    const token = await tokenResponse.json().catch(() => ({})) as OAuthTokenResponse
-    if (tokenResponse.ok && token.access_token && token.refresh_token && token.token_type?.toLowerCase() === 'bearer' && Number.isFinite(token.expires_in)) {
-      const credential: StoredOAuthCredential = {
-        version: 1,
-        accessToken: token.access_token,
-        refreshToken: token.refresh_token,
-        accessTokenExpiresAt: Date.now() + token.expires_in! * 1000,
-        tokenEndpoint: metadata.token_endpoint!,
-        clientId: config.clientId,
-      }
-      storeCredential(JSON.stringify(credential))
-      process.stdout.write(`Signed in to ${site.url} and stored the Clerk credential in macOS Keychain.\n`)
+type AuthorizationCallback = { code: string }
+
+async function startAuthorizationCallback(state: string): Promise<{ redirectUri: string; result: Promise<AuthorizationCallback> }> {
+  let resolveResult!: (value: AuthorizationCallback) => void
+  let rejectResult!: (reason: Error) => void
+  const result = new Promise<AuthorizationCallback>((resolve, reject) => { resolveResult = resolve; rejectResult = reject })
+  const server = createServer((request, response) => {
+    const url = new URL(request.url ?? '/', 'http://127.0.0.1')
+    if (url.pathname !== '/callback') {
+      response.writeHead(404).end('Not found')
       return
     }
-    if (token.error === 'authorization_pending') continue
-    if (token.error === 'slow_down') { interval += 5000; continue }
-    if (token.error) throw new Error(token.error_description ?? `Clerk device authorization failed: ${token.error}`)
-    throw new Error('Clerk returned an invalid token response')
+    const receivedState = url.searchParams.get('state')
+    const code = url.searchParams.get('code')
+    const error = url.searchParams.get('error')
+    if (!receivedState || !sameState(state, receivedState)) {
+      response.writeHead(400, { 'content-type': 'text/html; charset=utf-8' }).end('<p>Plan Manager sign-in could not be verified. Return to the sign-in page and try again.</p>')
+    } else if (error) {
+      response.writeHead(400, { 'content-type': 'text/html; charset=utf-8' }).end('<p>Plan Manager sign-in was cancelled. You may close this window.</p>')
+      rejectResult(new Error(`Clerk authorization failed: ${error}`))
+      server.close()
+    } else if (!code) {
+      response.writeHead(400, { 'content-type': 'text/html; charset=utf-8' }).end('<p>Plan Manager sign-in failed. Return to the sign-in page and try again.</p>')
+    } else {
+      response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }).end('<p>Plan Manager sign-in complete. You may close this window.</p>')
+      resolveResult({ code })
+      server.close()
+    }
+  })
+  await new Promise<void>((resolve, reject) => {
+    server.once('error', reject)
+    server.listen(0, '127.0.0.1', () => {
+      server.off('error', reject)
+      resolve()
+    })
+  })
+  const address = server.address()
+  if (!address || typeof address === 'string') {
+    server.close()
+    throw new Error('Unable to start the local OAuth callback server')
   }
-  throw new Error('Clerk device code expired. Run plan auth login again to start a new sign-in.')
+  const timeout = setTimeout(() => {
+    server.close()
+    rejectResult(new Error('Sign-in timed out. Run plan auth login again to start a new sign-in.'))
+  }, 5 * 60_000)
+  result.finally(() => clearTimeout(timeout)).catch(() => undefined)
+  return { redirectUri: `http://127.0.0.1:${address.port}/callback`, result }
+}
+
+export async function requestAuthorizationCodeToken(site: Site): Promise<void> {
+  const config = await getOAuthConfiguration(site)
+  const metadata = await getOAuthMetadata(config.issuerUrl)
+  const state = base64Url(randomBytes(32))
+  const verifier = base64Url(randomBytes(48))
+  const challenge = base64Url(createHash('sha256').update(verifier).digest())
+  const callback = await startAuthorizationCallback(state)
+  const authorizationUrl = new URL(metadata.authorization_endpoint!)
+  authorizationUrl.search = new URLSearchParams({ response_type: 'code', client_id: config.clientId, redirect_uri: callback.redirectUri, scope: 'openid offline_access', state, code_challenge: challenge, code_challenge_method: 'S256' }).toString()
+  process.stdout.write(`Sign in to Plan Manager\nOpen: ${authorizationUrl.toString()}\nWaiting for approval...\n`)
+  openVerificationUrl(authorizationUrl.toString())
+  const { code } = await callback.result
+  const tokenResponse = await fetch(metadata.token_endpoint!, {
+    method: 'POST',
+    headers: { 'content-type': 'application/x-www-form-urlencoded', accept: 'application/json' },
+    body: new URLSearchParams({ client_id: config.clientId, grant_type: 'authorization_code', code, redirect_uri: callback.redirectUri, code_verifier: verifier }),
+  })
+  const token = await responseJson<OAuthTokenResponse>(tokenResponse, 'Clerk authorization code exchange')
+  if (!token.access_token || !token.refresh_token || token.token_type?.toLowerCase() !== 'bearer' || !Number.isFinite(token.expires_in)) throw new Error('Clerk returned an invalid token response')
+  const credential: StoredOAuthCredential = { version: 1, accessToken: token.access_token, refreshToken: token.refresh_token, accessTokenExpiresAt: Date.now() + token.expires_in! * 1000, tokenEndpoint: metadata.token_endpoint!, clientId: config.clientId }
+  storeCredential(JSON.stringify(credential))
+  process.stdout.write(`Signed in to ${site.url} and stored the Clerk credential in macOS Keychain.\n`)
 }
 
 export async function tokenFromKeychain(): Promise<string> {
@@ -241,7 +271,7 @@ export async function cmdAuth(args: string[], opts: { stdin?: boolean; token?: s
         storeLegacyToken(token)
         process.stdout.write(opts.json ? JSON.stringify({ site: site.url, credential: 'configured', type: 'legacy' }) + '\n' : `Stored Plan Manager token for ${site.url} in macOS Keychain.\n`)
       } else {
-        await requestDeviceToken(site)
+        await requestAuthorizationCodeToken(site)
         if (opts.json) process.stdout.write(JSON.stringify({ site: site.url, credential: 'configured', type: 'clerk-oauth' }) + '\n')
       }
       return

@@ -106,12 +106,12 @@ Commands that change or return a plan print a versioned envelope when you pass `
 ### Pushing to a hosted remote
 
 ```sh
-plan auth login          # opens Clerk device authorization
+plan auth login          # opens Clerk authorization in your browser
 plan push --all
 plan auth status
 ```
 
-There is a single hosted site, `https://planmanager.hacker1db.dev`; set `PLAN_MANAGER_URL` to point the CLI elsewhere (for example, a preview deployment). Push revisions are saved in `~/.config/plan-manager/site.json`. If the hosted copy changed since your last push, `plan push` refuses to overwrite it and exits with code 5. See [`docs/hosting.md`](docs/hosting.md) for Clerk device authorization and legacy token management.
+There is a single hosted site, `https://planmanager.hacker1db.dev`; set `PLAN_MANAGER_URL` to point the CLI elsewhere (for example, a preview deployment). Push revisions are saved in `~/.config/plan-manager/site.json`. If the hosted copy changed since your last push, `plan push` refuses to overwrite it and exits with code 5. See [`docs/hosting.md`](docs/hosting.md) for Clerk Authorization Code + PKCE setup and legacy token management.
 
 ## Configuration
 
