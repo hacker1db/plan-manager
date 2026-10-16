@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
-import { apiError } from "@/hosted/lib/api"
+import { apiError, forbidden } from "@/hosted/lib/api"
 import { requireOwnerResponse } from "@/hosted/lib/auth"
+import { isJsonRequest, isSameOriginRequest } from "@/hosted/lib/security"
 import { getHostedEnvironment } from "@/hosted/lib/env"
 import { createToken } from "@/hosted/lib/store"
 import { generateToken, hashSecret, isPlanScope } from "@/hosted/lib/token"
@@ -9,6 +10,8 @@ import type { PlanScope } from "@/hosted/lib/types"
 export async function POST(request: Request) {
   const denied = await requireOwnerResponse()
   if (denied) return denied
+  if (!isSameOriginRequest(request)) return forbidden()
+  if (!isJsonRequest(request)) return NextResponse.json({ error: "Expected JSON" }, { status: 415 })
   try {
     const body = await request.json() as { scopes?: unknown; expiresAt?: unknown }
     if (!Array.isArray(body.scopes) || body.scopes.length === 0 || !body.scopes.every((scope): scope is PlanScope => typeof scope === "string" && isPlanScope(scope))) throw new Error("Invalid token scopes")

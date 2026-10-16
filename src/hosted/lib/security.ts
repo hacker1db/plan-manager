@@ -7,3 +7,7 @@ export function isSameOriginRequest(request: Pick<Request, "url" | "headers">): 
     return false
   }
 }
+
+export function isJsonRequest(request: Pick<Request, "headers">): boolean {
+  return request.headers.get("content-type")?.split(";", 1)[0].trim().toLowerCase() === "application/json"
+}
