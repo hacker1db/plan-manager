@@ -4,7 +4,7 @@ import { HostedConfigurationError, getCliOAuthConfiguration, getClerkIssuerUrl, 
 import { publicPlan } from "../../src/hosted/lib/api"
 import { requirePlanId, requireRevision, sanitizeMarkdown } from "../../src/hosted/lib/sanitize"
 import { generateToken, hashSecret, parseBearer, tokenAuthorizes, verifySecret } from "../../src/hosted/lib/token"
-import { isSameOriginRequest } from "../../src/hosted/lib/security"
+import { isJsonRequest, isSameOriginRequest } from "../../src/hosted/lib/security"
 import { isPlanStatus } from "../../src/lib/types"
 
 test("hosted configuration fails closed when a required key is absent", () => {
@@ -100,6 +100,17 @@ test("dashboard mutations require an exact same-origin Origin header", () => {
   assert.equal(isSameOriginRequest(makeRequest("https://plans.example")), true)
   assert.equal(isSameOriginRequest(makeRequest("https://attacker.example")), false)
   assert.equal(isSameOriginRequest(makeRequest()), false)
+})
+
+test("token creation accepts only JSON requests", () => {
+  const request = (contentType?: string) => new Request("https://plans.example/api/v1/tokens", {
+    method: "POST",
+    headers: contentType ? { "Content-Type": contentType } : {},
+  })
+  assert.equal(isJsonRequest(request("application/json")), true)
+  assert.equal(isJsonRequest(request("application/json; charset=utf-8")), true)
+  assert.equal(isJsonRequest(request("text/plain")), false)
+  assert.equal(isJsonRequest(request()), false)
 })
 
 test("all supported plan statuses are accepted and unknown statuses are rejected", () => {
