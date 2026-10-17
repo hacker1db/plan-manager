@@ -3,19 +3,21 @@
 import { createPortal } from "react-dom"
 import { useEffect, useState } from "react"
 import PlanMarkdown from "./plan-markdown"
+import { sourceFormat } from "@/lib/mdx/format"
 import type { DashboardPlan } from "@/hosted/lib/types"
 
 function HostedPlanContent({ plan, markdown }: { plan: DashboardPlan; markdown: string }) {
   const [copyMessage, setCopyMessage] = useState("")
   const [copying, setCopying] = useState(false)
-  async function copyMarkdown() {
+  const formatLabel = sourceFormat(markdown) === "mdx" ? "MDX" : "Markdown"
+  async function copySource() {
     setCopying(true)
     setCopyMessage("")
     try {
       await navigator.clipboard.writeText(markdown)
-      setCopyMessage("Markdown copied")
+      setCopyMessage(`${formatLabel} copied`)
     } catch {
-      setCopyMessage("Could not copy Markdown. Try Download Markdown instead.")
+      setCopyMessage(`Could not copy ${formatLabel}. Try Download ${formatLabel} instead.`)
     } finally {
       setCopying(false)
     }
@@ -32,8 +34,8 @@ function HostedPlanContent({ plan, markdown }: { plan: DashboardPlan; markdown: 
       <div className="meta"><span className="meta-label">Revision</span><span className="meta-value rev" title={plan.revision}>{plan.revision.slice(0, 8)}</span></div>
     </div>
     <div className="detail-actions">
-      <button className="btn" type="button" onClick={copyMarkdown} disabled={copying}>{copying ? "Copying…" : "Copy Markdown"}</button>
-      <a className="btn" href={`/api/v1/plans/${encodeURIComponent(plan.id)}/content`}>Download Markdown</a>
+      <button className="btn" type="button" onClick={copySource} disabled={copying}>{copying ? "Copying…" : `Copy ${formatLabel}`}</button>
+      <a className="btn" href={`/api/v1/plans/${encodeURIComponent(plan.id)}/content`}>Download {formatLabel}</a>
       <span role="status">{copyMessage}</span>
     </div>
     <div className="document"><PlanMarkdown markdown={markdown} /></div>

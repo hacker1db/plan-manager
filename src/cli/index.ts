@@ -16,6 +16,8 @@ import { cmdDoctor } from './commands/doctor.js'
 import { cmdOpen } from './commands/open.js'
 import { cmdAuth, cmdPush } from './commands/remote.js'
 import { cmdCompletion } from './commands/completion.js'
+import { cmdBlocks } from './commands/blocks.js'
+import { cmdCheck } from './commands/check.js'
 import { EXIT } from './exit.js'
 
 function parseArgs(argv) {
@@ -30,6 +32,7 @@ function parseArgs(argv) {
     else if (a === '--token') { opts.token = argv[++i] }
     else if (a === '--title') { opts.title = argv[++i] }
     else if (a === '--file') { opts.file = argv[++i] }
+    else if (a === '--format') { opts.format = argv[++i] }
     else if (a === '--status') { opts.status = argv[++i] }
     else if (a === '--if-revision') { opts.ifRevision = argv[++i] }
     else if (a === '--all' || !a.startsWith('--')) { args.push(a) }
@@ -46,9 +49,10 @@ Usage:
   plan [open]                    Open the dashboard
   plan init                      Initialize plan home
   plan new <title>               Create a plan and open in $EDITOR
+    [--format md|mdx]
   plan create --title <title>    Create a plan non-interactively
-    [--stdin|--file <file>] [--json]
-  plan import <file>             Import an existing Markdown file
+    [--stdin|--file <file>] [--format md|mdx] [--json]
+  plan import <file>             Import an existing Markdown or MDX file
   plan capture <artifact>        Capture external Markdown or HTML
     [--title <title>] [--json]
   plan list [--status <s>] [--json]
@@ -65,6 +69,9 @@ Usage:
   plan auth <logout|status>
   plan push <id-or-slug|--all>   Upload plans to the hosted site
                                  (PLAN_MANAGER_URL overrides the site URL)
+  plan blocks [--json]           Print the MDX plan block reference
+  plan check <file|id>... [--json]
+                                 Validate MDX plan blocks (exit 2 on errors)
   plan completion bash           Print shell completion script
                                  (add eval "$(plan completion bash)" to ~/.bashrc)
 
@@ -103,6 +110,8 @@ export async function run(argv) {
     case 'doctor': return cmdDoctor(args, opts)
     case 'auth': return cmdAuth(args, opts)
     case 'push': return cmdPush(args, opts)
+    case 'blocks': return cmdBlocks(args, opts)
+    case 'check': return cmdCheck(args, opts)
     case 'completion': return cmdCompletion(args)
     default: process.stderr.write(`Unknown command: ${cmd}\n\n${USAGE}`); process.exit(EXIT.INVALID_INPUT)
   }

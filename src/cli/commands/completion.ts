@@ -4,13 +4,14 @@ import { EXIT } from '../exit.js'
 const BASH = `# plan bash completion — load with: eval "$(plan completion bash)"
 _plan() {
   local cur=\${COMP_WORDS[COMP_CWORD]} prev=\${COMP_WORDS[COMP_CWORD-1]}
-  local cmds="open init new create import capture list search show edit update status archive serve doctor auth push completion"
+  local cmds="open init new create import capture list search show edit update status archive serve doctor auth push blocks check completion"
   if [ "$COMP_CWORD" -eq 1 ]; then
     COMPREPLY=($(compgen -W "$cmds --help --version" -- "$cur")); return
   fi
   case "$prev" in
-    --file|import|capture) COMPREPLY=($(compgen -f -- "$cur")); return ;;
+    --file|import|capture|check) COMPREPLY=($(compgen -f -- "$cur")); return ;;
     --status) COMPREPLY=($(compgen -W "active completed archived all" -- "$cur")); return ;;
+    --format) COMPREPLY=($(compgen -W "md mdx" -- "$cur")); return ;;
   esac
   case "\${COMP_WORDS[1]}" in
     show|edit|update|status|archive|push)

@@ -18,6 +18,8 @@ import yaml from 'js-yaml'
 import { getHost, getPlanHome, getPort } from '../lib/config.js'
 import { computeRevision } from '../lib/ids.js'
 import { parseFrontmatter } from '../lib/metadata.js'
+import { formatFromPath, isPlanFilename } from '../lib/mdx/format.js'
+import { renderMdxToHtml } from '../lib/mdx/html.js'
 import { withPlanWriteLock } from '../lib/write-lock.js'
 
 const STATUS_VALUES = new Set(['active', 'completed', 'archived'])
@@ -223,7 +225,7 @@ export async function startServer(options = {}) {
     for (const directory of [planHome, archiveHome]) {
       const entries = await readdir(directory, { withFileTypes: true })
       for (const entry of entries) {
-        if (!entry.isFile() || entry.isSymbolicLink() || !entry.name.endsWith('.md')) continue
+        if (!entry.isFile() || entry.isSymbolicLink() || !isPlanFilename(entry.name)) continue
         const filePath = join(directory, entry.name)
         if (isContained(planHome, filePath)) files.push(filePath)
       }
@@ -252,6 +254,7 @@ export async function startServer(options = {}) {
     }
     return {
       meta: parsed.meta,
+      format: parsed.meta.format === 'mdx' || formatFromPath(filePath) === 'mdx' ? 'mdx' : 'md',
       body: parsed.body,
       raw,
       filePath,
@@ -294,6 +297,7 @@ export async function startServer(options = {}) {
       throw pathError
     }
     const updatedMeta = { ...meta, updated: new Date().toISOString() }
+    if (formatFromPath(filePath) === 'mdx') updatedMeta.format = 'mdx'
     const frontmatter = yaml.dump(updatedMeta, { lineWidth: -1 }).trimEnd()
     const content = `---\n${frontmatter}\n---\n${body.startsWith('\n') ? body : `\n${body}`}`
     const temporaryPath = join(
@@ -621,7 +625,14 @@ export async function startServer(options = {}) {
       }
       let html = null
       let renderState = 'unavailable'
-      if (await pandocIsAvailable()) {
+      if (plan.format === 'mdx') {
+        try {
+          html = renderMdxToHtml(plan.body)
+          renderState = 'rendered'
+        } catch {
+          renderState = 'failed'
+        }
+      } else if (await pandocIsAvailable()) {
         try {
           html = await renderMarkdown(plan.body)
           renderState = 'rendered'
@@ -637,6 +648,7 @@ export async function startServer(options = {}) {
         updated: plan.meta.updated,
         tags: plan.meta.tags,
         revision: plan.revision,
+        format: plan.format,
         body: plan.body,
         html,
         renderState,
