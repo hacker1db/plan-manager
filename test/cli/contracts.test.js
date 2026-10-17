@@ -144,3 +144,21 @@ test('pnpm dev serves the canonical plans.localhost URL from TypeScript source',
     await rm(dir, { recursive: true })
   }
 })
+
+test('completion bash completes subcommands and plan ids', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'plan-completion-'))
+  try {
+    const created = planCmd(['create', '--title', 'Tab target', '--stdin', '--json'], { PLAN_HOME: dir }, 'x\n')
+    assert.equal(created.status, 0, created.stderr)
+    const { id } = JSON.parse(created.stdout)
+    const script = planCmd(['completion', 'bash']).stdout
+    const shim = `plan() { "${process.execPath}" "${BIN}" "$@"; }\n${script}\n`
+    const complete = words => spawnSync('bash', ['-c', `${shim}COMP_WORDS=(${words}); COMP_CWORD=$((\${#COMP_WORDS[@]}-1)); _plan; printf '%s\\n' "\${COMPREPLY[@]}"`], { encoding: 'utf8', env: { ...process.env, PLAN_HOME: dir } }).stdout.split('\n')
+    assert.deepEqual(complete("plan st").filter(Boolean).sort(), ['status'])
+    assert.ok(complete("plan show ''").includes(id))
+    assert.deepEqual(complete("plan status x c").filter(Boolean), ['completed'])
+    assert.equal(planCmd(['completion', 'fish']).status, 2)
+  } finally {
+    await rm(dir, { recursive: true, force: true })
+  }
+})

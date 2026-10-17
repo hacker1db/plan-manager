@@ -15,6 +15,7 @@ import { cmdServe } from './commands/serve.js'
 import { cmdDoctor } from './commands/doctor.js'
 import { cmdOpen } from './commands/open.js'
 import { cmdAuth, cmdPush } from './commands/remote.js'
+import { cmdCompletion } from './commands/completion.js'
 import { EXIT } from './exit.js'
 
 function parseArgs(argv) {
@@ -64,6 +65,8 @@ Usage:
   plan auth <logout|status>
   plan push <id-or-slug|--all>   Upload plans to the hosted site
                                  (PLAN_MANAGER_URL overrides the site URL)
+  plan completion bash           Print shell completion script
+                                 (add eval "$(plan completion bash)" to ~/.bashrc)
 
 Exit codes:
   0  success
@@ -100,6 +103,7 @@ export async function run(argv) {
     case 'doctor': return cmdDoctor(args, opts)
     case 'auth': return cmdAuth(args, opts)
     case 'push': return cmdPush(args, opts)
+    case 'completion': return cmdCompletion(args)
     default: process.stderr.write(`Unknown command: ${cmd}\n\n${USAGE}`); process.exit(EXIT.INVALID_INPUT)
   }
 }

@@ -58,6 +58,8 @@ plan archive migrate-auth-service
 
 You can refer to a plan by its ID or its filename slug. Run `plan --help` to see every command.
 
+Enable Tab completion (bash; zsh after `autoload -U bashcompinit && bashcompinit`) by adding `eval "$(plan completion bash)"` to your shell rc.
+
 ### Plan format
 
 ```markdown
