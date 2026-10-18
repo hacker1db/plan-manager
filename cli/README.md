@@ -92,6 +92,8 @@ The command bar uses the same completion logic as the shell scripts, so the TUI 
 - Unknown flags are rejected with exit code 2 instead of being ignored silently. To pass an argument that starts with `-`, put `--` before it: `plan search -- -rc1`.
 - `plan push <id> --all` is rejected with exit code 2 instead of pushing only `<id>`.
 - Frontmatter timestamps are written with double quotes (`"2026-…Z"`) instead of single quotes. Both implementations read either form.
+- `plan completion` accepts zsh, fish, and powershell in addition to bash; the TypeScript CLI accepts only bash and exits 2 for anything else.
+- Completion suggests slugs (with the title and status as the description) and falls back to IDs only for ambiguous slugs; the TypeScript CLI suggests IDs. Both scripts define and register `_plan`, and both work without the bash-completion package.
 
 ## Development
 

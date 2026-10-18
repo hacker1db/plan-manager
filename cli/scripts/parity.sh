@@ -17,6 +17,11 @@ cp "$repo_dir"/test/cli/create.test.js "$repo_dir"/test/cli/capture.test.js \
    "$repo_dir"/test/cli/contracts.test.js "$repo_dir"/test/cli/dashboard.test.js "$work/test/cli/"
 # doctor reports the Go runtime under "runtime" rather than "node".
 sed -i.bak 's/assert.ok(report.node)/assert.ok(report.runtime)/' "$work/test/cli/create.test.js"
+# Completion suggests slugs rather than IDs, and supports fish.
+sed -i.bak \
+  -e "s/\.includes(id)/.includes('tab-target')/" \
+  -e "s/\['completion', 'fish'\]).status, 2/['completion', 'fish']).status, 0/" \
+  "$work/test/cli/contracts.test.js"
 
 cat > "$work/bin/plan" <<EOF
 #!/usr/bin/env node

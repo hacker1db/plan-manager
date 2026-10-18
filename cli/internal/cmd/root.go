@@ -81,6 +81,10 @@ func NewRoot() *cobra.Command {
 		c.GroupID = "remote"
 		root.AddCommand(c)
 	}
+	// Cobra's default completion command is replaced by one that fixes the
+	// bash script for shells without the bash-completion package.
+	root.CompletionOptions.DisableDefaultCmd = true
+	root.AddCommand(newCompletionCmd())
 	return root
 }
 
