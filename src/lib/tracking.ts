@@ -8,10 +8,11 @@ export const EXECUTION_ROLES = ['planning', 'implementation', 'review'] as const
 export const ENVIRONMENT_TYPES = ['host', 'vm', 'container', 'remote'] as const
 export const PR_ROLES = ['implements', 'partial', 'followup', 'supporting'] as const
 export const PR_STATES = ['open', 'draft', 'closed', 'merged'] as const
-export const EVENT_TYPES = ['migrated', 'stage', 'session.attached', 'session.ended', 'pr.attached', 'pr.detached', 'pr.observed', 'plan.review', 'pr.review', 'completed', 'reopened', 'session.lead', 'handoff'] as const
+export const EVENT_TYPES = ['migrated', 'stage', 'session.attached', 'session.ended', 'pr.attached', 'pr.detached', 'pr.observed', 'plan.review', 'pr.review', 'completed', 'reopened', 'session.lead', 'handoff', 'session.heartbeat'] as const
 export const PLAN_REVIEW_DECISIONS = ['approved', 'changes_requested'] as const
 export const PR_REVIEW_STATES = ['submitted', 'requested', 'approved', 'changes_requested', 'dismissed', 'unknown'] as const
 export const REOPEN_STAGES = ['in_progress', 'planning'] as const
+export const ACTIVITIES = ['active', 'idle', 'blocked'] as const
 export const EVENT_SOURCES = ['cli', 'server', 'migration'] as const
 export const TRACKING_LIMITS = { events: 500, eventBytes: 4096, text: 512 }
 
@@ -26,6 +27,7 @@ export type EventSource = typeof EVENT_SOURCES[number]
 export type PlanReviewDecision = typeof PLAN_REVIEW_DECISIONS[number]
 export type PrReviewState = typeof PR_REVIEW_STATES[number]
 export type ReopenStage = typeof REOPEN_STAGES[number]
+export type Activity = typeof ACTIVITIES[number]
 
 export interface MachineIdentity { installationId: string; displayName: string; hostname: string; os: string; arch: string }
 export interface EnvironmentIdentity { id: string; type: EnvironmentType; parentId?: string }
@@ -62,7 +64,8 @@ export interface TrackingEvent {
 }
 export interface Tracking { events: TrackingEvent[] }
 
-export interface ProjectedExecution extends Execution { attachedEventId: string; startedAt: string; endedAt?: string }
+export interface Heartbeat { activity: Activity; blockReason?: string; owner?: string; nextAction?: string; recordedAt: string; observedAt?: string }
+export interface ProjectedExecution extends Execution { attachedEventId: string; startedAt: string; endedAt?: string; heartbeat?: Heartbeat }
 export interface ProjectedHandoff { eventId: string; fromExecutionId: string; toExecutionId: string; reason: string; scope?: string; endPrevious?: boolean; actor: string; at: string }
 export interface PrReview { state: PrReviewState; headSha: string; reviewedAt: string; stale: boolean }
 export interface ProjectedPr extends PrAssociation {
@@ -273,6 +276,18 @@ function validateData(type: EventType, value: unknown): UnknownRecord {
       if (from === to) fail('data.toExecutionId must differ from data.fromExecutionId')
       return clean({ fromExecutionId: from, toExecutionId: to, reason: text(raw.reason, 'data.reason'), scope: optionalText(raw.scope, 'data.scope'), endPrevious: raw.endPrevious as true | undefined })
     }
+    case 'session.heartbeat': {
+      const raw = record(value, 'data', ['executionId', 'activity', 'blockReason', 'owner', 'nextAction'])
+      const data = clean({
+        executionId: uuid(raw.executionId, 'data.executionId'),
+        activity: oneOf(raw.activity, 'data.activity', ACTIVITIES),
+        blockReason: optionalText(raw.blockReason, 'data.blockReason'),
+        owner: optionalText(raw.owner, 'data.owner'),
+        nextAction: optionalText(raw.nextAction, 'data.nextAction'),
+      })
+      if (data.activity === 'blocked' && (data.blockReason === undefined || data.owner === undefined)) fail('a blocked heartbeat requires data.blockReason and data.owner')
+      return data
+    }
   }
 }
 
@@ -394,6 +409,12 @@ export function projectEvents(events: TrackingEvent[], status: PlanStatus, body?
         // endPrevious ends the predecessor in the same event, so the handoff and the end can never be split by a crash.
         const previous = data.endPrevious ? projection.executions.find(item => item.id === data.fromExecutionId) : undefined
         if (previous && !previous.endedAt) previous.endedAt = at
+        break
+      }
+      case 'session.heartbeat': {
+        const execution = projection.executions.find(item => item.id === data.executionId)
+        const { executionId: _, ...beat } = data
+        if (execution && !execution.endedAt) execution.heartbeat = clean({ ...beat, recordedAt: event.recordedAt, observedAt: event.observedAt }) as unknown as Heartbeat
         break
       }
     }
@@ -536,4 +557,49 @@ export function appendEvent(meta: PlanMetadata, input: EventInput, now = new Dat
   const stage = projectEvents(tracking.events, meta.status).stage
   const status: PlanStatus = meta.status === 'archived' ? 'archived' : stage === 'completed' ? 'completed' : 'active'
   return { meta: { ...meta, status, schemaVersion: TRACKING_SCHEMA_VERSION, tracking }, event, duplicate: false }
+}
+
+export const HEARTBEAT_THROTTLE_MS = 5 * 60_000
+export const CLOCK_SKEW_LIMIT_MS = 5 * 60_000
+
+// An unchanged heartbeat inside the throttle window adds nothing, so it is skipped to keep the Markdown small.
+export function coalescesHeartbeat(execution: ProjectedExecution, data: UnknownRecord, now: Date, throttleMs = HEARTBEAT_THROTTLE_MS): boolean {
+  const last = execution.heartbeat
+  if (!last) return false
+  const same = (['activity', 'blockReason', 'owner', 'nextAction'] as const).every(key => last[key] === data[key])
+  return same && now.getTime() - Date.parse(last.recordedAt) < throttleMs
+}
+
+export interface ExecutionHealth {
+  activity: Activity | 'ended' | null
+  // recordedAt of the latest heartbeat (this machine's clock); null when the session never sent one.
+  lastSeen: string | null
+  // Never "offline": an expired heartbeat only means no recent heartbeat.
+  freshness: 'fresh' | 'stale' | 'unknown'
+  staleMs: number
+  clockSkewMs: number | null
+  clockSkewed: boolean
+  ended: boolean
+  blockReason?: string
+  owner?: string
+  nextAction?: string
+}
+
+export function executionHealth(execution: ProjectedExecution, now: Date, { staleMs }: { staleMs: number }): ExecutionHealth {
+  const beat = execution.heartbeat
+  const ended = execution.endedAt !== undefined
+  const lastSeen = beat?.recordedAt ?? null
+  const clockSkewMs = beat?.observedAt === undefined ? null : Date.parse(beat.observedAt) - Date.parse(beat.recordedAt)
+  return clean({
+    activity: ended ? 'ended' : beat?.activity ?? null,
+    lastSeen,
+    freshness: lastSeen === null ? 'unknown' : now.getTime() - Date.parse(lastSeen) > staleMs ? 'stale' : 'fresh',
+    staleMs,
+    clockSkewMs,
+    clockSkewed: clockSkewMs !== null && Math.abs(clockSkewMs) > CLOCK_SKEW_LIMIT_MS,
+    ended,
+    blockReason: beat?.blockReason,
+    owner: beat?.owner,
+    nextAction: beat?.nextAction,
+  }) as ExecutionHealth
 }

@@ -9,7 +9,7 @@ import { assertRevision } from '../../lib/revisions.js'
 import { withPlanWriteLock } from '../../lib/write-lock.js'
 import { localMachine } from '../../lib/machine.js'
 import {
-  appendEvent, parsePrUrl, prKey, projectTracking, validateEnvironment, PLAN_STAGES, PR_ROLES,
+  appendEvent, coalescesHeartbeat, parsePrUrl, prKey, projectTracking, validateEnvironment, PLAN_STAGES, PR_ROLES,
   assertCompletion, assertPlanReview, assertReopen, assertStageTransition, bodyRevision, PLAN_REVIEW_DECISIONS, PR_REVIEW_STATES, REOPEN_STAGES,
   TrackingError, type EnvironmentIdentity, type EventInput, type PlanStage, type PrObservation, type PrRole, type TrackingEvent,
   type PlanReviewDecision, type PrReviewState, type ReopenStage,
@@ -306,15 +306,29 @@ async function reopen(idOrSlug: string, opts: CliOptions): Promise<void> {
   report(opts, outcome, {}, `Reopened: ${target}`)
 }
 
+async function sessionHeartbeat(idOrSlug: string, executionId: string | undefined, opts: CliOptions): Promise<void> {
+  if (!executionId) usage('execution ID required\n  Usage: plan session heartbeat <id-or-slug> <execution-id> [--activity active|idle|blocked]')
+  const data: UnknownRecord = { executionId, activity: opts.activity ?? 'active', blockReason: opts.reason, owner: opts.owner, nextAction: opts.next }
+  const outcome = await mutate(idOrSlug, opts, meta => {
+    const execution = projectTracking(meta).executions.find(item => item.id === executionId)
+    if (!execution) throw Object.assign(new Error(`No session ${executionId} on plan ${meta.id}`), { code: 'ENOTFOUND' })
+    if (execution.endedAt) throw new TrackingError(`Session ${executionId} has ended; heartbeats are rejected`)
+    if (coalescesHeartbeat(execution, data, new Date())) return { result: { coalesced: true } }
+    return { input: { type: 'session.heartbeat', data, actor: actor(opts), observedAt: opts.observedAt, idempotencyKey: opts.idempotencyKey, evidence: opts.evidence } }
+  })
+  report(opts, outcome, { executionId, coalesced: false }, `Heartbeat ${data.activity} for ${executionId}`)
+}
+
 export async function cmdSession(args: string[], opts: CliOptions): Promise<void> {
   const [sub, idOrSlug, executionId] = args
-  if (!idOrSlug) usage('Usage: plan session <attach|end|lead> <id-or-slug> ...')
+  if (!idOrSlug) usage('Usage: plan session <attach|end|lead|heartbeat> <id-or-slug> ...')
   try {
     if (sub === 'attach') return await sessionAttach(idOrSlug, opts)
     if (sub === 'end') return await sessionEnd(idOrSlug, executionId, opts)
     if (sub === 'lead') return await sessionLead(idOrSlug, executionId, opts)
+    if (sub === 'heartbeat') return await sessionHeartbeat(idOrSlug, executionId, opts)
   } catch (err) { exitFor(err) }
-  usage(`Unknown session subcommand: ${sub}\n  Usage: plan session <attach|end|lead> <id-or-slug> ...`)
+  usage(`Unknown session subcommand: ${sub}\n  Usage: plan session <attach|end|lead|heartbeat> <id-or-slug> ...`)
 }
 
 export async function cmdHandoff(args: string[], opts: CliOptions): Promise<void> {

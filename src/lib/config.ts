@@ -17,3 +17,8 @@ export function getHost(): string {
 export function getConfigDir(): string {
   return join(process.env.XDG_CONFIG_HOME ?? join(homedir(), '.config'), 'plan-manager')
 }
+
+export function getStaleMs(): number {
+  const minutes = Number(process.env.PLAN_STALE_MINUTES)
+  return (Number.isFinite(minutes) && minutes > 0 ? minutes : 15) * 60_000
+}

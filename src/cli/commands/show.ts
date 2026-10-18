@@ -2,6 +2,8 @@
 import { initStorage, resolveByIdOrSlug, containedPath } from '../../lib/storage.js'
 import { readPlan } from '../../lib/metadata.js'
 import { buildEnvelope } from '../../lib/envelope.js'
+import { projectTracking, executionHealth } from '../../lib/tracking.js'
+import { getStaleMs } from '../../lib/config.js'
 import { EXIT } from '../exit.js'
 
 export async function cmdShow(args, opts) {
@@ -32,7 +34,7 @@ export async function cmdShow(args, opts) {
   const parsed = await readPlan(resolved.filePath)
   if (opts.json) {
     const envelope = await buildEnvelope(parsed)
-    const out = { ...envelope, body: parsed.body }
+    const out = { ...envelope, body: parsed.body, tracking: trackingView(parsed.meta) }
     process.stdout.write(JSON.stringify(out) + '\n')
   } else {
     process.stdout.write(`# ${parsed.meta.title}\n`)
@@ -40,4 +42,13 @@ export async function cmdShow(args, opts) {
     process.stdout.write(`url: http://plans.localhost:4173/plans/${parsed.meta.id}\n\n`)
     process.stdout.write(parsed.body + '\n')
   }
+}
+
+// Null when tracking cannot be read, matching the envelope's unknown stage.
+function trackingView(meta) {
+  let projection
+  try { projection = projectTracking(meta) } catch { return null }
+  const now = new Date()
+  const staleMs = getStaleMs()
+  return { staleMs, executions: projection.executions.map(execution => ({ ...execution, health: executionHealth(execution, now, { staleMs }) })) }
 }
