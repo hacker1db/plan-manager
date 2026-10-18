@@ -54,6 +54,15 @@ async function mutate(suffix, options = {}) {
   })
 }
 
+async function copyMarkdown() {
+  try {
+    await navigator.clipboard.writeText(state.plan.body)
+    toast('Markdown copied')
+  } catch {
+    toast('Could not copy Markdown', 'error')
+  }
+}
+
 async function copyPath() {
   try {
     const value = await mutate('copy-path')
@@ -191,6 +200,7 @@ function render() {
   status.addEventListener('change', () => setStatus(status.value))
   actions.append(
     status,
+    button('Copy Markdown', copyMarkdown),
     button('Copy path', copyPath),
     button('Open in editor', openInEditor),
   )
