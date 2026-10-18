@@ -3,9 +3,29 @@ import yaml from 'js-yaml'
 import { atomicWrite } from './storage.js'
 import { generateId } from './ids.js'
 import { formatFromPath } from './mdx/format.js'
+import { assertStageMatchesStatus, TRACKING_SCHEMA_VERSION } from './tracking.js'
 import { PLAN_STATUSES, type ParsedPlan, type PlanMetadata, type PlanStatus, type UnknownRecord } from './types.js'
 
 const STATUS_VALUES = new Set<PlanStatus>(PLAN_STATUSES)
+const KNOWN_FIELDS = new Set(['id', 'title', 'status', 'created', 'updated', 'tags', 'source', 'format', 'schemaVersion', 'tracking'])
+const UNSAFE_FIELDS = new Set(['__proto__', 'constructor', 'prototype'])
+const UNKNOWN_LIMITS = { fields: 100, bytes: 65536 }
+
+function unknownFields(raw: UnknownRecord): UnknownRecord {
+  return Object.fromEntries(Object.entries(raw).filter(([key]) => !KNOWN_FIELDS.has(key) && !UNSAFE_FIELDS.has(key)))
+}
+
+// Writers must not drop or rewrite metadata they do not understand, so oversized or newer-schema plans fail before any write.
+function assertWritable(meta: PlanMetadata): void {
+  if (meta.schemaVersion !== undefined && meta.schemaVersion > TRACKING_SCHEMA_VERSION) {
+    throw Object.assign(new Error(`Plan ${meta.id} uses tracking schema ${meta.schemaVersion}; upgrade plan before writing it`), { code: 'EUNSUPPORTEDSCHEMA' })
+  }
+  const extra = unknownFields(meta)
+  if (Object.keys(extra).length > UNKNOWN_LIMITS.fields || JSON.stringify(extra).length > UNKNOWN_LIMITS.bytes) {
+    throw Object.assign(new Error(`Plan ${meta.id} has too much unrecognized frontmatter to rewrite safely`), { code: 'EMETADATALIMIT' })
+  }
+  assertStageMatchesStatus(meta)
+}
 
 export function parseFrontmatter(content: string): { meta: UnknownRecord; body: string } {
   if (!content.startsWith('---')) {
@@ -35,6 +55,7 @@ export function normalizeMeta(raw: UnknownRecord, filePath?: string): PlanMetada
     ? raw.status as PlanStatus
     : 'active'
   return {
+    ...unknownFields(raw),
     id: typeof raw.id === 'string' && raw.id.length > 0 ? raw.id : generateId(),
     title: typeof raw.title === 'string' && raw.title.length > 0 ? raw.title : 'Untitled',
     status,
@@ -43,6 +64,8 @@ export function normalizeMeta(raw: UnknownRecord, filePath?: string): PlanMetada
     tags: Array.isArray(raw.tags) ? raw.tags.filter((tag): tag is string => typeof tag === 'string') : [],
     ...(raw.source != null ? { source: String(raw.source) } : {}),
     ...(raw.format === 'mdx' || (filePath !== undefined && formatFromPath(filePath) === 'mdx') ? { format: 'mdx' as const } : {}),
+    ...(typeof raw.schemaVersion === 'number' ? { schemaVersion: raw.schemaVersion } : {}),
+    ...(raw.tracking !== undefined ? { tracking: raw.tracking } : {}),
   }
 }
 
@@ -56,6 +79,7 @@ export async function readPlan(filePath: string): Promise<ParsedPlan> {
 export async function writePlan(filePath: string, meta: PlanMetadata, body: string): Promise<void> {
   const updated: PlanMetadata = { ...meta, updated: new Date().toISOString() }
   if (formatFromPath(filePath) === 'mdx') updated.format = 'mdx'
+  assertWritable(updated)
   const frontmatter = yaml.dump(updated, { lineWidth: -1 }).trimEnd()
   const content = `---\n${frontmatter}\n---\n${body.startsWith('\n') ? body : '\n' + body}`
   await atomicWrite(filePath, content)
