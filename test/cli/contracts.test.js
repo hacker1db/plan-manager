@@ -1,12 +1,13 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { createServer } from 'node:net'
-import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { cp, mkdtemp, mkdir, readFile, rm, symlink, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { spawn, spawnSync } from 'node:child_process'
 
 const BIN = new URL('../../bin/plan', import.meta.url).pathname
+const ROOT = new URL('../../', import.meta.url).pathname
 
 function planCmd(args, env = {}, stdin) {
   return spawnSync(process.execPath, [BIN, ...args], {
@@ -66,6 +67,66 @@ test('doctor reports service ownership, LaunchAgent, Codex override, and effecti
     assert.equal(report.codex.configuredWritableRoot, true)
     assert.equal(report.codex.overrideConflict, true)
     assert.equal(report.launchAgent.label, 'com.plan-manager.serve')
+  } finally {
+    await rm(dir, { recursive: true })
+  }
+})
+
+test('--version reports the package.json version', async () => {
+  const pkg = JSON.parse(await readFile(join(ROOT, 'package.json'), 'utf8'))
+  const result = planCmd(['--version'])
+  assert.equal(result.status, 0, result.stderr)
+  assert.equal(result.stdout.trim(), pkg.version)
+})
+
+test('doctor reports the CLI build as current right after a build', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'plan-build-contract-'))
+  try {
+    const result = planCmd(['doctor', '--json'], { HOME: dir, PLAN_HOME: join(dir, 'plans'), PLAN_PORT: String(await freePort()) })
+    assert.equal(result.status, 0, result.stderr)
+    assert.equal(JSON.parse(result.stdout).build.status, 'ok')
+    const text = planCmd(['doctor'], { HOME: dir, PLAN_HOME: join(dir, 'plans'), PLAN_PORT: String(await freePort()) })
+    assert.match(text.stdout, /^CLI build: .*\[ok\]$/m)
+    const unknown = planCmd(['bogus'])
+    assert.equal(unknown.status, 2)
+    assert.doesNotMatch(unknown.stderr, /out of date/)
+  } finally {
+    await rm(dir, { recursive: true })
+  }
+})
+
+test('a stale dist is reported by doctor and hinted on unknown commands', async () => {
+  // Work on a copy of the install so the real tree's mtimes are untouched.
+  const dir = await mkdtemp(join(tmpdir(), 'plan-stale-contract-'))
+  try {
+    await Promise.all([
+      cp(join(ROOT, 'dist'), join(dir, 'dist'), { recursive: true }),
+      cp(join(ROOT, 'bin'), join(dir, 'bin'), { recursive: true }),
+      cp(join(ROOT, 'package.json'), join(dir, 'package.json')),
+      symlink(join(ROOT, 'node_modules'), join(dir, 'node_modules')),
+      mkdir(join(dir, 'src', 'cli'), { recursive: true }),
+    ])
+    const copy = (args, env = {}) => spawnSync(process.execPath, [join(dir, 'bin', 'plan'), ...args], {
+      encoding: 'utf8',
+      env: { ...process.env, HOME: dir, PLAN_HOME: join(dir, 'plans'), ...env },
+    })
+    const fresh = copy(['doctor', '--json'], { PLAN_PORT: String(await freePort()) })
+    assert.equal(fresh.status, 0, fresh.stderr)
+    assert.equal(JSON.parse(fresh.stdout).build.status, 'ok')
+
+    await new Promise(resolve => setTimeout(resolve, 20))
+    await writeFile(join(dir, 'src', 'cli', 'newer.ts'), 'export {}\n')
+
+    const stale = copy(['doctor', '--json'], { PLAN_PORT: String(await freePort()) })
+    assert.equal(stale.status, 0, stale.stderr)
+    assert.equal(JSON.parse(stale.stdout).build.status, 'stale')
+    const text = copy(['doctor'], { PLAN_PORT: String(await freePort()) })
+    assert.match(text.stdout, /^CLI build: .*\[stale — run pnpm build:cli\]$/m)
+
+    const unknown = copy(['bogus'])
+    assert.equal(unknown.status, 2)
+    assert.match(unknown.stderr, /^Unknown command: bogus\nThis build is out of date; run pnpm build:cli\.\n/)
+    assert.match(unknown.stderr, /Usage:/)
   } finally {
     await rm(dir, { recursive: true })
   }
