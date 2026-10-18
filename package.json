@@ -3,7 +3,7 @@
   "version": "0.2.0",
   "description": "Local Markdown plan library, CLI, dashboard, and private hosted app",
   "type": "module",
-  "packageManager": "pnpm@10.17.1",
+  "packageManager": "pnpm@12.14.0",
   "engines": {
     "node": ">=20.0.0"
   },

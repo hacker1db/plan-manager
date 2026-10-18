@@ -6,6 +6,20 @@ import PlanMarkdown from "./plan-markdown"
 import type { DashboardPlan } from "@/hosted/lib/types"
 
 function HostedPlanContent({ plan, markdown }: { plan: DashboardPlan; markdown: string }) {
+  const [copyMessage, setCopyMessage] = useState("")
+  const [copying, setCopying] = useState(false)
+  async function copyMarkdown() {
+    setCopying(true)
+    setCopyMessage("")
+    try {
+      await navigator.clipboard.writeText(markdown)
+      setCopyMessage("Markdown copied")
+    } catch {
+      setCopyMessage("Could not copy Markdown. Try Download Markdown instead.")
+    } finally {
+      setCopying(false)
+    }
+  }
   const tags = plan.tags.length
     ? plan.tags.map(tag => <span className="plan-tag" key={tag}>{tag}</span>)
     : "—"
@@ -17,7 +31,11 @@ function HostedPlanContent({ plan, markdown }: { plan: DashboardPlan; markdown: 
       <div className="meta"><span className="meta-label">Tags</span><span className="meta-value plan-meta">{tags}</span></div>
       <div className="meta"><span className="meta-label">Revision</span><span className="meta-value rev" title={plan.revision}>{plan.revision.slice(0, 8)}</span></div>
     </div>
-    <div className="detail-actions"><a className="btn" href={`/api/v1/plans/${encodeURIComponent(plan.id)}/content`}>Download Markdown</a></div>
+    <div className="detail-actions">
+      <button className="btn" type="button" onClick={copyMarkdown} disabled={copying}>{copying ? "Copying…" : "Copy Markdown"}</button>
+      <a className="btn" href={`/api/v1/plans/${encodeURIComponent(plan.id)}/content`}>Download Markdown</a>
+      <span role="status">{copyMessage}</span>
+    </div>
     <div className="document"><PlanMarkdown markdown={markdown} /></div>
   </>
 }
