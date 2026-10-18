@@ -60,6 +60,10 @@ You can refer to a plan by its ID or its filename slug. Run `plan --help` to see
 
 Enable Tab completion (bash; zsh after `autoload -U bashcompinit && bashcompinit`) by adding `eval "$(plan completion bash)"` to your shell rc.
 
+### Go CLI and terminal UI
+
+[`cli/`](cli/README.md) contains a Go build of the same CLI. It has identical commands, JSON output, and exit codes, and adds `plan tui` (a full-screen plan manager), shell completion for plan slugs and statuses, and a command bar that suggests the next argument as you type. Install it with `cd cli && go install ./cmd/plan`.
+
 ### Plan format
 
 ```markdown
@@ -131,6 +135,7 @@ There is a single hosted site, `https://planmanager.hacker1db.dev`; set `PLAN_MA
 
 ```
 bin/plan            CLI entry point (runs dist/cli/index.js)
+cli/                Go build of the CLI with the TUI and shell completion
 src/cli/            Argument parsing and one module per command
 src/lib/            Storage, frontmatter, IDs, revisions, locking, service management
 src/server/         Local dashboard HTTP server and JSON API
