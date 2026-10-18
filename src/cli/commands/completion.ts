@@ -6,7 +6,7 @@ _plan() {
   local cur=\${COMP_WORDS[COMP_CWORD]} prev=\${COMP_WORDS[COMP_CWORD-1]}
   local cmds="open init new create import capture list search show edit update status archive serve doctor auth push completion"
   if [ "$COMP_CWORD" -eq 1 ]; then
-    COMPREPLY=($(compgen -W "$cmds --help --version" -- "$cur")); return
+    COMPREPLY=($(compgen -W "$cmds --help --version --localhost" -- "$cur")); return
   fi
   case "$prev" in
     --file|import|capture) COMPREPLY=($(compgen -f -- "$cur")); return ;;
@@ -21,6 +21,7 @@ _plan() {
     auth) [ "$COMP_CWORD" -eq 2 ] && COMPREPLY=($(compgen -W "login logout status" -- "$cur")) ;;
     completion) COMPREPLY=($(compgen -W "bash" -- "$cur")) ;;
     list) COMPREPLY=($(compgen -W "--status --json" -- "$cur")) ;;
+    open) COMPREPLY=($(compgen -W "--localhost" -- "$cur")) ;;
   esac
 }
 complete -F _plan plan

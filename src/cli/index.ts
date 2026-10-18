@@ -27,6 +27,7 @@ function parseArgs(argv) {
     if (a === '--json') { opts.json = true }
     else if (a === '--stdin') { opts.stdin = true }
     else if (a === '--foreground') { opts.foreground = true }
+    else if (a === '--localhost') { opts.localhost = true }
     else if (a === '--token') { opts.token = argv[++i] }
     else if (a === '--title') { opts.title = argv[++i] }
     else if (a === '--file') { opts.file = argv[++i] }
@@ -43,7 +44,9 @@ const VERSION = '0.3.0'
 const USAGE = `plan — local Markdown plan manager
 
 Usage:
-  plan [open]                    Open the dashboard
+  plan [open]                    Open the hosted Plan Manager site
+                                 (PLAN_MANAGER_URL overrides the site URL)
+  plan [open] --localhost        Start and open the local dashboard
   plan init                      Initialize plan home
   plan new <title>               Create a plan and open in $EDITOR
   plan create --title <title>    Create a plan non-interactively
@@ -81,9 +84,10 @@ Exit codes:
 `
 
 export async function run(argv) {
-  const [cmd, ...rest] = argv
+  let [cmd, ...rest] = argv
   if (cmd === '--version' || cmd === '-v') { process.stdout.write(VERSION + '\n'); return }
   if (cmd === '--help' || cmd === '-h') { process.stdout.write(USAGE); return }
+  if (cmd === '--localhost') { rest = [cmd, ...rest]; cmd = 'open' }
   const { args, opts } = parseArgs(rest)
   switch (cmd) {
     case undefined: case 'open': return cmdOpen(args, opts)
