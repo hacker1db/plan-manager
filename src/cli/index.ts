@@ -86,7 +86,8 @@ export async function run(argv) {
   if (cmd === '--help' || cmd === '-h') { process.stdout.write(USAGE); return }
   const { args, opts } = parseArgs(rest)
   switch (cmd) {
-    case undefined: case 'open': return cmdOpen(args, opts)
+    case undefined: return cmdOpen(args, { ...opts, remote: true })
+    case 'open': return cmdOpen(args, opts)
     case 'init': return cmdInit(args, opts)
     case 'new': return cmdNew(args, opts)
     case 'create': return cmdCreate(args, opts)
