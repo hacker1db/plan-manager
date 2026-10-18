@@ -78,12 +78,12 @@ test('machines sharing a hostname stay distinct executions', () => {
   assert.deepEqual(installations, [A, B])
 })
 
-test('stage completion keeps status in agreement and contradictions are refused', async () => {
+test('completion keeps status in agreement and contradictions are refused', async () => {
   await withHome(async dir => {
     const fp = join(dir, 'plan.md')
-    const { meta } = appendEvent(META, { type: 'stage', data: { stage: 'completed' }, actor: 't' })
+    const { meta } = appendEvent(META, { type: 'completed', data: { reason: 'done', noPrRationale: 'docs only', coveredPrIds: [] }, actor: 't' })
     assert.equal(meta.status, 'completed')
-    const reopened = appendEvent(meta, { type: 'stage', data: { stage: 'in_progress' }, actor: 't' }).meta
+    const reopened = appendEvent(meta, { type: 'reopened', data: { stage: 'in_progress', reason: 'more work' }, actor: 't' }).meta
     assert.equal(reopened.status, 'active')
     await assert.rejects(writePlan(fp, { ...reopened, status: 'completed' }, ''), { code: 'ESTAGECONFLICT' })
     await writePlan(fp, { ...reopened, status: 'archived' }, '')
