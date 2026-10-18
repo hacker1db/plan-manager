@@ -65,8 +65,9 @@ Usage:
   plan auth <logout|status>
   plan push <id-or-slug|--all>   Upload plans to the hosted site
                                  (PLAN_MANAGER_URL overrides the site URL)
-  plan completion bash           Print shell completion script
-                                 (add eval "$(plan completion bash)" to ~/.bashrc)
+  plan completion <bash|zsh>     Print shell completion script
+                                 (add eval "$(plan completion bash)" to ~/.bashrc,
+                                 or eval "$(plan completion zsh)" to ~/.zshrc)
 
 Exit codes:
   0  success
