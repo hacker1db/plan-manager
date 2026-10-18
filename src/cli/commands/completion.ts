@@ -4,7 +4,7 @@ import { EXIT } from '../exit.js'
 const BASH = `# plan bash completion — load with: eval "$(plan completion bash)"
 _plan() {
   local cur=\${COMP_WORDS[COMP_CWORD]} prev=\${COMP_WORDS[COMP_CWORD-1]}
-  local cmds="open init new create import capture list search show edit update status archive serve doctor auth push blocks check completion stage session pr review complete reopen"
+  local cmds="open init new create import capture list search show edit update status archive serve doctor auth push blocks check completion stage session pr review complete reopen handoff"
   if [ "$COMP_CWORD" -eq 1 ]; then
     COMPREPLY=($(compgen -W "$cmds --help --version" -- "$cur")); return
   fi
@@ -18,7 +18,7 @@ _plan() {
     --stage) COMPREPLY=($(compgen -W "in_progress planning" -- "$cur")); return ;;
   esac
   case "\${COMP_WORDS[1]}" in
-    show|edit|update|status|archive|push|stage|complete|reopen)
+    show|edit|update|status|archive|push|stage|complete|reopen|handoff)
       if [ "\${COMP_WORDS[1]}" = status ] && [ "$COMP_CWORD" -eq 3 ]; then
         COMPREPLY=($(compgen -W "active completed archived" -- "$cur")); return
       fi
@@ -26,7 +26,7 @@ _plan() {
         COMPREPLY=($(compgen -W "planning awaiting_plan_review in_progress awaiting_pr_review" -- "$cur")); return
       fi
       [ "$COMP_CWORD" -eq 2 ] && COMPREPLY=($(compgen -W "$(plan list --status all 2>/dev/null | awk '$0 != "No plans found." {print $1}') --all" -- "$cur")) ;;
-    session) [ "$COMP_CWORD" -eq 2 ] && COMPREPLY=($(compgen -W "attach end" -- "$cur")) ;;
+    session) [ "$COMP_CWORD" -eq 2 ] && COMPREPLY=($(compgen -W "attach end lead" -- "$cur")) ;;
     review)
       [ "$COMP_CWORD" -eq 2 ] && COMPREPLY=($(compgen -W "record" -- "$cur"))
       [ "$COMP_CWORD" -eq 4 ] && COMPREPLY=($(compgen -W "plan pr" -- "$cur")) ;;

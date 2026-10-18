@@ -141,6 +141,39 @@ async function sessionEnd(idOrSlug: string, executionId: string | undefined, opt
   report(opts, outcome, { executionId }, `Ended session ${executionId}`)
 }
 
+function liveExecution(meta: PlanMetadata, executionId: string) {
+  const execution = projectTracking(meta).executions.find(item => item.id === executionId)
+  if (!execution) throw Object.assign(new Error(`No session ${executionId} on plan ${meta.id}`), { code: 'ENOTFOUND' })
+  if (execution.endedAt) throw new TrackingError(`Session ${executionId} has ended and cannot lead`)
+  return execution
+}
+
+async function sessionLead(idOrSlug: string, executionId: string | undefined, opts: CliOptions): Promise<void> {
+  if (!executionId) usage('execution ID required\n  Usage: plan session lead <id-or-slug> <execution-id>')
+  const outcome = await mutate(idOrSlug, opts, meta => {
+    liveExecution(meta, executionId)
+    if (projectTracking(meta).leadExecutionId === executionId) return { result: { executionId } }
+    return { input: { type: 'session.lead', data: { executionId }, actor: actor(opts), idempotencyKey: opts.idempotencyKey, evidence: opts.evidence } }
+  })
+  report(opts, outcome, { executionId, leadExecutionId: executionId }, `Lead session ${executionId}`)
+}
+
+async function handoff(idOrSlug: string, from: string | undefined, to: string | undefined, opts: CliOptions): Promise<void> {
+  const help = '\n  Usage: plan handoff <id-or-slug> <from-execution-id> <to-execution-id> --reason <text> [--scope <text>] [--end-previous]'
+  if (!from || !to) usage(`predecessor and successor execution IDs required${help}`)
+  if (!opts.reason) usage(`--reason is required${help}`)
+  let leadExecutionId: string | null = null
+  const outcome = await mutate(idOrSlug, opts, meta => {
+    const projection = projectTracking(meta)
+    if (!projection.executions.some(item => item.id === from)) throw Object.assign(new Error(`No session ${from} on plan ${meta.id}`), { code: 'ENOTFOUND' })
+    liveExecution(meta, to)
+    leadExecutionId = projection.leadExecutionId === from ? to : projection.leadExecutionId
+    const data = { fromExecutionId: from, toExecutionId: to, reason: opts.reason, ...(opts.scope ? { scope: opts.scope } : {}), ...(opts.endPrevious ? { endPrevious: true } : {}) }
+    return { input: { type: 'handoff', data, actor: actor(opts), idempotencyKey: opts.idempotencyKey, evidence: opts.evidence } }
+  })
+  report(opts, outcome, { fromExecutionId: from, toExecutionId: to, leadExecutionId }, `Handed off ${from} to ${to}`)
+}
+
 interface GhPr { url: string; state: string; isDraft: boolean; headRefOid?: string; mergeCommit?: { oid?: string } | null }
 
 // External PR data is untrusted: only identity and state facts are read from it, and identity must match what was asked for.
@@ -275,12 +308,19 @@ async function reopen(idOrSlug: string, opts: CliOptions): Promise<void> {
 
 export async function cmdSession(args: string[], opts: CliOptions): Promise<void> {
   const [sub, idOrSlug, executionId] = args
-  if (!idOrSlug) usage('Usage: plan session <attach|end> <id-or-slug> ...')
+  if (!idOrSlug) usage('Usage: plan session <attach|end|lead> <id-or-slug> ...')
   try {
     if (sub === 'attach') return await sessionAttach(idOrSlug, opts)
     if (sub === 'end') return await sessionEnd(idOrSlug, executionId, opts)
+    if (sub === 'lead') return await sessionLead(idOrSlug, executionId, opts)
   } catch (err) { exitFor(err) }
-  usage(`Unknown session subcommand: ${sub}\n  Usage: plan session <attach|end> <id-or-slug> ...`)
+  usage(`Unknown session subcommand: ${sub}\n  Usage: plan session <attach|end|lead> <id-or-slug> ...`)
+}
+
+export async function cmdHandoff(args: string[], opts: CliOptions): Promise<void> {
+  const [idOrSlug, from, to] = args
+  if (!idOrSlug) usage('Usage: plan handoff <id-or-slug> <from-execution-id> <to-execution-id> --reason <text>')
+  try { await handoff(idOrSlug, from, to, opts) } catch (err) { exitFor(err) }
 }
 
 export async function cmdPr(args: string[], opts: CliOptions): Promise<void> {

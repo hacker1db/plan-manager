@@ -18,7 +18,7 @@ import { cmdAuth, cmdPush } from './commands/remote.js'
 import { cmdCompletion } from './commands/completion.js'
 import { cmdBlocks } from './commands/blocks.js'
 import { cmdCheck } from './commands/check.js'
-import { cmdSession, cmdPr, cmdStage, cmdReview, cmdComplete, cmdReopen } from './commands/tracking.js'
+import { cmdSession, cmdPr, cmdStage, cmdReview, cmdComplete, cmdReopen, cmdHandoff } from './commands/tracking.js'
 import { EXIT } from './exit.js'
 import { fileURLToPath } from 'node:url'
 import { checkBuildFreshness, packageVersion } from '../lib/build.js'
@@ -48,6 +48,8 @@ function parseArgs(argv) {
     else if (a === '--head') { opts.head = argv[++i] }
     else if (a === '--no-pr-rationale') { opts.noPrRationale = argv[++i] }
     else if (a === '--stage') { opts.stage = argv[++i] }
+    else if (a === '--scope') { opts.scope = argv[++i] }
+    else if (a === '--end-previous') { opts.endPrevious = true }
     else if (a === '--all' || !a.startsWith('--')) { args.push(a) }
     i++
   }
@@ -90,6 +92,11 @@ Usage:
                                  Attach an agent session (provider, nativeSessionId,
                                  role, repository, worktree, branch, commit, environment)
   plan session end <id-or-slug> <execution-id>
+  plan session lead <id-or-slug> <execution-id>
+                                 Designate the one lead session (ending it leaves none)
+  plan handoff <id-or-slug> <from-execution-id> <to-execution-id> --reason <text>
+    [--scope <text>] [--end-previous]
+                                 Hand work to another session; the lead moves with it
   plan pr attach <id-or-slug> <pr-url> [--role implements|partial|followup|supporting]
   plan pr detach <id-or-slug> <pr-url|pr-id>
   plan pr refresh <id-or-slug> [pr-url|pr-id]
@@ -151,6 +158,7 @@ export async function run(argv) {
     case 'review': return cmdReview(args, opts)
     case 'complete': return cmdComplete(args, opts)
     case 'reopen': return cmdReopen(args, opts)
+    case 'handoff': return cmdHandoff(args, opts)
     case 'completion': return cmdCompletion(args)
     default: {
       const hint = checkBuildFreshness(DIST_DIR)?.stale ? 'This build is out of date; run pnpm build:cli.\n' : ''
