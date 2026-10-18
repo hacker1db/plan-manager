@@ -10,7 +10,9 @@ import { withPlanWriteLock } from '../../lib/write-lock.js'
 import { localMachine } from '../../lib/machine.js'
 import {
   appendEvent, parsePrUrl, prKey, projectTracking, validateEnvironment, PLAN_STAGES, PR_ROLES,
+  assertCompletion, assertPlanReview, assertReopen, assertStageTransition, bodyRevision, PLAN_REVIEW_DECISIONS, PR_REVIEW_STATES, REOPEN_STAGES,
   TrackingError, type EnvironmentIdentity, type EventInput, type PlanStage, type PrObservation, type PrRole, type TrackingEvent,
+  type PlanReviewDecision, type PrReviewState, type ReopenStage,
 } from '../../lib/tracking.js'
 import type { CliOptions, PlanEnvelope, PlanMetadata, UnknownRecord } from '../../lib/types.js'
 import { EXIT } from '../exit.js'
@@ -58,12 +60,12 @@ async function loadPlan(idOrSlug: string) {
   return readPlan(resolved.filePath)
 }
 
-async function mutate(idOrSlug: string, opts: CliOptions, build: (meta: PlanMetadata) => Mutation): Promise<Outcome> {
+async function mutate(idOrSlug: string, opts: CliOptions, build: (meta: PlanMetadata, body: string) => Mutation): Promise<Outcome> {
   await initStorage()
   return withPlanWriteLock(async () => {
     const parsed = await loadPlan(idOrSlug)
     if (opts.ifRevision) await assertRevision(parsed.filePath, opts.ifRevision)
-    const mutation = build(parsed.meta)
+    const mutation = build(parsed.meta, parsed.body)
     if ('result' in mutation) return { envelope: await buildEnvelope(parsed), duplicate: true, result: mutation.result }
     const { meta, event, duplicate } = appendEvent(parsed.meta, mutation.input)
     if (!duplicate) await writePlan(parsed.filePath, meta, parsed.body)
@@ -219,11 +221,56 @@ async function prRefresh(idOrSlug: string, reference: string | undefined, opts: 
 
 async function stage(idOrSlug: string, target: string | undefined, opts: CliOptions): Promise<void> {
   if (!target || !(PLAN_STAGES as readonly string[]).includes(target)) usage(`stage required (valid: ${PLAN_STAGES.join(', ')})\n  Usage: plan stage <id-or-slug> <stage> [--reason <text>]`)
-  const outcome = await mutate(idOrSlug, opts, meta => {
-    if (meta.tracking !== undefined && projectTracking(meta).stage === target) return { result: {} }
-    return { input: { type: 'stage', data: { stage: target as PlanStage, ...(opts.reason ? { reason: opts.reason } : {}) }, actor: actor(opts), idempotencyKey: opts.idempotencyKey, evidence: opts.evidence } }
+  const outcome = await mutate(idOrSlug, opts, (meta, body) => {
+    if (!assertStageTransition(projectTracking(meta, body), target as PlanStage)) return { result: {} }
+    // Submitting pins the exact body revision under review.
+    const data = { stage: target, ...(opts.reason ? { reason: opts.reason } : {}), ...(target === 'awaiting_plan_review' ? { bodyRevision: bodyRevision(body) } : {}) }
+    return { input: { type: 'stage', data, actor: actor(opts), idempotencyKey: opts.idempotencyKey, evidence: opts.evidence } }
   })
   report(opts, outcome, {}, `Stage: ${target}`)
+}
+
+async function reviewPlan(idOrSlug: string, opts: CliOptions): Promise<void> {
+  const decision = opts.decision as PlanReviewDecision
+  if (!PLAN_REVIEW_DECISIONS.includes(decision)) usage(`--decision required (valid: ${PLAN_REVIEW_DECISIONS.join(', ')})`)
+  const outcome = await mutate(idOrSlug, opts, (meta, body) => {
+    assertPlanReview(projectTracking(meta, body))
+    return { input: { type: 'plan.review', data: { decision, bodyRevision: bodyRevision(body) }, actor: actor(opts), idempotencyKey: opts.idempotencyKey, evidence: opts.evidence } }
+  })
+  report(opts, outcome, {}, `Plan review: ${decision}`)
+}
+
+async function reviewPr(idOrSlug: string, reference: string | undefined, opts: CliOptions): Promise<void> {
+  if (!reference) usage('PR URL or ID required\n  Usage: plan review record <id-or-slug> pr <pr-url|pr-id> --state <state> --head <sha>')
+  const state = opts.state as PrReviewState
+  if (!PR_REVIEW_STATES.includes(state)) usage(`--state required (valid: ${PR_REVIEW_STATES.join(', ')})`)
+  if (!opts.head) usage('--head <sha> required: a review applies to one PR head commit')
+  const outcome = await mutate(idOrSlug, opts, meta => {
+    const pr = findPr(meta, reference)
+    return { input: { type: 'pr.review', data: { prId: pr.id, state, headSha: opts.head!.toLowerCase() }, actor: actor(opts), idempotencyKey: opts.idempotencyKey, evidence: opts.evidence } }
+  })
+  const prId = outcome.event?.data.prId as string
+  report(opts, outcome, { prId }, `PR review: ${state}`)
+}
+
+async function complete(idOrSlug: string, opts: CliOptions): Promise<void> {
+  if (!opts.reason) usage('--reason required\n  Usage: plan complete <id-or-slug> --reason <text> [--no-pr-rationale <text>]')
+  const outcome = await mutate(idOrSlug, opts, (meta, body) => {
+    const coveredPrIds = assertCompletion(projectTracking(meta, body), opts.noPrRationale)
+    const data = { reason: opts.reason, ...(opts.noPrRationale ? { noPrRationale: opts.noPrRationale } : {}), coveredPrIds }
+    return { input: { type: 'completed', data, actor: actor(opts), idempotencyKey: opts.idempotencyKey, evidence: opts.evidence } }
+  })
+  report(opts, outcome, {}, 'Completed')
+}
+
+async function reopen(idOrSlug: string, opts: CliOptions): Promise<void> {
+  const target = opts.stage as ReopenStage
+  if (!REOPEN_STAGES.includes(target) || !opts.reason) usage(`--stage and --reason required\n  Usage: plan reopen <id-or-slug> --stage ${REOPEN_STAGES.join('|')} --reason <text>`)
+  const outcome = await mutate(idOrSlug, opts, (meta, body) => {
+    assertReopen(projectTracking(meta, body), target)
+    return { input: { type: 'reopened', data: { stage: target, reason: opts.reason }, actor: actor(opts), idempotencyKey: opts.idempotencyKey, evidence: opts.evidence } }
+  })
+  report(opts, outcome, {}, `Reopened: ${target}`)
 }
 
 export async function cmdSession(args: string[], opts: CliOptions): Promise<void> {
@@ -251,4 +298,25 @@ export async function cmdStage(args: string[], opts: CliOptions): Promise<void> 
   const [idOrSlug, target] = args
   if (!idOrSlug) usage(`Usage: plan stage <id-or-slug> <${PLAN_STAGES.join('|')}>`)
   try { await stage(idOrSlug, target, opts) } catch (err) { exitFor(err) }
+}
+
+export async function cmdReview(args: string[], opts: CliOptions): Promise<void> {
+  const [sub, idOrSlug, kind, reference] = args
+  const help = '  Usage: plan review record <id-or-slug> plan --decision approved|changes_requested\n         plan review record <id-or-slug> pr <pr-url|pr-id> --state <state> --head <sha>'
+  if (sub !== 'record' || !idOrSlug) usage(`Usage: plan review record <id-or-slug> <plan|pr> ...\n${help}`)
+  try {
+    if (kind === 'plan') return await reviewPlan(idOrSlug, opts)
+    if (kind === 'pr') return await reviewPr(idOrSlug, reference, opts)
+  } catch (err) { exitFor(err) }
+  usage(`review target must be plan or pr\n${help}`)
+}
+
+export async function cmdComplete(args: string[], opts: CliOptions): Promise<void> {
+  if (!args[0]) usage('Usage: plan complete <id-or-slug> --reason <text> [--no-pr-rationale <text>]')
+  try { await complete(args[0], opts) } catch (err) { exitFor(err) }
+}
+
+export async function cmdReopen(args: string[], opts: CliOptions): Promise<void> {
+  if (!args[0]) usage(`Usage: plan reopen <id-or-slug> --stage ${REOPEN_STAGES.join('|')} --reason <text>`)
+  try { await reopen(args[0], opts) } catch (err) { exitFor(err) }
 }
