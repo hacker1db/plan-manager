@@ -13,3 +13,7 @@ export function getPort(): number {
 export function getHost(): string {
   return process.env.PLAN_HOST ?? '127.0.0.1'
 }
+
+export function getConfigDir(): string {
+  return join(process.env.XDG_CONFIG_HOME ?? join(homedir(), '.config'), 'plan-manager')
+}

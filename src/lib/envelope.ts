@@ -1,5 +1,6 @@
 import { getPort } from './config.js'
 import { computeRevision } from './ids.js'
+import { safeStage } from './tracking.js'
 import type { ParsedPlan, PlanEnvelope } from './types.js'
 
 export function buildUrl(id: string): string {
@@ -21,5 +22,6 @@ export async function buildEnvelope(parsedPlan: ParsedPlan): Promise<PlanEnvelop
     created: meta.created,
     updated: meta.updated,
     tags: meta.tags,
+    stage: safeStage(meta),
   }
 }

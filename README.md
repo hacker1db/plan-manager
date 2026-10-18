@@ -111,6 +111,21 @@ Props must be static literals; imports and expressions render as errors.
 
 `plan blocks` prints every block with its props and an example. The output comes from the same registry the renderer validates against. Before you commit or push an MDX file, run `plan check <file|id>` to catch unknown tags, missing props, or parse errors. `format: mdx` in the frontmatter is how the hosted site knows to render the blocks after `plan push`, and `plan create` and `plan update` write it for you. The repo ships `visual-plan` and `visual-recap` agent skills in `.claude/skills/` that author these files. See [`docs/recaps/mdx-visual-plans.mdx`](docs/recaps/mdx-visual-plans.mdx) for a worked example.
 
+### Tracking sessions, PRs and stages
+
+A plan can record its journey stage (`planning`, `awaiting_plan_review`, `in_progress`, `awaiting_pr_review`, `completed`), the agent sessions working on it, and the pull requests that implement it:
+
+```sh
+plan stage migrate-auth-service in_progress --reason "plan approved"
+echo '{"provider":"claude","nativeSessionId":"…","branch":"feat/auth"}' \
+  | plan session attach migrate-auth-service --stdin --idempotency-key run-42 --json
+plan session end migrate-auth-service <execution-id>
+plan pr attach migrate-auth-service https://github.com/owner/repo/pull/12 --role implements
+plan pr refresh migrate-auth-service       # re-reads PR state with gh
+```
+
+These commands append events to a validated `tracking` block in the frontmatter; nothing is rewritten in place. The first event on an existing plan records how it was migrated (an `active` plan starts in `planning`, a `completed` one keeps a legacy completion with unknown review history). Retrying a command with the same `--idempotency-key` changes nothing. A merged PR never moves the stage on its own, and `plan status` refuses to contradict the tracked stage. Each machine gets a random installation ID in `~/.config/plan-manager/installation.json`, so two machines with the same hostname stay distinct. Unknown frontmatter fields are preserved on every write, and a plan written by a newer tracking schema refuses writes from an older `plan` instead of losing data.
+
 ### Dashboard
 
 `plan serve` starts the dashboard as a background service. `plan serve --foreground` runs it in the current terminal instead. The server listens only on `127.0.0.1` and checks the `plans.localhost` host name.
@@ -120,7 +135,7 @@ Props must be static literals; imports and expressions render as errors.
 Commands that change or return a plan print a versioned envelope when you pass `--json`:
 
 ```json
-{ "version": 1, "id": "…", "title": "…", "status": "active", "path": "…", "url": "http://plans.localhost:4173/plans/…", "revision": "…", "created": "…", "updated": "…", "tags": [] }
+{ "version": 1, "id": "…", "title": "…", "status": "active", "path": "…", "url": "http://plans.localhost:4173/plans/…", "revision": "…", "created": "…", "updated": "…", "tags": [], "stage": "planning" }
 ```
 
 | Code | Meaning                  |

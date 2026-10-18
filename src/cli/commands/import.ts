@@ -43,8 +43,10 @@ export async function cmdImport(args, opts) {
   const title = rawMeta.title || basename(sourcePath, extension).replace(/-/g, ' ')
   const id = generateId()
   const now = new Date().toISOString()
+  // Tracking history from an outside file is unverified provenance, so an import starts untracked.
+  const { tracking: _tracking, schemaVersion: _schemaVersion, ...foreignMeta } = rawMeta
   const meta = normalizeMeta({
-    ...rawMeta,
+    ...foreignMeta,
     id,
     title,
     created: rawMeta.created ?? now,
