@@ -17,7 +17,10 @@ import yaml from 'js-yaml'
 
 import { getHost, getPlanHome, getPort } from '../lib/config.js'
 import { computeRevision } from '../lib/ids.js'
-import { parseFrontmatter } from '../lib/metadata.js'
+import { assertWritable, parseFrontmatter } from '../lib/metadata.js'
+import { appendEvent, projectTracking } from '../lib/tracking.js'
+import { ACTION_PARAM_FIELDS, TRACKING_ACTIONS } from '../lib/tracking-actions.js'
+import { userInfo } from 'node:os'
 import { formatFromPath, isPlanFilename } from '../lib/mdx/format.js'
 import { renderMdxToHtml } from '../lib/mdx/html.js'
 import { withPlanWriteLock } from '../lib/write-lock.js'
@@ -28,6 +31,8 @@ const MAX_BODY_BYTES = 64 * 1024
 const STABILITY_DELAY_MS = 120
 const WATCH_DEBOUNCE_MS = 300
 const RECONCILE_INTERVAL_MS = 5000
+// Refused tracking writes map to client errors instead of a generic 500.
+const ERROR_STATUSES = { ENOTFOUND: 404, ECONFLICT: 409, ELOCKTIMEOUT: 409, ETRACKING: 400, ESTAGECONFLICT: 400, EUNSUPPORTEDSCHEMA: 400, EMETADATALIMIT: 400 }
 
 function json(res, status, value, extraHeaders = {}) {
   res.writeHead(status, {
@@ -298,6 +303,7 @@ export async function startServer(options = {}) {
     }
     const updatedMeta = { ...meta, updated: new Date().toISOString() }
     if (formatFromPath(filePath) === 'mdx') updatedMeta.format = 'mdx'
+    assertWritable(updatedMeta)
     const frontmatter = yaml.dump(updatedMeta, { lineWidth: -1 }).trimEnd()
     const content = `---\n${frontmatter}\n---\n${body.startsWith('\n') ? body : `\n${body}`}`
     const temporaryPath = join(
@@ -703,6 +709,74 @@ export async function startServer(options = {}) {
       return
     }
 
+    const trackingMatch = pathname.match(/^\/api\/plans\/([^/]+)\/tracking\/([a-z-]+)$/)
+    if (method === 'POST' && trackingMatch) {
+      if (!mutationIsAuthorized(req, res)) return
+      const action = TRACKING_ACTIONS[trackingMatch[2]]
+      if (!Object.hasOwn(TRACKING_ACTIONS, trackingMatch[2])) {
+        error(res, 404, 'unknown tracking action')
+        return
+      }
+      let body
+      try {
+        body = parseJson(await readBody(req))
+      } catch (bodyError) {
+        error(res, bodyError.code === 'ETOOLARGE' ? 413 : 400, bodyError.message)
+        return
+      }
+      if (body === null || typeof body !== 'object' || Array.isArray(body)) {
+        error(res, 400, 'invalid tracking request')
+        return
+      }
+      const params = {}
+      for (const [key, value] of Object.entries(body)) {
+        if (key === 'revision') continue
+        const valid = key === 'endPrevious' ? typeof value === 'boolean' : typeof value === 'string'
+        if (!ACTION_PARAM_FIELDS.includes(key) || !valid) {
+          error(res, 400, `invalid tracking field: ${key}`)
+          return
+        }
+        params[key] = value
+      }
+      if (body.revision !== undefined && (typeof body.revision !== 'string' || !/^[a-f0-9]{64}$/i.test(body.revision))) {
+        error(res, 400, 'invalid revision')
+        return
+      }
+      let id
+      try {
+        id = decodeURIComponent(trackingMatch[1])
+      } catch {
+        error(res, 400, 'invalid plan ID')
+        return
+      }
+      const result = await withPlanWriteLock(async () => {
+        const plan = await findPlan(id)
+        if (!plan) return null
+        if (body.revision !== undefined && plan.revision !== body.revision) {
+          throw Object.assign(new Error('stale plan revision'), { code: 'ECONFLICT' })
+        }
+        const mutation = action(plan.meta, plan.body, { ...params, actor: params.actor ?? userInfo().username, source: 'server' })
+        if ('result' in mutation) return { plan, duplicate: true, result: mutation.result }
+        const appended = appendEvent(plan.meta, mutation.input)
+        if (appended.duplicate) return { plan, event: appended.event, duplicate: true }
+        return { plan: await atomicPlanWrite(plan.filePath, appended.meta, plan.body), event: appended.event, duplicate: false }
+      }, planHome)
+      if (!result) {
+        error(res, 404, 'plan not found')
+        return
+      }
+      if (!result.duplicate) scheduleScan()
+      json(res, 200, {
+        id,
+        revision: result.plan.revision,
+        tracking: projectTracking(result.plan.meta, result.plan.body),
+        ...(result.event ? { event: result.event } : {}),
+        duplicate: result.duplicate,
+        ...result.result,
+      })
+      return
+    }
+
     const taskMatch = pathname.match(/^\/api\/plans\/([^/]+)\/tasks\/(\d+)$/)
     if (method === 'POST' && taskMatch) {
       if (!mutationIsAuthorized(req, res)) return
@@ -877,6 +951,11 @@ export async function startServer(options = {}) {
     handler(req, res).catch(requestError => {
       if (res.headersSent) {
         res.destroy()
+        return
+      }
+      const status = ERROR_STATUSES[requestError.code]
+      if (status) {
+        error(res, status, requestError.message)
         return
       }
       error(res, requestError.code === 'ETOOLARGE' ? 413 : 500, 'internal server error')

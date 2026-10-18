@@ -8,9 +8,10 @@ import { buildEnvelope } from '../../lib/envelope.js'
 import { assertRevision } from '../../lib/revisions.js'
 import { withPlanWriteLock } from '../../lib/write-lock.js'
 import { localMachine } from '../../lib/machine.js'
+import { findPr, TRACKING_ACTIONS, type ActionParams } from '../../lib/tracking-actions.js'
 import {
-  appendEvent, coalescesHeartbeat, parsePrUrl, prKey, projectEvents, projectTracking, readTracking, validateEnvironment, PLAN_STAGES, PR_ROLES,
-  assertCompletion, assertPlanReview, assertReopen, assertStageTransition, bodyRevision, PLAN_REVIEW_DECISIONS, PR_REVIEW_STATES, REOPEN_STAGES,
+  appendEvent, parsePrUrl, prKey, projectEvents, projectTracking, readTracking, validateEnvironment, PLAN_STAGES, PR_ROLES,
+  PLAN_REVIEW_DECISIONS, PR_REVIEW_STATES, REOPEN_STAGES,
   TrackingError, type EnvironmentIdentity, type EventInput, type PlanStage, type PrAssociation, type PrObservation, type PrRole, type TrackingEvent,
   type PlanReviewDecision, type PrReviewState, type ReopenStage,
 } from '../../lib/tracking.js'
@@ -45,6 +46,10 @@ function exitFor(err: unknown): never {
 
 function actor(opts: CliOptions): string {
   return opts.actor || userInfo().username
+}
+
+function params(opts: CliOptions, extra: Partial<ActionParams>): ActionParams {
+  return { actor: actor(opts), idempotencyKey: opts.idempotencyKey, evidence: opts.evidence, reason: opts.reason, ...extra }
 }
 
 // Retried calls with the same key must produce the same entity ID so the retry is recognized as a duplicate.
@@ -132,29 +137,14 @@ async function sessionAttach(idOrSlug: string, opts: CliOptions): Promise<void> 
 
 async function sessionEnd(idOrSlug: string, executionId: string | undefined, opts: CliOptions): Promise<void> {
   if (!executionId) usage('execution ID required\n  Usage: plan session end <id-or-slug> <execution-id>')
-  const outcome = await mutate(idOrSlug, opts, meta => {
-    const execution = projectTracking(meta).executions.find(item => item.id === executionId)
-    if (!execution) throw Object.assign(new Error(`No session ${executionId} on plan ${meta.id}`), { code: 'ENOTFOUND' })
-    if (execution.endedAt) return { result: { executionId } }
-    return { input: { type: 'session.ended', data: { executionId }, actor: actor(opts), idempotencyKey: opts.idempotencyKey, evidence: opts.evidence } }
-  })
+  const outcome = await mutate(idOrSlug, opts, (meta, body) => TRACKING_ACTIONS['session-end'](meta, body, params(opts, { executionId })))
   report(opts, outcome, { executionId }, `Ended session ${executionId}`)
 }
 
-function liveExecution(meta: PlanMetadata, executionId: string) {
-  const execution = projectTracking(meta).executions.find(item => item.id === executionId)
-  if (!execution) throw Object.assign(new Error(`No session ${executionId} on plan ${meta.id}`), { code: 'ENOTFOUND' })
-  if (execution.endedAt) throw new TrackingError(`Session ${executionId} has ended and cannot lead`)
-  return execution
-}
 
 async function sessionLead(idOrSlug: string, executionId: string | undefined, opts: CliOptions): Promise<void> {
   if (!executionId) usage('execution ID required\n  Usage: plan session lead <id-or-slug> <execution-id>')
-  const outcome = await mutate(idOrSlug, opts, meta => {
-    liveExecution(meta, executionId)
-    if (projectTracking(meta).leadExecutionId === executionId) return { result: { executionId } }
-    return { input: { type: 'session.lead', data: { executionId }, actor: actor(opts), idempotencyKey: opts.idempotencyKey, evidence: opts.evidence } }
-  })
+  const outcome = await mutate(idOrSlug, opts, (meta, body) => TRACKING_ACTIONS['session-lead'](meta, body, params(opts, { executionId })))
   report(opts, outcome, { executionId, leadExecutionId: executionId }, `Lead session ${executionId}`)
 }
 
@@ -163,13 +153,11 @@ async function handoff(idOrSlug: string, from: string | undefined, to: string | 
   if (!from || !to) usage(`predecessor and successor execution IDs required${help}`)
   if (!opts.reason) usage(`--reason is required${help}`)
   let leadExecutionId: string | null = null
-  const outcome = await mutate(idOrSlug, opts, meta => {
-    const projection = projectTracking(meta)
-    if (!projection.executions.some(item => item.id === from)) throw Object.assign(new Error(`No session ${from} on plan ${meta.id}`), { code: 'ENOTFOUND' })
-    liveExecution(meta, to)
-    leadExecutionId = projection.leadExecutionId === from ? to : projection.leadExecutionId
-    const data = { fromExecutionId: from, toExecutionId: to, reason: opts.reason, ...(opts.scope ? { scope: opts.scope } : {}), ...(opts.endPrevious ? { endPrevious: true } : {}) }
-    return { input: { type: 'handoff', data, actor: actor(opts), idempotencyKey: opts.idempotencyKey, evidence: opts.evidence } }
+  const outcome = await mutate(idOrSlug, opts, (meta, body) => {
+    const mutation = TRACKING_ACTIONS.handoff(meta, body, params(opts, { fromExecutionId: from, toExecutionId: to, scope: opts.scope, endPrevious: opts.endPrevious }))
+    const lead = projectTracking(meta).leadExecutionId
+    leadExecutionId = lead === from ? to : lead
+    return mutation
   })
   report(opts, outcome, { fromExecutionId: from, toExecutionId: to, leadExecutionId }, `Handed off ${from} to ${to}`)
 }
@@ -190,14 +178,6 @@ function fetchPr(url: string): { url: string; observation: Omit<PrObservation, '
   return { url: canonical.url, observation: { state, headSha: pr.headRefOid?.toLowerCase(), mergeSha: pr.mergeCommit?.oid?.toLowerCase() } }
 }
 
-function findPr(meta: PlanMetadata, reference: string) {
-  const prs = projectTracking(meta).prs
-  let key: string | undefined
-  try { key = prKey(parsePrUrl(reference)) } catch { key = undefined }
-  const pr = prs.find(item => item.id === reference || prKey(item) === key)
-  if (!pr) throw Object.assign(new Error(`No attached PR ${reference} on plan ${meta.id}`), { code: 'ENOTFOUND' })
-  return pr
-}
 
 async function prAttach(idOrSlug: string, url: string | undefined, opts: CliOptions): Promise<void> {
   if (!url) usage('PR URL required\n  Usage: plan pr attach <id-or-slug> <pr-url> [--role implements|partial|followup|supporting]')
@@ -229,10 +209,7 @@ async function observe(idOrSlug: string, prId: string, observation: Omit<PrObser
 
 async function prDetach(idOrSlug: string, reference: string | undefined, opts: CliOptions): Promise<void> {
   if (!reference) usage('PR URL or ID required\n  Usage: plan pr detach <id-or-slug> <pr-url|pr-id>')
-  const outcome = await mutate(idOrSlug, opts, meta => {
-    const pr = findPr(meta, reference)
-    return { input: { type: 'pr.detached', data: { prId: pr.id }, revokes: pr.attachedEventId, actor: actor(opts), idempotencyKey: opts.idempotencyKey, evidence: opts.evidence } }
-  })
+  const outcome = await mutate(idOrSlug, opts, (meta, body) => TRACKING_ACTIONS['pr-detach'](meta, body, params(opts, { pr: reference })))
   report(opts, outcome, {}, `Detached ${reference}`)
 }
 
@@ -254,22 +231,14 @@ async function prRefresh(idOrSlug: string, reference: string | undefined, opts: 
 
 async function stage(idOrSlug: string, target: string | undefined, opts: CliOptions): Promise<void> {
   if (!target || !(PLAN_STAGES as readonly string[]).includes(target)) usage(`stage required (valid: ${PLAN_STAGES.join(', ')})\n  Usage: plan stage <id-or-slug> <stage> [--reason <text>]`)
-  const outcome = await mutate(idOrSlug, opts, (meta, body) => {
-    if (!assertStageTransition(projectTracking(meta, body), target as PlanStage)) return { result: {} }
-    // Submitting pins the exact body revision under review.
-    const data = { stage: target, ...(opts.reason ? { reason: opts.reason } : {}), ...(target === 'awaiting_plan_review' ? { bodyRevision: bodyRevision(body) } : {}) }
-    return { input: { type: 'stage', data, actor: actor(opts), idempotencyKey: opts.idempotencyKey, evidence: opts.evidence } }
-  })
+  const outcome = await mutate(idOrSlug, opts, (meta, body) => TRACKING_ACTIONS.stage(meta, body, params(opts, { stage: target })))
   report(opts, outcome, {}, `Stage: ${target}`)
 }
 
 async function reviewPlan(idOrSlug: string, opts: CliOptions): Promise<void> {
   const decision = opts.decision as PlanReviewDecision
   if (!PLAN_REVIEW_DECISIONS.includes(decision)) usage(`--decision required (valid: ${PLAN_REVIEW_DECISIONS.join(', ')})`)
-  const outcome = await mutate(idOrSlug, opts, (meta, body) => {
-    assertPlanReview(projectTracking(meta, body))
-    return { input: { type: 'plan.review', data: { decision, bodyRevision: bodyRevision(body) }, actor: actor(opts), idempotencyKey: opts.idempotencyKey, evidence: opts.evidence } }
-  })
+  const outcome = await mutate(idOrSlug, opts, (meta, body) => TRACKING_ACTIONS['review-plan'](meta, body, params(opts, { decision })))
   report(opts, outcome, {}, `Plan review: ${decision}`)
 }
 
@@ -278,45 +247,28 @@ async function reviewPr(idOrSlug: string, reference: string | undefined, opts: C
   const state = opts.state as PrReviewState
   if (!PR_REVIEW_STATES.includes(state)) usage(`--state required (valid: ${PR_REVIEW_STATES.join(', ')})`)
   if (!opts.head) usage('--head <sha> required: a review applies to one PR head commit')
-  const outcome = await mutate(idOrSlug, opts, meta => {
-    const pr = findPr(meta, reference)
-    return { input: { type: 'pr.review', data: { prId: pr.id, state, headSha: opts.head!.toLowerCase() }, actor: actor(opts), idempotencyKey: opts.idempotencyKey, evidence: opts.evidence } }
-  })
+  const outcome = await mutate(idOrSlug, opts, (meta, body) => TRACKING_ACTIONS['review-pr'](meta, body, params(opts, { pr: reference, state, head: opts.head })))
   const prId = outcome.event?.data.prId as string
   report(opts, outcome, { prId }, `PR review: ${state}`)
 }
 
 async function complete(idOrSlug: string, opts: CliOptions): Promise<void> {
   if (!opts.reason) usage('--reason required\n  Usage: plan complete <id-or-slug> --reason <text> [--no-pr-rationale <text>]')
-  const outcome = await mutate(idOrSlug, opts, (meta, body) => {
-    const coveredPrIds = assertCompletion(projectTracking(meta, body), opts.noPrRationale)
-    const data = { reason: opts.reason, ...(opts.noPrRationale ? { noPrRationale: opts.noPrRationale } : {}), coveredPrIds }
-    return { input: { type: 'completed', data, actor: actor(opts), idempotencyKey: opts.idempotencyKey, evidence: opts.evidence } }
-  })
+  const outcome = await mutate(idOrSlug, opts, (meta, body) => TRACKING_ACTIONS.complete(meta, body, params(opts, { noPrRationale: opts.noPrRationale })))
   report(opts, outcome, {}, 'Completed')
 }
 
 async function reopen(idOrSlug: string, opts: CliOptions): Promise<void> {
   const target = opts.stage as ReopenStage
   if (!REOPEN_STAGES.includes(target) || !opts.reason) usage(`--stage and --reason required\n  Usage: plan reopen <id-or-slug> --stage ${REOPEN_STAGES.join('|')} --reason <text>`)
-  const outcome = await mutate(idOrSlug, opts, (meta, body) => {
-    assertReopen(projectTracking(meta, body), target)
-    return { input: { type: 'reopened', data: { stage: target, reason: opts.reason }, actor: actor(opts), idempotencyKey: opts.idempotencyKey, evidence: opts.evidence } }
-  })
+  const outcome = await mutate(idOrSlug, opts, (meta, body) => TRACKING_ACTIONS.reopen(meta, body, params(opts, { stage: target })))
   report(opts, outcome, {}, `Reopened: ${target}`)
 }
 
 async function sessionHeartbeat(idOrSlug: string, executionId: string | undefined, opts: CliOptions): Promise<void> {
   if (!executionId) usage('execution ID required\n  Usage: plan session heartbeat <id-or-slug> <execution-id> [--activity active|idle|blocked]')
-  const data: UnknownRecord = { executionId, activity: opts.activity ?? 'active', blockReason: opts.reason, owner: opts.owner, nextAction: opts.next }
-  const outcome = await mutate(idOrSlug, opts, meta => {
-    const execution = projectTracking(meta).executions.find(item => item.id === executionId)
-    if (!execution) throw Object.assign(new Error(`No session ${executionId} on plan ${meta.id}`), { code: 'ENOTFOUND' })
-    if (execution.endedAt) throw new TrackingError(`Session ${executionId} has ended; heartbeats are rejected`)
-    if (coalescesHeartbeat(execution, data, new Date())) return { result: { coalesced: true } }
-    return { input: { type: 'session.heartbeat', data, actor: actor(opts), observedAt: opts.observedAt, idempotencyKey: opts.idempotencyKey, evidence: opts.evidence } }
-  })
-  report(opts, outcome, { executionId, coalesced: false }, `Heartbeat ${data.activity} for ${executionId}`)
+  const outcome = await mutate(idOrSlug, opts, (meta, body) => TRACKING_ACTIONS.heartbeat(meta, body, params(opts, { executionId, activity: opts.activity, owner: opts.owner, nextAction: opts.next, observedAt: opts.observedAt })))
+  report(opts, outcome, { executionId, coalesced: false }, `Heartbeat ${opts.activity ?? 'active'} for ${executionId}`)
 }
 
 export async function cmdSession(args: string[], opts: CliOptions): Promise<void> {

@@ -146,6 +146,8 @@ Execution health is separate from the stage. `plan session heartbeat` records `a
 
 `plan serve` starts the dashboard as a background service. `plan serve --foreground` runs it in the current terminal instead. The server listens only on `127.0.0.1` and checks the `plans.localhost` host name.
 
+The dashboard API accepts the same guarded tracking changes as the CLI at `POST /api/plans/<id>/tracking/<action>`, where the action is one of `stage`, `review-plan`, `review-pr`, `complete`, `reopen`, `session-end`, `session-lead`, `handoff`, `heartbeat` or `pr-detach`. The JSON body uses the same fields as the CLI flags (`stage`, `reason`, `decision`, `executionId`, `idempotencyKey`, …) plus an optional `revision`. Each change is recorded with source `server`. Requests need the same-origin and CSRF checks as every other dashboard write. Attaching sessions and PRs stays CLI-only: the server can't vouch for another process's machine identity, and it never runs `gh`.
+
 ### JSON output and exit codes
 
 Commands that change or return a plan print a versioned envelope when you pass `--json`:

@@ -16,7 +16,7 @@ function unknownFields(raw: UnknownRecord): UnknownRecord {
 }
 
 // Writers must not drop or rewrite metadata they do not understand, so oversized or newer-schema plans fail before any write.
-function assertWritable(meta: PlanMetadata): void {
+export function assertWritable(meta: PlanMetadata): void {
   if (meta.schemaVersion !== undefined && meta.schemaVersion > TRACKING_SCHEMA_VERSION) {
     throw Object.assign(new Error(`Plan ${meta.id} uses tracking schema ${meta.schemaVersion}; upgrade plan before writing it`), { code: 'EUNSUPPORTEDSCHEMA' })
   }
