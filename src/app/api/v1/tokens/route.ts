@@ -13,7 +13,8 @@ export async function POST(request: Request) {
   if (!isSameOriginRequest(request)) return forbidden()
   if (!isJsonRequest(request)) return NextResponse.json({ error: "Expected JSON" }, { status: 415 })
   try {
-    const body = await request.json() as { scopes?: unknown; expiresAt?: unknown }
+    const body: unknown = await request.json()
+    if (!body || typeof body !== "object" || Array.isArray(body) || !("scopes" in body) || !("expiresAt" in body)) throw new Error("Invalid token request")
     if (!Array.isArray(body.scopes) || body.scopes.length === 0 || !body.scopes.every((scope): scope is PlanScope => typeof scope === "string" && isPlanScope(scope))) throw new Error("Invalid token scopes")
     const expiresAt = new Date(typeof body.expiresAt === "string" ? body.expiresAt : "")
     if (Number.isNaN(expiresAt.valueOf()) || expiresAt <= new Date()) throw new Error("Invalid token expiration")
