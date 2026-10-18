@@ -18,7 +18,7 @@ import { cmdAuth, cmdPush } from './commands/remote.js'
 import { cmdCompletion } from './commands/completion.js'
 import { cmdBlocks } from './commands/blocks.js'
 import { cmdCheck } from './commands/check.js'
-import { cmdSession, cmdPr, cmdStage, cmdReview, cmdComplete, cmdReopen, cmdHandoff } from './commands/tracking.js'
+import { cmdSession, cmdPr, cmdStage, cmdReview, cmdComplete, cmdReopen, cmdHandoff, cmdHistory } from './commands/tracking.js'
 import { EXIT } from './exit.js'
 import { fileURLToPath } from 'node:url'
 import { checkBuildFreshness, packageVersion } from '../lib/build.js'
@@ -110,6 +110,8 @@ Usage:
   plan pr detach <id-or-slug> <pr-url|pr-id>
   plan pr refresh <id-or-slug> [pr-url|pr-id]
                                  Re-read PR state with gh
+  plan history <id-or-slug> [--json]
+                                 Show the plan's tracked events in order (read-only)
     Tracking commands accept [--if-revision <rev>] [--idempotency-key <key>]
     [--actor <name>] [--evidence <ref>] [--json]
   plan serve [--foreground] [--json]
@@ -168,6 +170,7 @@ export async function run(argv) {
     case 'complete': return cmdComplete(args, opts)
     case 'reopen': return cmdReopen(args, opts)
     case 'handoff': return cmdHandoff(args, opts)
+    case 'history': return cmdHistory(args, opts)
     case 'completion': return cmdCompletion(args)
     default: {
       const hint = checkBuildFreshness(DIST_DIR)?.stale ? 'This build is out of date; run pnpm build:cli.\n' : ''
