@@ -7,6 +7,7 @@ import { createServer } from 'node:http'
 import { initStorage, listPlanFiles, resolveByIdOrSlug } from '../../lib/storage.js'
 import { readPlan } from '../../lib/metadata.js'
 import { buildEnvelope } from '../../lib/envelope.js'
+import { sourceFormat } from '../../lib/mdx/format.js'
 import { EXIT } from '../exit.js'
 
 type Site = { url: string }
@@ -295,6 +296,9 @@ export async function cmdAuth(args: string[], opts: { stdin?: boolean; token?: s
 async function pushOne(site: Site, token: string, identifier: string, expectedRevision: string | null): Promise<{ id: string; url: string; revision: string }> {
   const resolved = await resolveByIdOrSlug(identifier)
   const parsed = await readPlan(resolved.filePath)
+  if (parsed.meta.format === 'mdx' && sourceFormat(parsed.raw) !== 'mdx') {
+    throw new Error(`MDX plan ${parsed.meta.id} needs "format: mdx" in its frontmatter so the hosted site renders it; add it or run plan update`)
+  }
   const envelope = await buildEnvelope(parsed)
   const response = await fetch(`${site.url}/api/v1/plans/${encodeURIComponent(envelope.id)}/versions`, {
     method: 'PUT',

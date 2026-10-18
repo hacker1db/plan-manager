@@ -24,6 +24,18 @@ test("plan rendering excludes active HTML, unsafe links, and remote image reques
   assert.match(html, /<h1>Safe<\/h1>/)
 })
 
+test("hosted rendering switches to MDX blocks when frontmatter declares format: mdx", () => {
+  const source = '---\nid: private_id\nformat: mdx\n---\n# Recap\n\n<Endpoint method="GET" path="/api/plans/:id" change="modified">\nReturns **format**.\n</Endpoint>\n\n<Tabs>\n<Tab label="a.ts">\n<Diff filename="a.ts" before={"x"} after={"y"} />\n</Tab>\n</Tabs>\n\n{process.env.SECRET}\n'
+  const html = renderToStaticMarkup(<PlanMarkdown markdown={source} />)
+  assert.match(html, /pm-endpoint/)
+  assert.match(html, /<strong>format<\/strong>/)
+  assert.match(html, /pm-diff/)
+  assert.match(html, /expressions\} are not supported/)
+  assert.doesNotMatch(html, /private_id|SECRET/)
+  const plain = renderToStaticMarkup(<PlanMarkdown markdown={"---\nid: x\n---\n<Callout>\nhi\n</Callout>"} />)
+  assert.doesNotMatch(plain, /pm-callout/)
+})
+
 test("hosted shells and browser assets are generated from the canonical local dashboard", async () => {
   const root = resolve(fileURLToPath(new URL("..", import.meta.url)), "..")
   const dashboard = resolve(root, "src/dashboard")

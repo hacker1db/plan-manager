@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises'
 import yaml from 'js-yaml'
 import { atomicWrite } from './storage.js'
 import { generateId } from './ids.js'
+import { formatFromPath } from './mdx/format.js'
 import { PLAN_STATUSES, type ParsedPlan, type PlanMetadata, type PlanStatus, type UnknownRecord } from './types.js'
 
 const STATUS_VALUES = new Set<PlanStatus>(PLAN_STATUSES)
@@ -28,7 +29,7 @@ export function parseFrontmatter(content: string): { meta: UnknownRecord; body: 
   return { meta, body }
 }
 
-export function normalizeMeta(raw: UnknownRecord, _filePath?: string): PlanMetadata {
+export function normalizeMeta(raw: UnknownRecord, filePath?: string): PlanMetadata {
   const now = new Date().toISOString()
   const status = typeof raw.status === 'string' && STATUS_VALUES.has(raw.status as PlanStatus)
     ? raw.status as PlanStatus
@@ -41,6 +42,7 @@ export function normalizeMeta(raw: UnknownRecord, _filePath?: string): PlanMetad
     updated: typeof raw.updated === 'string' ? raw.updated : now,
     tags: Array.isArray(raw.tags) ? raw.tags.filter((tag): tag is string => typeof tag === 'string') : [],
     ...(raw.source != null ? { source: String(raw.source) } : {}),
+    ...(raw.format === 'mdx' || (filePath !== undefined && formatFromPath(filePath) === 'mdx') ? { format: 'mdx' as const } : {}),
   }
 }
 
@@ -52,7 +54,8 @@ export async function readPlan(filePath: string): Promise<ParsedPlan> {
 }
 
 export async function writePlan(filePath: string, meta: PlanMetadata, body: string): Promise<void> {
-  const updated = { ...meta, updated: new Date().toISOString() }
+  const updated: PlanMetadata = { ...meta, updated: new Date().toISOString() }
+  if (formatFromPath(filePath) === 'mdx') updated.format = 'mdx'
   const frontmatter = yaml.dump(updated, { lineWidth: -1 }).trimEnd()
   const content = `---\n${frontmatter}\n---\n${body.startsWith('\n') ? body : '\n' + body}`
   await atomicWrite(filePath, content)
