@@ -50,6 +50,10 @@ function parseArgs(argv) {
     else if (a === '--stage') { opts.stage = argv[++i] }
     else if (a === '--scope') { opts.scope = argv[++i] }
     else if (a === '--end-previous') { opts.endPrevious = true }
+    else if (a === '--activity') { opts.activity = argv[++i] }
+    else if (a === '--owner') { opts.owner = argv[++i] }
+    else if (a === '--next') { opts.next = argv[++i] }
+    else if (a === '--observed-at') { opts.observedAt = argv[++i] }
     else if (a === '--all' || !a.startsWith('--')) { args.push(a) }
     i++
   }
@@ -97,6 +101,11 @@ Usage:
   plan handoff <id-or-slug> <from-execution-id> <to-execution-id> --reason <text>
     [--scope <text>] [--end-previous]
                                  Hand work to another session; the lead moves with it
+  plan session heartbeat <id-or-slug> <execution-id>
+    [--activity active|idle|blocked] [--reason <text>] [--owner <text>]
+    [--next <text>] [--observed-at <iso>]
+                                 Report session health; blocked needs --reason and --owner
+                                 (unchanged heartbeats within 5 minutes are coalesced)
   plan pr attach <id-or-slug> <pr-url> [--role implements|partial|followup|supporting]
   plan pr detach <id-or-slug> <pr-url|pr-id>
   plan pr refresh <id-or-slug> [pr-url|pr-id]

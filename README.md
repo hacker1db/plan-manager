@@ -128,6 +128,8 @@ echo '{"provider":"claude","nativeSessionId":"…","branch":"feat/auth"}' \
 plan session lead migrate-auth-service <execution-id>
 plan handoff migrate-auth-service <from-execution-id> <to-execution-id> \
   --reason "context window full" --scope "phase 2" --end-previous
+plan session heartbeat migrate-auth-service <execution-id> --activity blocked \
+  --reason "waiting on API keys" --owner alice --next "rotate keys"
 plan session end migrate-auth-service <execution-id>
 plan pr attach migrate-auth-service https://github.com/owner/repo/pull/12 --role implements
 plan stage migrate-auth-service awaiting_pr_review
@@ -140,6 +142,8 @@ plan reopen migrate-auth-service --stage in_progress --reason "regression"
 Stage changes are guarded. Work starts only after the submitted plan is approved, and the approval covers the exact plan body (a sha256 of the body, not the frontmatter): editing the body afterwards makes it stale until it is resubmitted and reviewed again. `awaiting_pr_review` needs an attached PR that is open (not draft). `plan stage … completed` is refused; `plan complete` requires a current plan approval and every `implements` PR merged with an approved review of its current head SHA, or `--no-pr-rationale` when no PR is attached. A push after a PR review makes that review stale, and a PR approval never counts as plan approval. `plan reopen` keeps the completion in the history.
 
 These commands append events to a validated `tracking` block in the frontmatter; nothing is rewritten in place. The first event on an existing plan records how it was migrated (an `active` plan starts in `planning`, a `completed` one keeps a legacy completion with unknown review history). Retrying a command with the same `--idempotency-key` changes nothing. Several sessions can work on a plan at once, but only one is the lead, and only `plan session lead` or a handoff from the lead sets it. Ending the lead leaves the plan with no lead until you designate one. `plan handoff` records the predecessor, successor, actor, reason and scope; `--end-previous` ends the predecessor in the same event. A merged PR never moves the stage on its own, and `plan status` refuses to contradict the tracked stage. Each machine gets a random installation ID in `~/.config/plan-manager/installation.json`, so two machines with the same hostname stay distinct. Unknown frontmatter fields are preserved on every write, and a plan written by a newer tracking schema refuses writes from an older `plan` instead of losing data.
+
+Execution health is separate from the stage. `plan session heartbeat` records `active`, `idle` or `blocked` (blocked needs `--reason` and `--owner`); an unchanged heartbeat within 5 minutes is coalesced instead of written, and heartbeats on ended sessions are rejected. `plan show --json` adds `tracking.executions[].health` with `activity`, `lastSeen`, `freshness` (`fresh`, `stale` after `PLAN_STALE_MINUTES`, or `unknown` when a session never sent a heartbeat), the `staleMs` threshold, and `clockSkewMs` between the reporter's `--observed-at` and the recorded time (`clockSkewed` past 5 minutes). A missing heartbeat never means offline and never changes the stage.
 
 ### Dashboard
 
@@ -182,6 +186,7 @@ There is a single hosted site, `https://planmanager.hacker1db.dev`; set `PLAN_MA
 | `PLAN_HOME`                      | `~/notes/SecondBrain/4.Resources/plans` | Directory where plans are stored |
 | `PLAN_PORT`                      | `4173`                | Dashboard port                              |
 | `PLAN_HOST`                      | `127.0.0.1`           | Address the dashboard listens on            |
+| `PLAN_STALE_MINUTES`             | `15`                  | Minutes without a heartbeat before a session shows as stale |
 | `PLAN_PANDOC`                    | `pandoc`              | Pandoc executable used by `capture`         |
 | `XDG_CONFIG_HOME`                | `~/.config`           | Base directory for the remote configuration |
 | `EDITOR` / `VISUAL`              | `vi`                  | Editor used by `new` and `edit`             |
