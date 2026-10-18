@@ -6,6 +6,7 @@ import { parseFrontmatter, normalizeMeta, writePlan, readPlan } from '../../lib/
 import { generateId, slugify } from '../../lib/ids.js'
 import { buildEnvelope } from '../../lib/envelope.js'
 import { withPlanWriteLock } from '../../lib/write-lock.js'
+import { formatFromPath } from '../../lib/mdx/format.js'
 import { EXIT } from '../exit.js'
 
 export async function cmdImport(args, opts) {
@@ -16,8 +17,8 @@ export async function cmdImport(args, opts) {
   }
   const sourcePath = resolve(src)
   const extension = extname(sourcePath).toLowerCase()
-  if (extension !== '.md' && extension !== '.markdown') {
-    process.stderr.write('Error: plan import accepts only Markdown files; use plan capture for HTML artifacts\n')
+  if (extension !== '.md' && extension !== '.markdown' && extension !== '.mdx') {
+    process.stderr.write('Error: plan import accepts only Markdown or MDX files; use plan capture for HTML artifacts\n')
     process.exit(EXIT.INVALID_INPUT)
   }
   try {
@@ -42,8 +43,10 @@ export async function cmdImport(args, opts) {
   const title = rawMeta.title || basename(sourcePath, extension).replace(/-/g, ' ')
   const id = generateId()
   const now = new Date().toISOString()
+  // Tracking history from an outside file is unverified provenance, so an import starts untracked.
+  const { tracking: _tracking, schemaVersion: _schemaVersion, ...foreignMeta } = rawMeta
   const meta = normalizeMeta({
-    ...rawMeta,
+    ...foreignMeta,
     id,
     title,
     created: rawMeta.created ?? now,
@@ -55,7 +58,7 @@ export async function cmdImport(args, opts) {
     envelope = await withPlanWriteLock(async () => {
       const base = slugify(meta.title)
       const slug = await uniqueSlug(base)
-      const fp = planPath(slug)
+      const fp = planPath(slug, meta.format === 'mdx' ? 'mdx' : formatFromPath(sourcePath))
       await writePlan(fp, meta, body)
       return buildEnvelope(await readPlan(fp))
     })

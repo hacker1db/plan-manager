@@ -6,13 +6,15 @@ import { writePlan, readPlan } from '../../lib/metadata.js'
 import { buildEnvelope } from '../../lib/envelope.js'
 import { withPlanWriteLock } from '../../lib/write-lock.js'
 import { EXIT } from '../exit.js'
+import { requestedFormat } from '../format-option.js'
 
 export async function cmdNew(args, opts) {
   const title = args.join(' ').trim()
   if (!title) {
-    process.stderr.write('Error: title required\n  Usage: plan new <title>\n')
+    process.stderr.write('Error: title required\n  Usage: plan new <title> [--format md|mdx]\n')
     process.exit(EXIT.INVALID_INPUT)
   }
+  const format = requestedFormat(opts, 'md')
   await initStorage()
   let fp
   try {
@@ -20,7 +22,7 @@ export async function cmdNew(args, opts) {
       const id = generateId()
       const base = slugify(title)
       const slug = await uniqueSlug(base)
-      const filePath = planPath(slug)
+      const filePath = planPath(slug, format)
       const meta = {
         id,
         title,

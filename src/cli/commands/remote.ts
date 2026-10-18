@@ -1,12 +1,13 @@
 import { mkdir, readFile, writeFile, chmod } from 'node:fs/promises'
-import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { spawn, spawnSync } from 'node:child_process'
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto'
 import { createServer } from 'node:http'
+import { getConfigDir } from '../../lib/config.js'
 import { initStorage, listPlanFiles, resolveByIdOrSlug } from '../../lib/storage.js'
 import { readPlan } from '../../lib/metadata.js'
 import { buildEnvelope } from '../../lib/envelope.js'
+import { sourceFormat } from '../../lib/mdx/format.js'
 import { EXIT } from '../exit.js'
 
 type Site = { url: string }
@@ -19,12 +20,9 @@ type StoredOAuthCredential = { version: 1; accessToken: string; refreshToken: st
 const DEFAULT_SITE_URL = 'https://planmanager.hacker1db.dev'
 const KEYCHAIN_SERVICE = 'plan-manager:site'
 
-function configDir(): string {
-  return join(process.env.XDG_CONFIG_HOME ?? join(homedir(), '.config'), 'plan-manager')
-}
 
 function configPath(): string {
-  return join(configDir(), 'site.json')
+  return join(getConfigDir(), 'site.json')
 }
 
 function securityCommand(): string {
@@ -62,14 +60,14 @@ async function loadConfig(site: Site): Promise<SiteConfig> {
     return { version: 1, revisions: validRevisions(parsed.revisions) }
   }
   // Carry push revisions over from the multi-remote config so conflict detection keeps working.
-  const legacy = await readJson(join(configDir(), 'remotes.json')).catch(() => null) as { remotes?: { name?: unknown; url?: unknown }[]; revisions?: Record<string, unknown> } | null
+  const legacy = await readJson(join(getConfigDir(), 'remotes.json')).catch(() => null) as { remotes?: { name?: unknown; url?: unknown }[]; revisions?: Record<string, unknown> } | null
   const legacyRemote = Array.isArray(legacy?.remotes) ? legacy.remotes.find(remote => remote?.url === site.url && typeof remote.name === 'string') : undefined
   return { version: 1, revisions: legacyRemote ? validRevisions(legacy?.revisions?.[legacyRemote.name as string]) : {} }
 }
 
 async function saveConfig(config: SiteConfig): Promise<void> {
   const path = configPath()
-  await mkdir(configDir(), { recursive: true, mode: 0o700 })
+  await mkdir(getConfigDir(), { recursive: true, mode: 0o700 })
   await writeFile(path, JSON.stringify(config, null, 2) + '\n', { mode: 0o600 })
   await chmod(path, 0o600)
 }
@@ -295,6 +293,9 @@ export async function cmdAuth(args: string[], opts: { stdin?: boolean; token?: s
 async function pushOne(site: Site, token: string, identifier: string, expectedRevision: string | null): Promise<{ id: string; url: string; revision: string }> {
   const resolved = await resolveByIdOrSlug(identifier)
   const parsed = await readPlan(resolved.filePath)
+  if (parsed.meta.format === 'mdx' && sourceFormat(parsed.raw) !== 'mdx') {
+    throw new Error(`MDX plan ${parsed.meta.id} needs "format: mdx" in its frontmatter so the hosted site renders it; add it or run plan update`)
+  }
   const envelope = await buildEnvelope(parsed)
   const response = await fetch(`${site.url}/api/v1/plans/${encodeURIComponent(envelope.id)}/versions`, {
     method: 'PUT',

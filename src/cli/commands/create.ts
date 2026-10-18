@@ -5,7 +5,9 @@ import { generateId, slugify } from '../../lib/ids.js'
 import { writePlan, readPlan, parseFrontmatter, normalizeMeta } from '../../lib/metadata.js'
 import { buildEnvelope } from '../../lib/envelope.js'
 import { withPlanWriteLock } from '../../lib/write-lock.js'
+import { formatFromPath } from '../../lib/mdx/format.js'
 import { EXIT } from '../exit.js'
+import { requestedFormat } from '../format-option.js'
 
 async function readStdin() {
   return new Promise((resolve, reject) => {
@@ -20,9 +22,10 @@ async function readStdin() {
 export async function cmdCreate(args, opts) {
   const title = opts.title
   if (!title) {
-    process.stderr.write('Error: --title is required\n  Usage: plan create --title <title> [--stdin|--file <file>] [--json]\n')
+    process.stderr.write('Error: --title is required\n  Usage: plan create --title <title> [--stdin|--file <file>] [--format md|mdx] [--json]\n')
     process.exit(EXIT.INVALID_INPUT)
   }
+  const format = requestedFormat(opts, opts.file ? formatFromPath(opts.file) : 'md')
 
   let body = ''
   if (opts.stdin) {
@@ -45,7 +48,7 @@ export async function cmdCreate(args, opts) {
       const id = generateId()
       const base = slugify(title)
       const slug = await uniqueSlug(base)
-      const fp = planPath(slug)
+      const fp = planPath(slug, format)
       const now = new Date().toISOString()
       const meta = normalizeMeta({ id, title, status: 'active', created: now, updated: now, tags: [] })
       await writePlan(fp, meta, body)
