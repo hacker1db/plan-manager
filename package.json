@@ -1,6 +1,6 @@
 {
   "name": "plan-manager",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Local Markdown plan library, CLI, dashboard, and private hosted app",
   "type": "module",
   "packageManager": "pnpm@10.17.1",
@@ -11,6 +11,7 @@
     "plan": "./bin/plan"
   },
   "scripts": {
+    "prepare": "pnpm build:cli",
     "build": "pnpm build:cli && pnpm build:web",
     "build:cli": "tsc --project tsconfig.cli.json && node scripts/copy-dashboard-assets.mjs",
     "build:web": "node scripts/sync-dashboard-style.mjs && next build",

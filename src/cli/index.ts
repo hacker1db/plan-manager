@@ -19,6 +19,8 @@ import { cmdCompletion } from './commands/completion.js'
 import { cmdBlocks } from './commands/blocks.js'
 import { cmdCheck } from './commands/check.js'
 import { EXIT } from './exit.js'
+import { fileURLToPath } from 'node:url'
+import { checkBuildFreshness, packageVersion } from '../lib/build.js'
 
 function parseArgs(argv) {
   const args = []
@@ -41,7 +43,7 @@ function parseArgs(argv) {
   return { args, opts }
 }
 
-const VERSION = '0.3.0'
+const DIST_DIR = fileURLToPath(new URL('..', import.meta.url))
 
 const USAGE = `plan — local Markdown plan manager
 
@@ -89,7 +91,7 @@ Exit codes:
 
 export async function run(argv) {
   const [cmd, ...rest] = argv
-  if (cmd === '--version' || cmd === '-v') { process.stdout.write(VERSION + '\n'); return }
+  if (cmd === '--version' || cmd === '-v') { process.stdout.write(packageVersion() + '\n'); return }
   if (cmd === '--help' || cmd === '-h') { process.stdout.write(USAGE); return }
   const { args, opts } = parseArgs(rest)
   switch (cmd) {
@@ -113,6 +115,10 @@ export async function run(argv) {
     case 'blocks': return cmdBlocks(args, opts)
     case 'check': return cmdCheck(args, opts)
     case 'completion': return cmdCompletion(args)
-    default: process.stderr.write(`Unknown command: ${cmd}\n\n${USAGE}`); process.exit(EXIT.INVALID_INPUT)
+    default: {
+      const hint = checkBuildFreshness(DIST_DIR)?.stale ? 'This build is out of date; run pnpm build:cli.\n' : ''
+      process.stderr.write(`Unknown command: ${cmd}\n${hint}\n${USAGE}`)
+      process.exit(EXIT.INVALID_INPUT)
+    }
   }
 }

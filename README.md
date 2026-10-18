@@ -37,6 +37,8 @@ plan init            # creates the plan home and archive directory
 plan doctor          # checks your setup
 ```
 
+The linked `plan` runs the compiled `dist/` build, so after `git pull` run `pnpm install` (or `pnpm build:cli`) to pick up changes. `plan doctor` reports when the build is stale.
+
 ## Usage
 
 ```sh
