@@ -241,3 +241,70 @@ test('plan push exits with dependency-unavailable', async () => {
     assert.equal(r.status, 8)
   })
 })
+
+test('plan create --format mdx writes an .mdx plan with format frontmatter', async () => {
+  await withHome(async dir => {
+    const r = planCmd(['create', '--title', 'Visual Plan', '--format', 'mdx', '--stdin', '--json'], { PLAN_HOME: dir }, '<Callout tone="decision">\nShip it\n</Callout>\n')
+    assert.equal(r.status, 0, r.stderr)
+    const envelope = JSON.parse(r.stdout)
+    assert.ok(envelope.path.endsWith('/visual-plan.mdx'))
+    const { readFile } = await import('node:fs/promises')
+    const raw = await readFile(envelope.path, 'utf8')
+    assert.match(raw, /^format: mdx$/m)
+    assert.match(raw, /<Callout tone="decision">/)
+    const shown = JSON.parse(planCmd(['show', 'visual-plan', '--json'], { PLAN_HOME: dir }).stdout)
+    assert.equal(shown.id, envelope.id)
+  })
+})
+
+test('plan create infers mdx from --file and rejects unknown formats', async () => {
+  await withHome(async dir => {
+    const { writeFile } = await import('node:fs/promises')
+    const source = join(dir, 'source.mdx')
+    await writeFile(source, '# From file\n')
+    const inferred = planCmd(['create', '--title', 'From File', '--file', source, '--json'], { PLAN_HOME: dir })
+    assert.equal(inferred.status, 0, inferred.stderr)
+    assert.ok(JSON.parse(inferred.stdout).path.endsWith('/from-file.mdx'))
+    const bad = planCmd(['create', '--title', 'Bad', '--format', 'html'], { PLAN_HOME: dir })
+    assert.equal(bad.status, 2)
+    assert.match(bad.stderr, /--format must be md or mdx/)
+  })
+})
+
+test('plan archive keeps the .mdx extension', async () => {
+  await withHome(async dir => {
+    const created = JSON.parse(planCmd(['create', '--title', 'Recap', '--format', 'mdx', '--json'], { PLAN_HOME: dir }).stdout)
+    const archived = planCmd(['archive', created.id, '--json'], { PLAN_HOME: dir })
+    assert.equal(archived.status, 0, archived.stderr)
+    assert.ok(JSON.parse(archived.stdout).path.endsWith('/archive/recap.mdx'))
+  })
+})
+
+test('plan blocks prints the MDX block catalog', () => {
+  const text = planCmd(['blocks'])
+  assert.equal(text.status, 0)
+  assert.match(text.stdout, /## <Diff>/)
+  const json = JSON.parse(planCmd(['blocks', '--json']).stdout)
+  assert.equal(json.version, 1)
+  assert.ok(json.blocks.some(block => block.name === 'FileTree'))
+})
+
+test('plan check validates MDX files and plan ids', async () => {
+  await withHome(async dir => {
+    const { writeFile } = await import('node:fs/promises')
+    const good = join(dir, 'good.mdx')
+    const bad = join(dir, 'bad.mdx')
+    await writeFile(good, '---\nformat: mdx\n---\n<Callout>\nfine\n</Callout>\n')
+    await writeFile(bad, '<Diff filename="a" />\n\n<Nope />\n')
+    const ok = planCmd(['check', good], { PLAN_HOME: dir })
+    assert.equal(ok.status, 0, ok.stdout + ok.stderr)
+    const failed = planCmd(['check', good, bad, '--json'], { PLAN_HOME: dir })
+    assert.equal(failed.status, 2)
+    const report = JSON.parse(failed.stdout)
+    assert.deepEqual(report.results.map(result => result.ok), [true, false])
+    assert.equal(report.results[1].problems.length, 2)
+    const created = JSON.parse(planCmd(['create', '--title', 'Checked', '--format', 'mdx', '--json'], { PLAN_HOME: dir }, '').stdout)
+    assert.equal(planCmd(['check', created.id], { PLAN_HOME: dir }).status, 0)
+    assert.equal(planCmd(['check', 'missing-plan'], { PLAN_HOME: dir }).status, 3)
+  })
+})

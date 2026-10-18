@@ -14,3 +14,8 @@ src/app/globals.css
 src/components/generated-dashboard.ts
 .vercel
 .temp.values.txt
+
+# Check in project skills only; the rest of .claude stays local
+!.claude/
+.claude/*
+!.claude/skills/
