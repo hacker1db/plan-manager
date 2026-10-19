@@ -20,7 +20,13 @@ const fakeSecurity = `#!/bin/sh
 action="$1"; shift
 case "$action" in
   add-generic-password)
-    while [ $# -gt 0 ]; do if [ "$1" = "-w" ]; then printf '%s' "$2" > "$PLAN_MANAGER_TEST_KEYCHAIN"; fi; shift; done ;;
+    # Like the real tool with a trailing -w: the password arrives on stdin
+    # (entered twice), never in argv.
+    for last; do :; done
+    [ "$last" = "-w" ] || exit 2
+    IFS= read -r first; IFS= read -r second
+    [ "$first" = "$second" ] || exit 1
+    printf '%s' "$first" > "$PLAN_MANAGER_TEST_KEYCHAIN" ;;
   find-generic-password)
     [ -f "$PLAN_MANAGER_TEST_KEYCHAIN" ] || exit 1
     cat "$PLAN_MANAGER_TEST_KEYCHAIN" ;;
