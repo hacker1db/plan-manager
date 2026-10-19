@@ -30,6 +30,11 @@ func TestEmbeddedDashboardMatchesSource(t *testing.T) {
 		t.Skip("source dashboard not available")
 	}
 	for _, e := range entries {
+		// go:embed skips directories' dot/underscore-prefixed entries, so a
+		// local artifact like src/dashboard/.omc must not count as stale.
+		if e.IsDir() || strings.HasPrefix(e.Name(), ".") || strings.HasPrefix(e.Name(), "_") {
+			continue
+		}
 		want, _ := os.ReadFile(filepath.Join(src, e.Name()))
 		got, err := dashboardFS.ReadFile("dashboard/" + e.Name())
 		if err != nil || !bytes.Equal(got, want) {
