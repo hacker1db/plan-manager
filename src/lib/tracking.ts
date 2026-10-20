@@ -8,7 +8,7 @@ export const EXECUTION_ROLES = ['planning', 'implementation', 'review'] as const
 export const ENVIRONMENT_TYPES = ['host', 'vm', 'container', 'remote'] as const
 export const PR_ROLES = ['implements', 'partial', 'followup', 'supporting'] as const
 export const PR_STATES = ['open', 'draft', 'closed', 'merged'] as const
-export const EVENT_TYPES = ['migrated', 'stage', 'session.attached', 'session.ended', 'pr.attached', 'pr.detached', 'pr.observed', 'plan.review', 'pr.review', 'completed', 'reopened'] as const
+export const EVENT_TYPES = ['migrated', 'stage', 'session.attached', 'session.ended', 'pr.attached', 'pr.detached', 'pr.observed', 'plan.review', 'pr.review', 'completed', 'reopened', 'session.lead', 'handoff'] as const
 export const PLAN_REVIEW_DECISIONS = ['approved', 'changes_requested'] as const
 export const PR_REVIEW_STATES = ['submitted', 'requested', 'approved', 'changes_requested', 'dismissed', 'unknown'] as const
 export const REOPEN_STAGES = ['in_progress', 'planning'] as const
@@ -63,6 +63,7 @@ export interface TrackingEvent {
 export interface Tracking { events: TrackingEvent[] }
 
 export interface ProjectedExecution extends Execution { attachedEventId: string; startedAt: string; endedAt?: string }
+export interface ProjectedHandoff { eventId: string; fromExecutionId: string; toExecutionId: string; reason: string; scope?: string; endPrevious?: boolean; actor: string; at: string }
 export interface PrReview { state: PrReviewState; headSha: string; reviewedAt: string; stale: boolean }
 export interface ProjectedPr extends PrAssociation {
   attachedEventId: string
@@ -85,6 +86,9 @@ export interface TrackingProjection {
   executions: ProjectedExecution[]
   prs: ProjectedPr[]
   planApproval: PlanApproval
+  // Only an explicit session.lead or handoff sets the lead; ending the lead leaves it null rather than promoting another.
+  leadExecutionId: string | null
+  handoffs: ProjectedHandoff[]
 }
 
 export class TrackingError extends Error {
@@ -260,6 +264,15 @@ function validateData(type: EventType, value: unknown): UnknownRecord {
       const raw = record(value, 'data', ['stage', 'reason'])
       return { stage: oneOf(raw.stage, 'data.stage', REOPEN_STAGES), reason: text(raw.reason, 'data.reason') }
     }
+    case 'session.lead': return { executionId: uuid(record(value, 'data', ['executionId']).executionId, 'data.executionId') }
+    case 'handoff': {
+      const raw = record(value, 'data', ['fromExecutionId', 'toExecutionId', 'reason', 'scope', 'endPrevious'])
+      if (raw.endPrevious !== undefined && raw.endPrevious !== true) fail('data.endPrevious must be true when present')
+      const from = uuid(raw.fromExecutionId, 'data.fromExecutionId')
+      const to = uuid(raw.toExecutionId, 'data.toExecutionId')
+      if (from === to) fail('data.toExecutionId must differ from data.fromExecutionId')
+      return clean({ fromExecutionId: from, toExecutionId: to, reason: text(raw.reason, 'data.reason'), scope: optionalText(raw.scope, 'data.scope'), endPrevious: raw.endPrevious as true | undefined })
+    }
   }
 }
 
@@ -316,7 +329,7 @@ function legacyStage(status: PlanStatus): { stage: PlanStage; legacyCompletion: 
 }
 
 export function projectEvents(events: TrackingEvent[], status: PlanStatus, body?: string): TrackingProjection {
-  const projection: TrackingProjection = { ...legacyStage(status), executions: [], prs: [], planApproval: { state: 'none', bodyRevision: null, stale: false } }
+  const projection: TrackingProjection = { ...legacyStage(status), executions: [], prs: [], planApproval: { state: 'none', bodyRevision: null, stale: false }, leadExecutionId: null, handoffs: [] }
   for (const event of events) {
     const data = event.data
     switch (event.type) {
@@ -336,6 +349,7 @@ export function projectEvents(events: TrackingEvent[], status: PlanStatus, body?
       case 'session.ended': {
         const execution = projection.executions.find(item => item.id === data.executionId)
         if (execution) execution.endedAt = event.observedAt ?? event.recordedAt
+        if (projection.leadExecutionId === data.executionId) projection.leadExecutionId = null
         break
       }
       case 'pr.attached':
@@ -370,6 +384,18 @@ export function projectEvents(events: TrackingEvent[], status: PlanStatus, body?
         projection.stage = data.stage as PlanStage
         projection.legacyCompletion = false
         break
+      case 'session.lead':
+        projection.leadExecutionId = data.executionId as string
+        break
+      case 'handoff': {
+        const at = event.observedAt ?? event.recordedAt
+        projection.handoffs.push({ ...data as unknown as Omit<ProjectedHandoff, 'eventId' | 'actor' | 'at'>, eventId: event.id, actor: event.actor, at })
+        if (projection.leadExecutionId === data.fromExecutionId) projection.leadExecutionId = data.toExecutionId as string
+        // endPrevious ends the predecessor in the same event, so the handoff and the end can never be split by a crash.
+        const previous = data.endPrevious ? projection.executions.find(item => item.id === data.fromExecutionId) : undefined
+        if (previous && !previous.endedAt) previous.endedAt = at
+        break
+      }
     }
   }
   for (const pr of projection.prs) {

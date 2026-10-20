@@ -125,6 +125,9 @@ plan review record migrate-auth-service plan --decision approved
 plan stage migrate-auth-service in_progress
 echo '{"provider":"claude","nativeSessionId":"…","branch":"feat/auth"}' \
   | plan session attach migrate-auth-service --stdin --idempotency-key run-42 --json
+plan session lead migrate-auth-service <execution-id>
+plan handoff migrate-auth-service <from-execution-id> <to-execution-id> \
+  --reason "context window full" --scope "phase 2" --end-previous
 plan session end migrate-auth-service <execution-id>
 plan pr attach migrate-auth-service https://github.com/owner/repo/pull/12 --role implements
 plan stage migrate-auth-service awaiting_pr_review
@@ -136,7 +139,7 @@ plan reopen migrate-auth-service --stage in_progress --reason "regression"
 
 Stage changes are guarded. Work starts only after the submitted plan is approved, and the approval covers the exact plan body (a sha256 of the body, not the frontmatter): editing the body afterwards makes it stale until it is resubmitted and reviewed again. `awaiting_pr_review` needs an attached PR that is open (not draft). `plan stage … completed` is refused; `plan complete` requires a current plan approval and every `implements` PR merged with an approved review of its current head SHA, or `--no-pr-rationale` when no PR is attached. A push after a PR review makes that review stale, and a PR approval never counts as plan approval. `plan reopen` keeps the completion in the history.
 
-These commands append events to a validated `tracking` block in the frontmatter; nothing is rewritten in place. The first event on an existing plan records how it was migrated (an `active` plan starts in `planning`, a `completed` one keeps a legacy completion with unknown review history). Retrying a command with the same `--idempotency-key` changes nothing. A merged PR never moves the stage on its own, and `plan status` refuses to contradict the tracked stage. Each machine gets a random installation ID in `~/.config/plan-manager/installation.json`, so two machines with the same hostname stay distinct. Unknown frontmatter fields are preserved on every write, and a plan written by a newer tracking schema refuses writes from an older `plan` instead of losing data.
+These commands append events to a validated `tracking` block in the frontmatter; nothing is rewritten in place. The first event on an existing plan records how it was migrated (an `active` plan starts in `planning`, a `completed` one keeps a legacy completion with unknown review history). Retrying a command with the same `--idempotency-key` changes nothing. Several sessions can work on a plan at once, but only one is the lead, and only `plan session lead` or a handoff from the lead sets it. Ending the lead leaves the plan with no lead until you designate one. `plan handoff` records the predecessor, successor, actor, reason and scope; `--end-previous` ends the predecessor in the same event. A merged PR never moves the stage on its own, and `plan status` refuses to contradict the tracked stage. Each machine gets a random installation ID in `~/.config/plan-manager/installation.json`, so two machines with the same hostname stay distinct. Unknown frontmatter fields are preserved on every write, and a plan written by a newer tracking schema refuses writes from an older `plan` instead of losing data.
 
 ### Dashboard
 
