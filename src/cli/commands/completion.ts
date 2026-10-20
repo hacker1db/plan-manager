@@ -45,13 +45,16 @@ function completionBody() {
     --status) COMPREPLY=($(compgen -W "active completed archived all" -- "$cur")); return ;;
     --title|--if-revision) return ;;
   esac
-  case "$cur" in
-    --*)
-      local flags=""
-      case "$sub" in
+  local flags=""
+  case "$sub" in
 ${flagCases()}
-      esac
-      COMPREPLY=($(compgen -W "$flags" -- "$cur")); return ;;
+  esac
+  case "$cur" in
+    --*) COMPREPLY=($(compgen -W "$flags" -- "$cur")); return ;;
+    '')
+      if [ "$sub" = list ]; then
+        COMPREPLY=($(compgen -W "$flags" -- "$cur")); return
+      fi ;;
   esac
   case "$sub" in
     import|capture) [ "$COMP_CWORD" -eq 2 ] && COMPREPLY=($(compgen -f -- "$cur")) ;;

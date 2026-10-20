@@ -79,6 +79,8 @@ test('bash completion offers each subcommand flags at any position after the sub
   assert.deepEqual(completeBash(script, ['plan', 'serve', '--']), ['--foreground', '--json'])
   assert.deepEqual(completeBash(script, ['plan', 'doctor', '--j']), ['--json'])
   assert.deepEqual(completeBash(script, ['plan', 'edit', 'some-id', '--']), [])
+  assert.deepEqual(completeBash(script, ['plan', 'list', '']), ['--json', '--status'])
+  assert.deepEqual(completeBash(script, ['plan', 'list', '--json', '']), ['--json', '--status'])
 })
 
 test('value completion still works for --status and status positions', () => {
