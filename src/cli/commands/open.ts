@@ -12,8 +12,9 @@ export async function cmdOpen(args, opts) {
     const url = getSite().url
     const opener = process.env.PLAN_BROWSER ?? (process.platform === 'darwin' ? 'open' : 'xdg-open')
     const result = spawnSync(opener, [url], { stdio: 'inherit' })
-    if (result.error) {
-      process.stderr.write(`Could not open browser: ${result.error.message}\n`)
+    if (result.error || result.status !== 0) {
+      const detail = result.error?.message ?? `browser opener exited with status ${result.status}`
+      process.stderr.write(`Could not open browser: ${detail}\n`)
       process.stdout.write(`Plan Manager: ${url}\n`)
     }
     return

@@ -25,6 +25,7 @@ function parseArgs(argv) {
   while (i < argv.length) {
     const a = argv[i]
     if (a === '--json') { opts.json = true }
+    else if (a === '--remote') { opts.remote = true }
     else if (a === '--stdin') { opts.stdin = true }
     else if (a === '--foreground') { opts.foreground = true }
     else if (a === '--token') { opts.token = argv[++i] }
@@ -44,6 +45,7 @@ const USAGE = `plan — local Markdown plan manager
 
 Usage:
   plan [open]                    Open the dashboard
+  plan open --remote             Open the hosted dashboard
   plan init                      Initialize plan home
   plan new <title>               Create a plan and open in $EDITOR
   plan create --title <title>    Create a plan non-interactively
