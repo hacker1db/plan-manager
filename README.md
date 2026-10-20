@@ -137,6 +137,7 @@ plan review record migrate-auth-service pr https://github.com/owner/repo/pull/12
 plan pr refresh migrate-auth-service       # re-reads PR state with gh
 plan complete migrate-auth-service --reason "shipped"
 plan reopen migrate-auth-service --stage in_progress --reason "regression"
+plan history migrate-auth-service          # ordered event timeline, read-only (--json)
 ```
 
 Stage changes are guarded. Work starts only after the submitted plan is approved, and the approval covers the exact plan body (a sha256 of the body, not the frontmatter): editing the body afterwards makes it stale until it is resubmitted and reviewed again. `awaiting_pr_review` needs an attached PR that is open (not draft). `plan stage … completed` is refused; `plan complete` requires a current plan approval and every `implements` PR merged with an approved review of its current head SHA, or `--no-pr-rationale` when no PR is attached. A push after a PR review makes that review stale, and a PR approval never counts as plan approval. `plan reopen` keeps the completion in the history.

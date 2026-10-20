@@ -9,9 +9,9 @@ import { assertRevision } from '../../lib/revisions.js'
 import { withPlanWriteLock } from '../../lib/write-lock.js'
 import { localMachine } from '../../lib/machine.js'
 import {
-  appendEvent, coalescesHeartbeat, parsePrUrl, prKey, projectTracking, validateEnvironment, PLAN_STAGES, PR_ROLES,
+  appendEvent, coalescesHeartbeat, parsePrUrl, prKey, projectEvents, projectTracking, readTracking, validateEnvironment, PLAN_STAGES, PR_ROLES,
   assertCompletion, assertPlanReview, assertReopen, assertStageTransition, bodyRevision, PLAN_REVIEW_DECISIONS, PR_REVIEW_STATES, REOPEN_STAGES,
-  TrackingError, type EnvironmentIdentity, type EventInput, type PlanStage, type PrObservation, type PrRole, type TrackingEvent,
+  TrackingError, type EnvironmentIdentity, type EventInput, type PlanStage, type PrAssociation, type PrObservation, type PrRole, type TrackingEvent,
   type PlanReviewDecision, type PrReviewState, type ReopenStage,
 } from '../../lib/tracking.js'
 import type { CliOptions, PlanEnvelope, PlanMetadata, UnknownRecord } from '../../lib/types.js'
@@ -373,4 +373,58 @@ export async function cmdComplete(args: string[], opts: CliOptions): Promise<voi
 export async function cmdReopen(args: string[], opts: CliOptions): Promise<void> {
   if (!args[0]) usage(`Usage: plan reopen <id-or-slug> --stage ${REOPEN_STAGES.join('|')} --reason <text>`)
   try { await reopen(args[0], opts) } catch (err) { exitFor(err) }
+}
+
+// One case per event type; unknown types fall through so newer events still print.
+function summarize(event: TrackingEvent, prUrls: Map<string, string>): string {
+  const data = event.data as Record<string, any>
+  switch (event.type as string) {
+    case 'migrated': return `migrated from ${data.fromStatus} → ${data.stage}${data.legacyCompletion ? ' (legacy completion)' : ''}`
+    case 'stage': return `stage → ${data.stage}${data.reason ? ` (${data.reason})` : ''}`
+    case 'session.attached': {
+      const e = data.execution
+      return `session attached ${e.provider} ${e.nativeSessionId ?? '(no native id)'} on ${e.machine.displayName} [${e.role}]`
+    }
+    case 'session.ended': return `session ended ${data.executionId}`
+    case 'pr.attached': return `PR attached ${data.pr.url} (${data.pr.role})`
+    case 'pr.detached': return `PR detached ${prUrls.get(data.prId) ?? data.prId}`
+    case 'pr.observed': {
+      const sha = data.mergeSha ?? data.headSha
+      return `PR observed ${data.state}${sha ? ` @${sha.slice(0, 7)}` : ''}`
+    }
+    case 'plan.review': return `plan review ${data.decision} @${data.bodyRevision.slice(0, 7)}`
+    case 'pr.review': return `PR review ${data.state} ${prUrls.get(data.prId) ?? data.prId} @${data.headSha.slice(0, 7)}`
+    case 'completed': return `completed (${data.reason})${data.noPrRationale ? ` no PR: ${data.noPrRationale}` : ''}`
+    case 'reopened': return `reopened → ${data.stage} (${data.reason})`
+    case 'session.lead': return `lead → ${data.executionId}`
+    case 'handoff': return `handoff ${data.fromExecutionId} → ${data.toExecutionId} (${data.reason})${data.endPrevious ? ' [ended previous]' : ''}`
+    case 'session.heartbeat': return `heartbeat ${data.activity} ${data.executionId}${data.blockReason ? ` (${data.blockReason}; owner ${data.owner})` : ''}`
+    default: return `${event.type} ${JSON.stringify(data)}`
+  }
+}
+
+async function history(idOrSlug: string, opts: CliOptions): Promise<void> {
+  await initStorage()
+  const parsed = await loadPlan(idOrSlug)
+  const events = readTracking(parsed.meta)?.events ?? []
+  const { revision } = await buildEnvelope(parsed)
+  const stage = projectEvents(events, parsed.meta.status).stage
+  if (opts.json) {
+    process.stdout.write(JSON.stringify({ version: 1, id: parsed.meta.id, revision, stage, events }) + '\n')
+    return
+  }
+  if (events.length === 0) { process.stdout.write(`No tracked events (stage: ${stage})\n`); return }
+  const revoked = new Set(events.map(event => event.revokes).filter(Boolean))
+  const prUrls = new Map<string, string>()
+  for (const event of events) {
+    if (event.type === 'pr.attached') { const pr = event.data.pr as PrAssociation; prUrls.set(pr.id, pr.url) }
+    const observed = event.observedAt && event.observedAt !== event.recordedAt ? `  observed ${event.observedAt}` : ''
+    process.stdout.write(`${event.seq}  ${event.recordedAt}  ${event.actor}  ${event.type}  ${summarize(event, prUrls)}${observed}${revoked.has(event.id) ? '  [revoked]' : ''}\n`)
+  }
+}
+
+export async function cmdHistory(args: string[], opts: CliOptions): Promise<void> {
+  const [idOrSlug] = args
+  if (!idOrSlug) usage('id or slug required\n  Usage: plan history <id-or-slug> [--json]')
+  try { await history(idOrSlug, opts) } catch (err) { exitFor(err) }
 }
