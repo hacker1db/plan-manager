@@ -66,6 +66,24 @@ async function storeSignedInCredential(keychainPath: string): Promise<void> {
   }))
 }
 
+async function captureDependencyFailure(fn: () => Promise<void>): Promise<string> {
+  const previousExit = process.exit
+  const previousWrite = process.stderr.write
+  let output = ""
+  process.exit = ((code?: number) => { throw new Error(`process.exit:${code}`) }) as typeof process.exit
+  process.stderr.write = ((chunk: string | Uint8Array) => {
+    output += String(chunk)
+    return true
+  }) as typeof process.stderr.write
+  try {
+    await assert.rejects(fn, /process\.exit:8/)
+  } finally {
+    process.exit = previousExit
+    process.stderr.write = previousWrite
+  }
+  return output
+}
+
 test("bare open launches the hosted site when signed in and reachable", async () => {
   await withEnvironment(async ({ openedPath, keychainPath }) => {
     await storeSignedInCredential(keychainPath)
@@ -122,6 +140,36 @@ test("bare open fails with guidance when signed out instead of falling back", as
     assert.match(result.stderr, /Not signed in to https:\/\/plans\.example/)
     assert.match(result.stderr, /plan auth login/)
     assert.match(result.stderr, /plan --localhost/)
+    await assert.rejects(readFile(openedPath, "utf8"), { code: "ENOENT" })
+  })
+})
+
+test("bare open reports credential refresh connectivity failures separately from signed-out state", async () => {
+  await withEnvironment(async ({ keychainPath }) => {
+    await writeFile(keychainPath, JSON.stringify({
+      version: 1,
+      accessToken: "expired-access-token",
+      refreshToken: "clerk-refresh-token",
+      accessTokenExpiresAt: Date.now() - 1000,
+      tokenEndpoint: "https://clerk.example/oauth/token",
+      clientId: "oauthapp_public",
+    }))
+    globalThis.fetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
+      assert.ok(init?.signal)
+      throw new TypeError("network unavailable")
+    }) as typeof fetch
+    const stderr = await captureDependencyFailure(() => cmdOpen([], {}))
+    assert.match(stderr, /Cannot refresh credentials for https:\/\/plans\.example/)
+    assert.doesNotMatch(stderr, /Not signed in/)
+  })
+})
+
+test("bare open rejects unsuccessful hosted availability responses", async () => {
+  await withEnvironment(async ({ openedPath, keychainPath }) => {
+    await storeSignedInCredential(keychainPath)
+    globalThis.fetch = (async () => Response.json({ error: "unavailable" }, { status: 503 })) as typeof fetch
+    const stderr = await captureDependencyFailure(() => cmdOpen([], {}))
+    assert.match(stderr, /Cannot reach https:\/\/plans\.example/)
     await assert.rejects(readFile(openedPath, "utf8"), { code: "ENOENT" })
   })
 })

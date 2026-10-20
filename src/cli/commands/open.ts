@@ -7,6 +7,16 @@ import { ensureService } from '../../lib/service.js'
 import { getSite, tokenFromKeychain } from './remote.js'
 import { EXIT } from '../exit.js'
 
+async function fetchWithTimeout(input, init, timeoutMs) {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), timeoutMs)
+  try {
+    return await fetch(input, { ...init, signal: controller.signal })
+  } finally {
+    clearTimeout(timeout)
+  }
+}
+
 async function resolvePlan(idOrSlug) {
   await initStorage()
   try {
@@ -63,14 +73,19 @@ export async function cmdOpen(args, opts) {
   }
 
   try {
-    await tokenFromKeychain()
-  } catch {
+    await tokenFromKeychain({ refreshTimeoutMs: 5000 })
+  } catch (error) {
+    if (error instanceof Error && error.message.startsWith('Could not refresh stored credential:')) {
+      process.stderr.write(`Cannot refresh credentials for ${site.url}. Check your connection, or run "plan --localhost" to open the local dashboard.\n`)
+      process.exit(EXIT.DEPENDENCY_UNAVAILABLE)
+    }
     process.stderr.write(`Not signed in to ${site.url}. Run "plan auth login" to sign in, or "plan --localhost" to open the local dashboard.\n`)
     process.exit(EXIT.DEPENDENCY_UNAVAILABLE)
   }
 
   try {
-    await fetch(`${site.url}/api/v1`, { headers: { accept: 'application/json' }, signal: AbortSignal.timeout(5000) })
+    const response = await fetchWithTimeout(`${site.url}/api/v1`, { headers: { accept: 'application/json' } }, 5000)
+    if (!response.ok) throw new Error(`HTTP ${response.status}`)
   } catch {
     process.stderr.write(`Cannot reach ${site.url}. Check your connection, or run "plan --localhost" to open the local dashboard.\n`)
     process.exit(EXIT.DEPENDENCY_UNAVAILABLE)

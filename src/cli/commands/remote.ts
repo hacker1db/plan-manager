@@ -222,21 +222,31 @@ export async function requestAuthorizationCodeToken(site: Site): Promise<void> {
   process.stdout.write(`Signed in to ${site.url} and stored the Clerk credential in macOS Keychain.\n`)
 }
 
-export async function tokenFromKeychain(): Promise<string> {
+export async function tokenFromKeychain(options: { signal?: AbortSignal; refreshTimeoutMs?: number } = {}): Promise<string> {
   const value = credentialFromKeychain()
   if (/^pm_[A-Za-z0-9_-]{8,64}_[A-Za-z0-9_-]{32,128}$/.test(value)) return value
   let credential = parseStoredOAuthCredential(value)
   if (!credential) throw new Error('Stored credential has an invalid format. Run "plan auth login" to sign in again.')
   if (credential.accessTokenExpiresAt <= Date.now() + 30_000) {
-    const response = await fetch(credential.tokenEndpoint, {
-      method: 'POST',
-      headers: { 'content-type': 'application/x-www-form-urlencoded', accept: 'application/json' },
-      body: new URLSearchParams({ client_id: credential.clientId, grant_type: 'refresh_token', refresh_token: credential.refreshToken }),
-    })
-    const token = await responseJson<OAuthTokenResponse>(response, 'Clerk token refresh')
-    if (!token.access_token || !Number.isFinite(token.expires_in)) throw new Error('Clerk returned an invalid refreshed token')
-    credential = { ...credential, accessToken: token.access_token, refreshToken: token.refresh_token ?? credential.refreshToken, accessTokenExpiresAt: Date.now() + token.expires_in! * 1000 }
-    storeCredential(JSON.stringify(credential))
+    const controller = options.signal || !options.refreshTimeoutMs ? undefined : new AbortController()
+    const timeout = controller ? setTimeout(() => controller.abort(), options.refreshTimeoutMs) : undefined
+    try {
+      const response = await fetch(credential.tokenEndpoint, {
+        method: 'POST',
+        headers: { 'content-type': 'application/x-www-form-urlencoded', accept: 'application/json' },
+        body: new URLSearchParams({ client_id: credential.clientId, grant_type: 'refresh_token', refresh_token: credential.refreshToken }),
+        signal: options.signal ?? controller?.signal,
+      })
+      const token = await responseJson<OAuthTokenResponse>(response, 'Clerk token refresh')
+      if (!token.access_token || !Number.isFinite(token.expires_in)) throw new Error('Clerk returned an invalid refreshed token')
+      credential = { ...credential, accessToken: token.access_token, refreshToken: token.refresh_token ?? credential.refreshToken, accessTokenExpiresAt: Date.now() + token.expires_in! * 1000 }
+      storeCredential(JSON.stringify(credential))
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error)
+      throw new Error(`Could not refresh stored credential: ${detail}`, { cause: error })
+    } finally {
+      if (timeout) clearTimeout(timeout)
+    }
   }
   return credential.accessToken
 }
