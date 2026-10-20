@@ -19,3 +19,4 @@ src/components/generated-dashboard.ts
 !.claude/
 .claude/*
 !.claude/skills/
+.omc/
