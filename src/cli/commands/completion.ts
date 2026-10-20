@@ -12,6 +12,7 @@ _plan() {
     --file|import|capture|check) COMPREPLY=($(compgen -f -- "$cur")); return ;;
     --status) COMPREPLY=($(compgen -W "active completed archived all" -- "$cur")); return ;;
     --format) COMPREPLY=($(compgen -W "md mdx" -- "$cur")); return ;;
+    --activity) COMPREPLY=($(compgen -W "active idle blocked" -- "$cur")); return ;;
     --role) COMPREPLY=($(compgen -W "implements partial followup supporting planning implementation review" -- "$cur")); return ;;
     --decision) COMPREPLY=($(compgen -W "approved changes_requested" -- "$cur")); return ;;
     --state) COMPREPLY=($(compgen -W "submitted requested approved changes_requested dismissed unknown" -- "$cur")); return ;;
@@ -26,7 +27,7 @@ _plan() {
         COMPREPLY=($(compgen -W "planning awaiting_plan_review in_progress awaiting_pr_review" -- "$cur")); return
       fi
       [ "$COMP_CWORD" -eq 2 ] && COMPREPLY=($(compgen -W "$(plan list --status all 2>/dev/null | awk '$0 != "No plans found." {print $1}') --all" -- "$cur")) ;;
-    session) [ "$COMP_CWORD" -eq 2 ] && COMPREPLY=($(compgen -W "attach end lead" -- "$cur")) ;;
+    session) [ "$COMP_CWORD" -eq 2 ] && COMPREPLY=($(compgen -W "attach end lead heartbeat" -- "$cur")) ;;
     review)
       [ "$COMP_CWORD" -eq 2 ] && COMPREPLY=($(compgen -W "record" -- "$cur"))
       [ "$COMP_CWORD" -eq 4 ] && COMPREPLY=($(compgen -W "plan pr" -- "$cur")) ;;
