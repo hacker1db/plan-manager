@@ -14,7 +14,7 @@
     "build": "pnpm build:cli && pnpm build:web",
     "build:cli": "tsc --project tsconfig.cli.json && node scripts/copy-dashboard-assets.mjs",
     "build:web": "node scripts/sync-dashboard-style.mjs && next build",
-    "dev": "tsx watch scripts/dev.mts serve --foreground",
+    "dev": "node scripts/dev-port.mjs serve --foreground",
     "dev:web": "node scripts/sync-dashboard-style.mjs && next dev",
     "start:web": "next start",
     "typecheck": "pnpm typecheck:cli && pnpm typecheck:web",

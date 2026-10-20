@@ -176,7 +176,7 @@ docs/recaps/        MDX recaps checked in alongside the changes they describe
 ## Development
 
 ```sh
-pnpm dev           # local dashboard at plans.localhost:4173
+pnpm dev           # local dashboard on a random free port (PLAN_PORT pins it), leaving 4173 to the installed CLI
 pnpm dev:web       # Next.js app used by Vercel, locally
 pnpm typecheck     # local CLI and hosted web app
 pnpm test          # CLI/lib and hosted security/dashboard tests
