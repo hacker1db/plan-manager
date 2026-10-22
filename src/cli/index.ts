@@ -18,7 +18,10 @@ import { cmdAuth, cmdPush } from './commands/remote.js'
 import { cmdCompletion } from './commands/completion.js'
 import { cmdBlocks } from './commands/blocks.js'
 import { cmdCheck } from './commands/check.js'
+import { cmdSession, cmdPr, cmdStage, cmdReview, cmdComplete, cmdReopen } from './commands/tracking.js'
 import { EXIT } from './exit.js'
+import { fileURLToPath } from 'node:url'
+import { checkBuildFreshness, packageVersion } from '../lib/build.js'
 
 function parseArgs(argv) {
   const args = []
@@ -35,13 +38,23 @@ function parseArgs(argv) {
     else if (a === '--format') { opts.format = argv[++i] }
     else if (a === '--status') { opts.status = argv[++i] }
     else if (a === '--if-revision') { opts.ifRevision = argv[++i] }
+    else if (a === '--actor') { opts.actor = argv[++i] }
+    else if (a === '--idempotency-key') { opts.idempotencyKey = argv[++i] }
+    else if (a === '--role') { opts.role = argv[++i] }
+    else if (a === '--reason') { opts.reason = argv[++i] }
+    else if (a === '--evidence') { opts.evidence = argv[++i] }
+    else if (a === '--decision') { opts.decision = argv[++i] }
+    else if (a === '--state') { opts.state = argv[++i] }
+    else if (a === '--head') { opts.head = argv[++i] }
+    else if (a === '--no-pr-rationale') { opts.noPrRationale = argv[++i] }
+    else if (a === '--stage') { opts.stage = argv[++i] }
     else if (a === '--all' || !a.startsWith('--')) { args.push(a) }
     i++
   }
   return { args, opts }
 }
 
-const VERSION = '0.3.0'
+const DIST_DIR = fileURLToPath(new URL('..', import.meta.url))
 
 const USAGE = `plan — local Markdown plan manager
 
@@ -63,6 +76,26 @@ Usage:
     [--stdin|--file <file>] [--if-revision <rev>] [--json]
   plan status <id-or-slug> <active|completed|archived>
   plan archive <id-or-slug>
+  plan stage <id-or-slug> <stage> Move the plan's journey stage (guarded)
+    [--reason <text>]            (planning, awaiting_plan_review, in_progress,
+                                  awaiting_pr_review)
+  plan review record <id-or-slug> plan --decision approved|changes_requested
+                                 Review the submitted plan body revision
+  plan review record <id-or-slug> pr <pr-url|pr-id> --head <sha>
+    --state submitted|requested|approved|changes_requested|dismissed|unknown
+  plan complete <id-or-slug> --reason <text> [--no-pr-rationale <text>]
+                                 Complete after plan approval and merged, approved PRs
+  plan reopen <id-or-slug> --stage in_progress|planning --reason <text>
+  plan session attach <id-or-slug> --stdin|--file <json>
+                                 Attach an agent session (provider, nativeSessionId,
+                                 role, repository, worktree, branch, commit, environment)
+  plan session end <id-or-slug> <execution-id>
+  plan pr attach <id-or-slug> <pr-url> [--role implements|partial|followup|supporting]
+  plan pr detach <id-or-slug> <pr-url|pr-id>
+  plan pr refresh <id-or-slug> [pr-url|pr-id]
+                                 Re-read PR state with gh
+    Tracking commands accept [--if-revision <rev>] [--idempotency-key <key>]
+    [--actor <name>] [--evidence <ref>] [--json]
   plan serve [--foreground] [--json]
   plan doctor [--json]
   plan auth login                Sign in to the hosted site in your browser
@@ -89,7 +122,7 @@ Exit codes:
 
 export async function run(argv) {
   const [cmd, ...rest] = argv
-  if (cmd === '--version' || cmd === '-v') { process.stdout.write(VERSION + '\n'); return }
+  if (cmd === '--version' || cmd === '-v') { process.stdout.write(packageVersion() + '\n'); return }
   if (cmd === '--help' || cmd === '-h') { process.stdout.write(USAGE); return }
   const { args, opts } = parseArgs(rest)
   switch (cmd) {
@@ -112,7 +145,17 @@ export async function run(argv) {
     case 'push': return cmdPush(args, opts)
     case 'blocks': return cmdBlocks(args, opts)
     case 'check': return cmdCheck(args, opts)
+    case 'stage': return cmdStage(args, opts)
+    case 'session': return cmdSession(args, opts)
+    case 'pr': return cmdPr(args, opts)
+    case 'review': return cmdReview(args, opts)
+    case 'complete': return cmdComplete(args, opts)
+    case 'reopen': return cmdReopen(args, opts)
     case 'completion': return cmdCompletion(args)
-    default: process.stderr.write(`Unknown command: ${cmd}\n\n${USAGE}`); process.exit(EXIT.INVALID_INPUT)
+    default: {
+      const hint = checkBuildFreshness(DIST_DIR)?.stale ? 'This build is out of date; run pnpm build:cli.\n' : ''
+      process.stderr.write(`Unknown command: ${cmd}\n${hint}\n${USAGE}`)
+      process.exit(EXIT.INVALID_INPUT)
+    }
   }
 }

@@ -37,6 +37,8 @@ plan init            # creates the plan home and archive directory
 plan doctor          # checks your setup
 ```
 
+The linked `plan` runs the compiled `dist/` build, so after `git pull` run `pnpm install` (or `pnpm build:cli`) to pick up changes. `plan doctor` reports when the build is stale.
+
 ## Usage
 
 ```sh
@@ -64,6 +66,10 @@ plan archive migrate-auth-service
 You can refer to a plan by its ID or its filename slug. Run `plan --help` to see every command.
 
 Enable Tab completion (bash; zsh after `autoload -U bashcompinit && bashcompinit`) by adding `eval "$(plan completion bash)"` to your shell rc.
+
+### Go CLI and terminal UI
+
+[`cli/`](cli/README.md) contains a Go build of the same CLI. It has identical commands, JSON output, and exit codes, and adds `plan tui` (a full-screen plan manager), shell completion for plan slugs and statuses, and a command bar that suggests the next argument as you type. Install it with `cd cli && go install ./cmd/plan`.
 
 ### Plan format
 
@@ -109,6 +115,29 @@ Props must be static literals; imports and expressions render as errors.
 
 `plan blocks` prints every block with its props and an example. The output comes from the same registry the renderer validates against. Before you commit or push an MDX file, run `plan check <file|id>` to catch unknown tags, missing props, or parse errors. `format: mdx` in the frontmatter is how the hosted site knows to render the blocks after `plan push`, and `plan create` and `plan update` write it for you. The repo ships `visual-plan` and `visual-recap` agent skills in `.claude/skills/` that author these files. See [`docs/recaps/mdx-visual-plans.mdx`](docs/recaps/mdx-visual-plans.mdx) for a worked example.
 
+### Tracking sessions, PRs and stages
+
+A plan can record its journey stage (`planning`, `awaiting_plan_review`, `in_progress`, `awaiting_pr_review`, `completed`), the agent sessions working on it, and the pull requests that implement it:
+
+```sh
+plan stage migrate-auth-service awaiting_plan_review          # submit the current body for review
+plan review record migrate-auth-service plan --decision approved
+plan stage migrate-auth-service in_progress
+echo '{"provider":"claude","nativeSessionId":"…","branch":"feat/auth"}' \
+  | plan session attach migrate-auth-service --stdin --idempotency-key run-42 --json
+plan session end migrate-auth-service <execution-id>
+plan pr attach migrate-auth-service https://github.com/owner/repo/pull/12 --role implements
+plan stage migrate-auth-service awaiting_pr_review
+plan review record migrate-auth-service pr https://github.com/owner/repo/pull/12 --state approved --head <sha>
+plan pr refresh migrate-auth-service       # re-reads PR state with gh
+plan complete migrate-auth-service --reason "shipped"
+plan reopen migrate-auth-service --stage in_progress --reason "regression"
+```
+
+Stage changes are guarded. Work starts only after the submitted plan is approved, and the approval covers the exact plan body (a sha256 of the body, not the frontmatter): editing the body afterwards makes it stale until it is resubmitted and reviewed again. `awaiting_pr_review` needs an attached PR that is open (not draft). `plan stage … completed` is refused; `plan complete` requires a current plan approval and every `implements` PR merged with an approved review of its current head SHA, or `--no-pr-rationale` when no PR is attached. A push after a PR review makes that review stale, and a PR approval never counts as plan approval. `plan reopen` keeps the completion in the history.
+
+These commands append events to a validated `tracking` block in the frontmatter; nothing is rewritten in place. The first event on an existing plan records how it was migrated (an `active` plan starts in `planning`, a `completed` one keeps a legacy completion with unknown review history). Retrying a command with the same `--idempotency-key` changes nothing. A merged PR never moves the stage on its own, and `plan status` refuses to contradict the tracked stage. Each machine gets a random installation ID in `~/.config/plan-manager/installation.json`, so two machines with the same hostname stay distinct. Unknown frontmatter fields are preserved on every write, and a plan written by a newer tracking schema refuses writes from an older `plan` instead of losing data.
+
 ### Dashboard
 
 `plan serve` starts the dashboard as a background service. `plan serve --foreground` runs it in the current terminal instead. The server listens only on `127.0.0.1` and checks the `plans.localhost` host name.
@@ -118,7 +147,7 @@ Props must be static literals; imports and expressions render as errors.
 Commands that change or return a plan print a versioned envelope when you pass `--json`:
 
 ```json
-{ "version": 1, "id": "…", "title": "…", "status": "active", "path": "…", "url": "http://plans.localhost:4173/plans/…", "revision": "…", "created": "…", "updated": "…", "tags": [] }
+{ "version": 1, "id": "…", "title": "…", "status": "active", "path": "…", "url": "http://plans.localhost:4173/plans/…", "revision": "…", "created": "…", "updated": "…", "tags": [], "stage": "planning" }
 ```
 
 | Code | Meaning                  |
@@ -159,6 +188,7 @@ There is a single hosted site, `https://planmanager.hacker1db.dev`; set `PLAN_MA
 
 ```
 bin/plan            CLI entry point (runs dist/cli/index.js)
+cli/                Go build of the CLI with the TUI and shell completion
 src/cli/            Argument parsing and one module per command
 src/lib/            Storage, frontmatter, IDs, revisions, locking, service management
 src/lib/mdx/        MDX block registry, static prop parser, and shared renderer
