@@ -5,12 +5,25 @@ import { initStorage, resolveByIdOrSlug } from '../../lib/storage.js'
 import { buildUrl } from '../../lib/envelope.js'
 import { ensureService } from '../../lib/service.js'
 import { EXIT } from '../exit.js'
+import { getSite } from './remote.js'
 
 export async function cmdOpen(args, opts) {
+  if (opts.remote) {
+    const url = getSite().url
+    const opener = process.env.PLAN_BROWSER ?? (process.platform === 'darwin' ? 'open' : 'xdg-open')
+    const result = spawnSync(opener, [url], { stdio: 'inherit' })
+    if (result.error || result.status !== 0) {
+      const detail = result.error?.message ?? `browser opener exited with status ${result.status}`
+      process.stderr.write(`Could not open browser: ${detail}\n`)
+      process.stdout.write(`Plan Manager: ${url}\n`)
+    }
+    return
+  }
+
   const port = getPort()
   let url = `http://plans.localhost:${port}`
 
-  if (args.length > 0 && !opts.remote) {
+  if (args.length > 0) {
     const idOrSlug = args[0]
     await initStorage()
     let resolved

@@ -21,8 +21,8 @@ importers:
         specifier: ^2.1.0
         version: 2.8.0
       js-yaml:
-        specifier: ^4.1.0
-        version: 4.3.0
+        specifier: ^4.3.2
+        version: 4.3.2
       nanoid:
         specifier: ^5.0.7
         version: 5.1.16
@@ -736,8 +736,8 @@ packages:
   js-cookie@3.0.8:
     resolution: {integrity: sha512-yeJd4aNAdYZQjaon2bpD/Gb0B/omw7HQOsynXXcOiWVCacbBcPlgn8S/d1X6blFSaHao7ozqtW7NZW19xpCtIw==}
 
-  js-yaml@4.3.0:
-    resolution: {integrity: sha512-1td788aAnnZ5qs7V2QIRl1owjtYpbKt749Y3xauqQgwIIGF/xXWz1wMTEBx5O3LK3lXLVuqXPdPxj2BoFHaW9Q==}
+  js-yaml@4.3.2:
+    resolution: {integrity: sha512-SFNOvSJ+Dgf/9An904Yx+CgSlIPCkIpao4qo51lpee25TIRejdH3rhR4EZMGoNx3/TP3O+wzWuiTFl4sqbltzA==}
     hasBin: true
 
   longest-streak@3.1.0:
@@ -1678,7 +1678,7 @@ snapshots:
 
   js-cookie@3.0.8: {}
 
-  js-yaml@4.3.0:
+  js-yaml@4.3.2:
     dependencies:
       argparse: 2.0.1
 

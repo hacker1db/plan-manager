@@ -164,6 +164,18 @@ test('serve starts in the background, is idempotent, and open reuses it', async 
   }
 })
 
+test('bare plan opens the hosted Plan Manager without starting a local service', async () => {
+  const port = await freePort()
+  const blocker = createServer()
+  await new Promise(resolve => blocker.listen(port, '127.0.0.1', resolve))
+  try {
+    const result = planCmd([], { PLAN_PORT: String(port), PLAN_BROWSER: '/usr/bin/true' })
+    assert.equal(result.status, 0, result.stderr)
+  } finally {
+    await new Promise(resolve => blocker.close(resolve))
+  }
+})
+
 test('pnpm dev serves the canonical plans.localhost URL from TypeScript source', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'plan-dev-contract-'))
   const port = await freePort()

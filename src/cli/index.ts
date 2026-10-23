@@ -30,6 +30,7 @@ function parseArgs(argv) {
   while (i < argv.length) {
     const a = argv[i]
     if (a === '--json') { opts.json = true }
+    else if (a === '--remote') { opts.remote = true }
     else if (a === '--stdin') { opts.stdin = true }
     else if (a === '--foreground') { opts.foreground = true }
     else if (a === '--token') { opts.token = argv[++i] }
@@ -60,6 +61,7 @@ const USAGE = `plan — local Markdown plan manager
 
 Usage:
   plan [open]                    Open the dashboard
+  plan open --remote             Open the hosted dashboard
   plan init                      Initialize plan home
   plan new <title>               Create a plan and open in $EDITOR
     [--format md|mdx]
@@ -126,7 +128,8 @@ export async function run(argv) {
   if (cmd === '--help' || cmd === '-h') { process.stdout.write(USAGE); return }
   const { args, opts } = parseArgs(rest)
   switch (cmd) {
-    case undefined: case 'open': return cmdOpen(args, opts)
+    case undefined: return cmdOpen(args, { ...opts, remote: true })
+    case 'open': return cmdOpen(args, opts)
     case 'init': return cmdInit(args, opts)
     case 'new': return cmdNew(args, opts)
     case 'create': return cmdCreate(args, opts)
