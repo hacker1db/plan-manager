@@ -1130,6 +1130,9 @@ span.pm-block-error { display: inline; margin: 0; padding: 0 0.3em; }
   overflow-x: auto;
 }
 .mermaid-diagram[data-mermaid="rendered"] { text-align: center; }
-.mermaid-diagram svg { max-width: 100%; height: auto; }
 .mermaid-diagram pre { margin: 0; }
 .mermaid-diagram .pm-block-error { margin: 0 0 0.8em; }
+.mermaid-diagram img { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+.mermaid-diagram details { margin-top: 0.8em; text-align: left; }
+.mermaid-diagram summary { cursor: pointer; color: var(--muted); font-size: 0.85em; }
+.mermaid-diagram details pre { margin-top: 0.6em; }

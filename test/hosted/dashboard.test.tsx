@@ -2,7 +2,7 @@ import assert from "node:assert/strict"
 import { test } from "node:test"
 import { renderToStaticMarkup } from "react-dom/server"
 import PlanMarkdown, { markdownBody } from "../../src/components/plan-markdown"
-import { mermaidSource } from "../../src/components/mermaid-diagram"
+import { diagramImage, mermaidSource } from "../../src/components/mermaid-diagram"
 import { libraryBody, planBody } from "../../src/components/generated-dashboard"
 import { access, readFile } from "node:fs/promises"
 import { fileURLToPath } from "node:url"
@@ -54,6 +54,15 @@ test("mermaidSource only matches code elements tagged language-mermaid", () => {
   assert.equal(mermaidSource(code("language-mermaid")), "graph TD\n")
   assert.equal(mermaidSource(code(["language-ts"])), null)
   assert.equal(mermaidSource(undefined), null)
+})
+
+test("rendered diagrams are isolated as data: SVG images sized from the viewBox", () => {
+  const image = diagramImage('<svg xmlns="http://www.w3.org/2000/svg" viewBox="-8 -8 640.5 312"><style>body{display:none}</style></svg>')
+  assert.equal(image.width, 641)
+  assert.equal(image.height, 312)
+  assert.match(image.src, /^data:image\/svg\+xml;charset=utf-8,%3Csvg/)
+  assert.doesNotMatch(image.src, /<|>/)
+  assert.equal(diagramImage("<svg></svg>").width, undefined)
 })
 
 test("hosted shells and browser assets are generated from the canonical local dashboard", async () => {

@@ -6,6 +6,8 @@ import type { Mermaid } from "mermaid"
 // Fenced ```mermaid blocks render as diagrams on the hosted viewer. The server
 // markup (and the local dashboard's static HTML) keeps the source as a code
 // block; mermaid is loaded only in the browser, only when a diagram is present.
+// The SVG is shown through <img src="data:...">: an SVG image cannot run script,
+// fetch remote resources, or leak its <style> (or classDef/style CSS) into the page.
 
 interface HastNode {
   type: string
@@ -33,6 +35,8 @@ function loadMermaid(): Promise<Mermaid> {
       // strict: labels are sanitized and click handlers are disabled.
       securityLevel: "strict",
       suppressErrorRendering: true,
+      // Keep %%{init}%% directives from swapping in their own CSS or theme.
+      secure: ["secure", "securityLevel", "startOnLoad", "maxTextSize", "suppressErrorRendering", "maxEdges", "theme", "themeCSS", "themeVariables", "fontFamily", "htmlLabels"],
       // SVG <text> labels instead of HTML in <foreignObject>, so DOMPurify keeps them.
       htmlLabels: false,
       flowchart: { htmlLabels: false },
@@ -58,25 +62,39 @@ function loadMermaid(): Promise<Mermaid> {
   return configured
 }
 
+interface DiagramImage { src: string; width?: number; height?: number }
+
+export function diagramImage(svg: string): DiagramImage {
+  const box = /viewBox="[-\d.]+[\s,]+[-\d.]+[\s,]+([\d.]+)[\s,]+([\d.]+)"/.exec(svg)
+  return {
+    src: `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`,
+    width: box ? Math.ceil(Number(box[1])) : undefined,
+    height: box ? Math.ceil(Number(box[2])) : undefined,
+  }
+}
+
 export function MermaidDiagram({ source }: { source: string }) {
   const id = `mermaid-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`
-  const [svg, setSvg] = useState<string | null>(null)
+  const [image, setImage] = useState<DiagramImage | null>(null)
   const [error, setError] = useState<string | null>(null)
   useEffect(() => {
     let cancelled = false
-    setSvg(null)
+    setImage(null)
     setError(null)
     loadMermaid()
       .then(mermaid => Promise.all([mermaid.render(id, source), import("dompurify")]))
       .then(([result, { default: DOMPurify }]) => {
         // Defense in depth on top of securityLevel strict: plans may hold pasted text.
         const clean = DOMPurify.sanitize(result.svg, { USE_PROFILES: { svg: true, svgFilters: true } })
-        if (!cancelled) setSvg(clean)
+        if (!cancelled) setImage(diagramImage(clean))
       })
       .catch((reason: unknown) => { if (!cancelled) setError(reason instanceof Error ? reason.message : String(reason)) })
     return () => { cancelled = true }
   }, [id, source])
-  if (svg) return <figure className="mermaid-diagram" data-mermaid="rendered" dangerouslySetInnerHTML={{ __html: svg }} />
+  if (image) return <figure className="mermaid-diagram" data-mermaid="rendered">
+    <img src={image.src} width={image.width} height={image.height} alt="Mermaid diagram; source below" />
+    <details><summary>Diagram source</summary><pre><code className="language-mermaid">{source}</code></pre></details>
+  </figure>
   return <figure className="mermaid-diagram" data-mermaid={error ? "error" : "pending"}>
     {error ? <div className="pm-block-error" role="note"><strong>Mermaid diagram could not render</strong><span>{error}</span></div> : null}
     <pre><code className="language-mermaid">{source}</code></pre>
