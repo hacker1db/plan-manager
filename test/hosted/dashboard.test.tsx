@@ -2,6 +2,7 @@ import assert from "node:assert/strict"
 import { test } from "node:test"
 import { renderToStaticMarkup } from "react-dom/server"
 import PlanMarkdown, { markdownBody } from "../../src/components/plan-markdown"
+import { diagramImage, mermaidSource } from "../../src/components/mermaid-diagram"
 import { libraryBody, planBody } from "../../src/components/generated-dashboard"
 import { access, readFile } from "node:fs/promises"
 import { fileURLToPath } from "node:url"
@@ -34,6 +35,34 @@ test("hosted rendering switches to MDX blocks when frontmatter declares format: 
   assert.doesNotMatch(html, /private_id|SECRET/)
   const plain = renderToStaticMarkup(<PlanMarkdown markdown={"---\nid: x\n---\n<Callout>\nhi\n</Callout>"} />)
   assert.doesNotMatch(plain, /pm-callout/)
+})
+
+test("mermaid fences render a diagram container with the source as fallback; other code stays a code block", () => {
+  const fence = "flowchart LR\n  A[\"Start<br/>here\"] --> B<script>"
+  const html = renderToStaticMarkup(<PlanMarkdown markdown={"# Plan\n\n``` mermaid\n" + fence + "\n```\n\n```ts\nconst x = 1\n```\n"} />)
+  assert.match(html, /<figure class="mermaid-diagram" data-mermaid="pending"><pre><code class="language-mermaid">flowchart LR/)
+  assert.match(html, /B&lt;script&gt;/)
+  assert.doesNotMatch(html, /<script/)
+  assert.match(html, /<pre><code class="language-ts">const x = 1/)
+  const mdx = renderToStaticMarkup(<PlanMarkdown markdown={"---\nformat: mdx\n---\n```mermaid\nflowchart TD\n  A --> B\n```\n"} />)
+  assert.match(mdx, /data-mermaid="pending"/)
+})
+
+test("mermaidSource only matches code elements tagged language-mermaid", () => {
+  const code = (className: unknown) => ({ type: "element", tagName: "pre", children: [{ type: "element", tagName: "code", properties: { className }, children: [{ type: "text", value: "graph TD\n" }] }] })
+  assert.equal(mermaidSource(code(["language-mermaid"])), "graph TD\n")
+  assert.equal(mermaidSource(code("language-mermaid")), "graph TD\n")
+  assert.equal(mermaidSource(code(["language-ts"])), null)
+  assert.equal(mermaidSource(undefined), null)
+})
+
+test("rendered diagrams are isolated as data: SVG images sized from the viewBox", () => {
+  const image = diagramImage('<svg xmlns="http://www.w3.org/2000/svg" viewBox="-8 -8 640.5 312"><style>body{display:none}</style></svg>')
+  assert.equal(image.width, 641)
+  assert.equal(image.height, 312)
+  assert.match(image.src, /^data:image\/svg\+xml;charset=utf-8,%3Csvg/)
+  assert.doesNotMatch(image.src, /<|>/)
+  assert.equal(diagramImage("<svg></svg>").width, undefined)
 })
 
 test("hosted shells and browser assets are generated from the canonical local dashboard", async () => {
