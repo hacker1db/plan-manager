@@ -1,0 +1,12 @@
+version: 1
+skills:
+    - revision: e10119c10e1717dec5695da09355d9e508ee1480
+      source: skills
+      id: patch
+      hash: 1b25f76911e5e83f6013b41ccde197793efea860b80a9b39d18081dcf7480e39
+      path: skills/patch
+    - revision: e10119c10e1717dec5695da09355d9e508ee1480
+      source: skills
+      id: threat-model
+      hash: 5a0b57af56dd6a9619d76768e1005ee755d27f4a9c68ef4b17dafc907dc3de13
+      path: skills/threat-model

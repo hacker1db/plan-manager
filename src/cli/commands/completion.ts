@@ -22,7 +22,19 @@ _plan() {
       if [ "\${COMP_WORDS[1]}" = stage ] && [ "$COMP_CWORD" -eq 3 ]; then
         COMPREPLY=($(compgen -W "planning awaiting_plan_review in_progress awaiting_pr_review completed" -- "$cur")); return
       fi
-      [ "$COMP_CWORD" -eq 2 ] && COMPREPLY=($(compgen -W "$(plan list --status all 2>/dev/null | awk '$0 != "No plans found." {print $1}') --all" -- "$cur")) ;;
+      if [ "$COMP_CWORD" -eq 2 ]; then
+        # Plan IDs come from frontmatter (imported, agent-written, or synced),
+        # so they are untrusted. Never feed them to \`compgen -W\`, which word-
+        # expands each candidate, so an id holding a command substitution would
+        # run on Tab. Read them line by line and prefix-match literally instead.
+        local _plan_id
+        COMPREPLY=()
+        while IFS= read -r _plan_id; do
+          [ -n "$_plan_id" ] || continue
+          case "$_plan_id" in "$cur"*) COMPREPLY+=("$_plan_id") ;; esac
+        done < <(plan list --status all 2>/dev/null | awk '$0 != "No plans found." {print $1}')
+        case "--all" in "$cur"*) COMPREPLY+=("--all") ;; esac
+      fi ;;
     session) [ "$COMP_CWORD" -eq 2 ] && COMPREPLY=($(compgen -W "attach end" -- "$cur")) ;;
     pr) [ "$COMP_CWORD" -eq 2 ] && COMPREPLY=($(compgen -W "attach detach refresh" -- "$cur")) ;;
     auth) [ "$COMP_CWORD" -eq 2 ] && COMPREPLY=($(compgen -W "login logout status" -- "$cur")) ;;

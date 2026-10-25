@@ -1,0 +1,31 @@
+{
+  "stage": 3,
+  "section4_threats_generalized": [
+    "T1 Next.js RCE/DoS (critical/possible) evidence GHSA-673q-mjm6-r5xr,GHSA-2464-fhr4-w9xw,CVE-2026-94482",
+    "T4 CLI Keychain credential theft via security(1) argv (high/likely) evidence f6b5921",
+    "T5 Tab-completion command execution via crafted plan id (high/possible)",
+    "T6 Long-lived pm_ token plan overwrite (high/possible) evidence 0134cdf,5c0bca2",
+    "T9 Cross-origin abuse of hosted state-change (high/rare) evidence 5c0bca2",
+    "T11 js-yaml ReDoS on untrusted frontmatter (medium/possible) evidence CVE-2026-84375,GHSA-5p4m-2wfm-xmqj",
+    "T12 x/net html-parser DoS in Go render (medium/possible) evidence CVE-2026-25680"
+  ],
+  "mitigation_notes": [
+    {"cluster":"vulnerable deps","recommended_mitigation":"Upgrade and continuously audit pinned deps (next 16.4.1, js-yaml 4.3.2, x/net 0.55.0); add an advisory gate"},
+    {"cluster":"keychain argv","recommended_mitigation":"Feed secrets to security(1) on stdin, never argv; remove --token argv path"},
+    {"cluster":"completion","recommended_mitigation":"Never expand untrusted plan ids in shell completion; literal prefix-match"},
+    {"cluster":"pm tokens","recommended_mitigation":"Bound/attribute tokens: max expiry, created_by/last_used, list endpoint, per-owner tenancy"},
+    {"cluster":"hosted headers","recommended_mitigation":"Set CSP default-src 'self' and frame-ancestors/X-Frame-Options on the hosted app"},
+    {"cluster":"local dashboard","recommended_mitigation":"Authenticate local dashboard beyond ambient CSRF; require Origin; per-user 0600 token"},
+    {"cluster":"cli egress","recommended_mitigation":"Bind credential to issuing site, refuse redirects on credential-bearing requests, size/time caps"},
+    {"cluster":"secrets mgmt","recommended_mitigation":"Least-privilege Neon/Blob, separate migrate role, rotate on teardown"},
+    {"cluster":"retention","recommended_mitigation":"Add plan-content purge/retention and pre-push secret scanning"}
+  ],
+  "sibling_locations": [
+    {"threat":"T4","locations":["src/cli/commands/remote.ts:82 storeCredential","cli/internal/remote/remote.go:157 storeCredential","src/cli/index.ts:35 --token","cli/internal/cmd/remotecmds.go:90 --token"]},
+    {"threat":"T5","locations":["src/cli/commands/completion.ts:25 compgen -W"]},
+    {"threat":"T11","locations":["src/hosted/lib/status-version.ts:24 yaml.load","src/lib/metadata.ts:42 yaml.load"]},
+    {"threat":"T1","locations":["pnpm-lock.yaml next@16.3.8"]},
+    {"threat":"T12","locations":["cli/go.mod golang.org/x/net v0.38.0"]},
+    {"threat":"T9/T10","locations":["src/app/api/plans/[id]/status/route.ts:11 origin-only no content-type","next.config.ts no security headers"]}
+  ]
+}
