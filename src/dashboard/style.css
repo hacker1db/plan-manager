@@ -1120,3 +1120,16 @@ span.pm-block-error { display: inline; margin: 0; padding: 0 0.3em; }
   .card:hover { transform: none; }
   .action:hover { transform: none; }
 }
+
+/* Mermaid diagrams (hosted viewer renders ```mermaid fences client-side) */
+.mermaid-diagram {
+  margin: 1.4em 0;
+  padding: 1.1em;
+  border: 1px solid var(--edge);
+  background: var(--paper);
+  overflow-x: auto;
+}
+.mermaid-diagram[data-mermaid="rendered"] { text-align: center; }
+.mermaid-diagram svg { max-width: 100%; height: auto; }
+.mermaid-diagram pre { margin: 0; }
+.mermaid-diagram .pm-block-error { margin: 0 0 0.8em; }
