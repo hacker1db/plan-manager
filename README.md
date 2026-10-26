@@ -14,7 +14,7 @@ A local-first library for Markdown plans. Plans are plain `.md` files with YAML 
 
 - **Plain files.** Each plan is a Markdown file you can edit with any editor or keep in Git.
 - **Visual MDX plans.** An `.mdx` plan can mix Markdown with typed blocks such as file trees, diffs, data models, endpoint contracts, flows, and open questions. The MDX is parsed but never executed, and the source stays readable in Git.
-- **CLI for people and scripts.** Most commands accept `--json` and return documented exit codes, so agents and scripts can create and update plans safely.
+- **CLI for people and scripts.** `plan` is a single Go binary. Most commands accept `--json` and return documented exit codes, so agents and scripts can create and update plans safely. `plan tui` is a full-screen manager for people.
 - **Safe writes.** Writes are atomic and use a lock. Paths that escape the plan home are rejected, and `--if-revision` guards against overwriting someone else's changes.
 - **Local dashboard.** Browse, search, filter by status, and check off tasks at `http://plans.localhost:4173`. The page refreshes live when files change on disk.
 - **Capture.** Turn an existing Markdown or HTML file into a plan. HTML is converted with Pandoc. Capturing the same source again updates the existing plan instead of creating a duplicate.
@@ -22,22 +22,23 @@ A local-first library for Markdown plans. Plans are plain `.md` files with YAML 
 
 ## Requirements
 
-- Node.js 20 or later
-- pnpm 10 (`corepack enable`)
-- [Pandoc](https://pandoc.org/), only needed to capture HTML
+- Go 1.26 or later, to build the CLI
+- [Pandoc](https://pandoc.org/), only needed to capture HTML and to render Markdown plans in the local dashboard
 - macOS, only needed for remote credentials (stored in Keychain)
+- Node.js 20 or later and pnpm 10 (`corepack enable`), only to work on the hosted web app
 
 ## Installation
 
 ```sh
-pnpm install
-pnpm build
-pnpm link --global   # puts `plan` on your PATH
-plan init            # creates the plan home and archive directory
-plan doctor          # checks your setup
+cd cli
+go install ./cmd/plan   # installs to $(go env GOPATH)/bin/plan; put that directory on your PATH
+plan init               # creates the plan home and archive directory
+plan doctor             # checks your setup
 ```
 
-The linked `plan` runs the compiled `dist/` build, so after `git pull` run `pnpm install` (or `pnpm build:cli`) to pick up changes. `plan doctor` reports when the build is stale.
+After `git pull`, run `go install ./cmd/plan` in `cli/` again to pick up changes.
+
+If an older `plan` from `pnpm link --global` is still on your PATH, remove it with `pnpm unlink --global plan-manager`.
 
 ## Usage
 
@@ -65,11 +66,7 @@ plan archive migrate-auth-service
 
 You can refer to a plan by its ID or its filename slug. Run `plan --help` to see every command.
 
-Enable Tab completion (bash; zsh after `autoload -U bashcompinit && bashcompinit`) by adding `eval "$(plan completion bash)"` to your shell rc.
-
-### Go CLI and terminal UI
-
-[`cli/`](cli/README.md) contains a Go build of the same CLI. It has identical commands, JSON output, and exit codes, and adds `plan tui` (a full-screen plan manager), shell completion for plan slugs and statuses, and a command bar that suggests the next argument as you type. Install it with `cd cli && go install ./cmd/plan`.
+Tab completion for bash, zsh, fish, and PowerShell completes plan slugs, statuses, stages, and file paths, for example `source <(plan completion zsh)`. See [`cli/README.md`](cli/README.md) for completion setup, `plan tui`, and its command bar.
 
 ### Plan format
 
@@ -113,7 +110,7 @@ Props must be static literals; imports and expressions render as errors.
 </Callout>
 ```
 
-`plan blocks` prints every block with its props and an example. The output comes from the same registry the renderer validates against. Before you commit or push an MDX file, run `plan check <file|id>` to catch unknown tags, missing props, or parse errors. `format: mdx` in the frontmatter is how the hosted site knows to render the blocks after `plan push`, and `plan create` and `plan update` write it for you. The repo ships `visual-plan` and `visual-recap` agent skills in `.claude/skills/` that author these files. See [`docs/recaps/mdx-visual-plans.mdx`](docs/recaps/mdx-visual-plans.mdx) for a worked example.
+`plan blocks` prints every block with its props and an example. The CLI embeds a copy of the hosted renderer's block registry (a test fails if the two drift). Before you commit or push an MDX file, run `plan check <file|id>` to catch unknown tags, missing props, or parse errors. `format: mdx` in the frontmatter is how the hosted site knows to render the blocks after `plan push`, and `plan create` and `plan update` write it for you. The hosted site renders the blocks; the local dashboard shows an MDX plan's source. The repo ships `visual-plan` and `visual-recap` agent skills in `.claude/skills/` that author these files. See [`docs/recaps/mdx-visual-plans.mdx`](docs/recaps/mdx-visual-plans.mdx) for a worked example.
 
 ### Tracking sessions, PRs and stages
 
@@ -140,7 +137,7 @@ These commands append events to a validated `tracking` block in the frontmatter;
 
 ### Dashboard
 
-`plan serve` starts the dashboard as a background service. `plan serve --foreground` runs it in the current terminal instead. The server listens only on `127.0.0.1` and checks the `plans.localhost` host name.
+`plan serve` starts the dashboard as a background service. `plan serve --foreground` runs it in the current terminal instead. The server listens only on `127.0.0.1` and checks the `plans.localhost` host name. Markdown plans are rendered with Pandoc; MDX plans are shown as source.
 
 ### JSON output and exit codes
 
@@ -182,22 +179,20 @@ There is a single hosted site, `https://planmanager.hacker1db.dev`; set `PLAN_MA
 | `PLAN_PANDOC`                    | `pandoc`              | Pandoc executable used by `capture`         |
 | `XDG_CONFIG_HOME`                | `~/.config`           | Base directory for the remote configuration |
 | `EDITOR` / `VISUAL`              | `vi`                  | Editor used by `new` and `edit`             |
-| `DEBUG`                          | —                     | Print stack traces for unexpected errors    |
+| `PLAN_GH`                        | `gh`                  | GitHub CLI used by `plan pr` to verify PRs  |
+| `PLAN_MACHINE_NAME`              | hostname              | Machine name recorded on attached sessions  |
 
 ## Project layout
 
 ```
-bin/plan            CLI entry point (runs dist/cli/index.js)
-cli/                Go build of the CLI with the TUI and shell completion
-src/cli/            Argument parsing and one module per command
-src/lib/            Storage, frontmatter, IDs, revisions, locking, service management
-src/lib/mdx/        MDX block registry, static prop parser, and shared renderer
-src/server/         Local dashboard HTTP server and JSON API
-src/dashboard/      Canonical static dashboard assets (HTML, JS, CSS)
-src/app/            Next.js routes for the same private hosted service
+cli/                The plan CLI (Go): commands, TUI, local dashboard server
+src/dashboard/      Canonical static dashboard assets (HTML, JS, CSS); cli/ embeds a copy
+src/lib/            IDs and plan types shared by the hosted app
+src/lib/mdx/        MDX block registry, static prop parser, and hosted renderer
+src/app/            Next.js routes for the private hosted service
 src/components/     Shared and hosted dashboard React components
 src/hosted/         Hosted-only auth, storage, database, and migrations
-test/               node:test suites for lib and CLI
+test/               node:test suites for the shared lib and the hosted app
 docs/hosting.md     Hosted deployment and authentication guide
 docs/recaps/        MDX recaps checked in alongside the changes they describe
 .claude/skills/     visual-plan and visual-recap agent skills
@@ -205,14 +200,22 @@ docs/recaps/        MDX recaps checked in alongside the changes they describe
 
 ## Development
 
+CLI (see [`cli/README.md`](cli/README.md)):
+
 ```sh
-pnpm dev           # local dashboard at plans.localhost:4173
-pnpm dev:web       # Next.js app used by Vercel, locally
-pnpm typecheck     # local CLI and hosted web app
-pnpm test          # CLI/lib and hosted security/dashboard tests
-pnpm build         # CLI and Vercel Next.js production builds
-pnpm test:lib
-pnpm test:cli
+cd cli
+go test ./...                     # unit and end-to-end CLI tests
+go vet ./...
+go run ./cmd/plan serve --foreground   # local dashboard at plans.localhost:4173
+go generate ./internal/server     # refresh the embedded dashboard after editing src/dashboard
 ```
 
-Tests run against the compiled `dist/` output, which is why each test script builds first.
+Hosted web app:
+
+```sh
+pnpm install
+pnpm dev:web       # Next.js app used by Vercel, locally
+pnpm typecheck
+pnpm test          # shared lib, MDX renderer, and hosted security/dashboard tests
+pnpm build         # Vercel Next.js production build
+```

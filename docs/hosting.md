@@ -1,12 +1,12 @@
 # Hosted Plan Manager
 
-The Next.js application in `src/app` serves the private plan library at `https://planmanager.hacker1db.dev`. The CLI, local server, and hosted app share the root pnpm package and `src/` source tree. Canonical local Markdown remains in `~/notes/SecondBrain/4.Resources/plans`; uploads are explicit.
+The Next.js application in `src/app` serves the private plan library at `https://planmanager.hacker1db.dev`. The hosted app is the root pnpm package in `src/`; the `plan` CLI and local dashboard server are the Go module in `cli/`. Canonical local Markdown remains in `~/notes/SecondBrain/4.Resources/plans`; uploads are explicit.
 
 ## GitHub and Vercel
 
 Push the complete plan-manager repository to GitHub, then connect that repository to the existing `hacker1dbs-projects/plan-manager` Vercel project. Keep the existing project so its domain, integrations, and environment variables are preserved.
 
-Set the existing Vercel project's root directory to the repository root (`.`). Use the Next.js framework preset, `pnpm install --frozen-lockfile` as the install command, and `pnpm build` as the build command. Next.js manages the output directory. Select the desired production branch after it exists on GitHub. The build creates the CLI output and then builds the Next.js app from `src/app`.
+Set the existing Vercel project's root directory to the repository root (`.`). Use the Next.js framework preset, `pnpm install --frozen-lockfile` as the install command, and `pnpm build` as the build command. Next.js manages the output directory. Select the desired production branch after it exists on GitHub. The build syncs the shared dashboard styles and builds the Next.js app from `src/app`; the Go CLI is not part of the Vercel build.
 
 Commit application source, migrations, tests, `pnpm-lock.yaml`, and `.env.example`. Local `.env*` secrets, `.vercel/`, `.next/`, `node_modules/`, and TypeScript caches are ignored. Never commit credentials or deployment-protection bypass tokens. The local `.vercel/` directory only identifies the linked project; it is not a Git backup.
 
@@ -34,6 +34,8 @@ After linking and verifying environment configuration, apply the initial databas
 Clerk authenticates browser sessions; only IDs listed in `PLAN_MANAGER_OWNER_CLERK_USER_IDS` may view or manage plans. Set it to a comma-separated allowlist of Clerk user IDs. The legacy `PLAN_MANAGER_OWNER_CLERK_USER_ID` remains supported as a single-user fallback. Disable public sign-up in Clerk and invite only the accounts that should share this plan library. The current deployment uses a Clerk development instance; production Clerk setup remains a separate deployment task.
 
 Every browser API checks owner authorization. Uploads require scoped, expiring, revocable CLI tokens with salted server-side hashes. Markdown uses private Vercel Blob access; API responses exclude storage locators. Hosted pages render Markdown safely and refresh when uploaded revisions change. Filesystem actions and task editing remain available in the local dashboard.
+
+Install the CLI with `cd cli && go install ./cmd/plan`, then sign in and upload:
 
 ```sh
 plan auth login
