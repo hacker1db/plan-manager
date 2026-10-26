@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/hacker1db/plan-manager/cli/internal/exitcode"
+	"github.com/hacker1db/plan-manager/cli/internal/mdx"
 	"github.com/hacker1db/plan-manager/cli/internal/plans"
 	"github.com/hacker1db/plan-manager/cli/internal/remote"
 )
@@ -162,6 +163,9 @@ func PushPlans(args []string, all bool) ([]remote.PushResult, error) {
 		p, err := plans.Resolve(id)
 		if err != nil {
 			return nil, err
+		}
+		if p.Meta.Format == "mdx" && mdx.SourceFormat(p.Raw) != "mdx" {
+			return nil, fmt.Errorf("MDX plan %s needs \"format: mdx\" in its frontmatter so the hosted site renders it; add it or run plan update", p.Meta.ID)
 		}
 		env := p.Envelope()
 		var expected *string

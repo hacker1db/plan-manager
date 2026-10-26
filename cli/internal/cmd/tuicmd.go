@@ -39,7 +39,7 @@ func newTUICmd(opts *options) *cobra.Command {
 					_, err := ArchivePlan(id)
 					return err
 				},
-				Create:     func(title string) (*plans.Plan, error) { return CreatePlan(newMeta(title), "") },
+				Create:     func(title string) (*plans.Plan, error) { return CreatePlan(newMeta(title), "", "md") },
 				Complete:   Complete,
 				EditorCmd:  func(path string) *exec.Cmd { return EditorCommand(path) },
 				Executable: self,

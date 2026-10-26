@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -55,8 +56,9 @@ func printCreated(c *cobra.Command, opts *options, label string, p *plans.Plan) 
 	return nil
 }
 
-// CreatePlan writes a new plan with a unique slug derived from its title.
-func CreatePlan(meta plans.Meta, body string) (*plans.Plan, error) {
+// CreatePlan writes a new plan in format ("md" or "mdx") with a unique slug
+// derived from its title.
+func CreatePlan(meta plans.Meta, body, format string) (*plans.Plan, error) {
 	if err := plans.InitStorage(); err != nil {
 		return nil, err
 	}
@@ -65,12 +67,36 @@ func CreatePlan(meta plans.Meta, body string) (*plans.Plan, error) {
 		if err != nil {
 			return nil, err
 		}
-		fp := plans.PlanPath(slug)
+		fp := plans.PlanPath(slug, format)
 		if err := plans.Write(fp, meta, body); err != nil {
 			return nil, err
 		}
 		return plans.Read(fp)
 	})
+}
+
+// requestedFormat validates --format, defaulting to fallback when unset.
+func requestedFormat(format, fallback string) (string, error) {
+	if format == "" {
+		return fallback, nil
+	}
+	if !slices.Contains(plans.Formats, format) {
+		return "", invalid("--format must be md or mdx")
+	}
+	return format, nil
+}
+
+func addFormatFlag(c *cobra.Command, format *string) {
+	c.Flags().StringVar(format, "format", "", "plan format: md or mdx")
+	_ = c.RegisterFlagCompletionFunc("format", cobra.FixedCompletions(
+		[]cobra.Completion{"md\tMarkdown", "mdx\tMDX with typed review blocks"}, cobra.ShellCompDirectiveNoFileComp))
+}
+
+// dropForeignTracking clears tracking from metadata read from an outside
+// file: its history is unverified provenance, so the new plan starts
+// untracked.
+func dropForeignTracking(meta *plans.Meta) {
+	meta.Tracking, meta.SchemaVersion = nil, nil
 }
 
 func newMeta(title string) plans.Meta {
@@ -79,15 +105,20 @@ func newMeta(title string) plans.Meta {
 }
 
 func newNewCmd(opts *options) *cobra.Command {
-	return &cobra.Command{
-		Use:   "new <title>",
+	var format string
+	c := &cobra.Command{
+		Use:   "new <title> [--format md|mdx]",
 		Short: "Create a plan and open it in $EDITOR",
 		RunE: func(c *cobra.Command, args []string) error {
 			title := strings.TrimSpace(strings.Join(args, " "))
 			if title == "" {
-				return invalid("title required\n  Usage: plan new <title>")
+				return invalid("title required\n  Usage: plan new <title> [--format md|mdx]")
 			}
-			p, err := CreatePlan(newMeta(title), "")
+			format, err := requestedFormat(format, "md")
+			if err != nil {
+				return err
+			}
+			p, err := CreatePlan(newMeta(title), "", format)
 			if err != nil {
 				return err
 			}
@@ -100,17 +131,27 @@ func newNewCmd(opts *options) *cobra.Command {
 			return printCreated(c, opts, "Created", p)
 		},
 	}
+	addFormatFlag(c, &format)
+	return c
 }
 
 func newCreateCmd(opts *options) *cobra.Command {
-	var title, file string
+	var title, file, format string
 	var stdin bool
 	c := &cobra.Command{
-		Use:   "create --title <title> [--stdin|--file <file>]",
+		Use:   "create --title <title> [--stdin|--file <file>] [--format md|mdx]",
 		Short: "Create a plan non-interactively",
 		RunE: func(c *cobra.Command, args []string) error {
 			if title == "" {
-				return invalid("--title is required\n  Usage: plan create --title <title> [--stdin|--file <file>] [--json]")
+				return invalid("--title is required\n  Usage: plan create --title <title> [--stdin|--file <file>] [--format md|mdx] [--json]")
+			}
+			fallback := "md"
+			if file != "" {
+				fallback = plans.FormatFromPath(file)
+			}
+			format, err := requestedFormat(format, fallback)
+			if err != nil {
+				return err
 			}
 			body := ""
 			if stdin || file != "" {
@@ -124,34 +165,35 @@ func newCreateCmd(opts *options) *cobra.Command {
 					body = b
 				}
 			}
-			p, err := CreatePlan(newMeta(title), body)
+			p, err := CreatePlan(newMeta(title), body, format)
 			if err != nil {
 				return err
 			}
 			return printCreated(c, opts, "Created", p)
 		},
 	}
+	addFormatFlag(c, &format)
 	c.Flags().StringVar(&title, "title", "", "plan title")
 	c.Flags().BoolVar(&stdin, "stdin", false, "read the body from stdin")
 	c.Flags().StringVar(&file, "file", "", "read the body from a file")
 	_ = c.RegisterFlagCompletionFunc("title", cobra.NoFileCompletions)
-	_ = c.MarkFlagFilename("file", "md", "markdown", "txt")
+	_ = c.MarkFlagFilename("file", "md", "mdx", "markdown", "txt")
 	return c
 }
 
 func newImportCmd(opts *options) *cobra.Command {
 	return &cobra.Command{
 		Use:               "import <file>",
-		Short:             "Import an existing Markdown file",
-		ValidArgsFunction: completeMarkdownFiles("md", "markdown"),
+		Short:             "Import an existing Markdown or MDX file",
+		ValidArgsFunction: completeMarkdownFiles("md", "mdx", "markdown"),
 		RunE: func(c *cobra.Command, args []string) error {
 			if len(args) == 0 {
 				return invalid("file argument required\n  Usage: plan import <file>")
 			}
 			src, _ := filepath.Abs(args[0])
 			ext := strings.ToLower(filepath.Ext(src))
-			if ext != ".md" && ext != ".markdown" {
-				return invalid("plan import accepts only Markdown files; use plan capture for HTML artifacts")
+			if ext != ".md" && ext != ".markdown" && ext != ".mdx" {
+				return invalid("plan import accepts only Markdown or MDX files; use plan capture for HTML artifacts")
 			}
 			info, err := os.Lstat(src)
 			if err != nil {
@@ -171,7 +213,12 @@ func newImportCmd(opts *options) *cobra.Command {
 				meta.Title = strings.ReplaceAll(strings.TrimSuffix(filepath.Base(src), filepath.Ext(src)), "-", " ")
 			}
 			meta.Source = src
-			p, err := CreatePlan(meta, body)
+			dropForeignTracking(&meta)
+			format := plans.FormatFromPath(src)
+			if meta.Format == "mdx" {
+				format = "mdx"
+			}
+			p, err := CreatePlan(meta, body, format)
 			if err != nil {
 				return err
 			}
@@ -529,7 +576,7 @@ func ArchivePlan(idOrSlug string) (*ArchiveResult, error) {
 			np, err := plans.Read(p.FilePath)
 			return &ArchiveResult{AlreadyArchived: true, Source: p.FilePath, Plan: np}, err
 		}
-		dest, err := plans.UniqueArchivePath(plans.Slug(p.FilePath))
+		dest, err := plans.UniqueArchivePath(plans.Slug(p.FilePath), plans.FormatFromPath(p.FilePath))
 		if err != nil {
 			return nil, err
 		}

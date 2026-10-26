@@ -250,7 +250,7 @@ func (s *Server) planFiles() []string {
 			continue
 		}
 		for _, e := range entries {
-			if !e.Type().IsRegular() || !strings.HasSuffix(e.Name(), ".md") {
+			if !e.Type().IsRegular() || !plans.IsPlanFilename(e.Name()) {
 				continue
 			}
 			p := filepath.Join(dir, e.Name())
@@ -308,8 +308,12 @@ func (s *Server) readStrict(p string) (*strictPlan, error) {
 	if !validMetadata(raw) {
 		return nil, fmt.Errorf("Malformed plan metadata: %s", filepath.Base(p))
 	}
+	meta := plans.NormalizeMeta(raw)
+	if plans.FormatFromPath(p) == "mdx" {
+		meta.Format = "mdx"
+	}
 	return &strictPlan{
-		Meta: plans.NormalizeMeta(raw), body: body, content: content, filePath: p,
+		Meta: meta, body: body, content: content, filePath: p,
 		revision: plans.Revision(content), isArchived: filepath.Dir(p) == s.archive,
 	}, nil
 }
@@ -803,7 +807,12 @@ func (s *Server) serveDetail(w http.ResponseWriter, id string, seq int) {
 	}
 	var html any
 	renderState := "unavailable"
-	if s.pandocAvailable() {
+	format := "md"
+	if p.Format == "mdx" {
+		// MDX blocks are rendered by the hosted app only; the dashboard shows
+		// the source rather than letting pandoc mangle the JSX.
+		format = "mdx"
+	} else if s.pandocAvailable() {
 		if out, err := RenderMarkdown(p.body); err == nil {
 			html, renderState = out, "rendered"
 		} else {
@@ -812,7 +821,7 @@ func (s *Server) serveDetail(w http.ResponseWriter, id string, seq int) {
 	}
 	writeJSON(w, 200, map[string]any{
 		"id": p.ID, "title": p.Title, "status": p.Status, "created": p.Created, "updated": p.Updated,
-		"tags": p.Tags, "revision": p.revision, "body": p.body, "html": html, "renderState": renderState,
+		"tags": p.Tags, "revision": p.revision, "format": format, "body": p.body, "html": html, "renderState": renderState,
 		"filePath": p.filePath, "url": planURL(p.ID), "isArchived": p.isArchived, "sequence": seq,
 	})
 }
