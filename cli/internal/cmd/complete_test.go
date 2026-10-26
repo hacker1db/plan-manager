@@ -24,7 +24,7 @@ func suggest(line string) map[string]bool {
 
 func TestCompleteCommandsAndArguments(t *testing.T) {
 	t.Setenv("PLAN_HOME", t.TempDir())
-	if _, err := CreatePlan(newMeta("Migrate auth service"), ""); err != nil {
+	if _, err := CreatePlan(newMeta("Migrate auth service"), "", "md"); err != nil {
 		t.Fatal(err)
 	}
 
@@ -53,7 +53,7 @@ func TestPlanCandidatesUseIDForAmbiguousSlug(t *testing.T) {
 	if err := plans.InitStorage(); err != nil {
 		t.Fatal(err)
 	}
-	for i, p := range []string{plans.PlanPath("dup"), plans.ArchivePath("dup")} {
+	for i, p := range []string{plans.PlanPath("dup", "md"), plans.ArchivePath("dup", "md")} {
 		m := plans.Meta{ID: []string{"id-one", "id-two"}[i], Title: "Dup", Status: "active", Tags: []string{}}
 		if err := plans.Write(p, m, ""); err != nil {
 			t.Fatal(err)
