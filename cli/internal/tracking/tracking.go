@@ -41,9 +41,8 @@ var (
 // Limits bound how much tracking a plan may carry.
 var Limits = struct{ Events, EventBytes, Text int }{500, 4096, 512}
 
-// Error is a tracking failure. Code is the error code the TypeScript CLI
-// used (ETRACKING, ECONFLICT, EDEPENDENCY, ...), which commands map to exit
-// codes.
+// Error is a tracking failure. Code (ETRACKING, ECONFLICT, EDEPENDENCY, ...)
+// is what commands map to an exit code.
 type Error struct {
 	Code string
 	Msg  string

@@ -1,6 +1,8 @@
 // Block vocabulary for MDX plans. This registry is the single source of truth
 // for the renderer's validation and for `plan blocks`, so the catalog an agent
-// reads can never drift from what the dashboards actually render.
+// reads can never drift from what the dashboards actually render. The Go CLI
+// embeds a copy at cli/internal/mdx/blocks.json; test/lib/mdx.test.tsx fails
+// when the two differ.
 
 export type PropType = 'string' | 'number' | 'boolean' | 'array' | 'object'
 

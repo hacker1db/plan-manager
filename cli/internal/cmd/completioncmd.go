@@ -10,8 +10,8 @@ import (
 // _get_comp_words_by_ref from the bash-completion package, which a bare bash
 // (macOS ships 3.2 without it) does not have, so sourcing the script there
 // produced a completion that always failed. The fallback keeps it working,
-// and registering the TypeScript CLI's function name `_plan` keeps the two
-// scripts interchangeable.
+// and registering the function name `_plan` (which the old TypeScript CLI's
+// script used) keeps existing shell setups working.
 const bashCompat = `
 if ! declare -F _get_comp_words_by_ref >/dev/null 2>&1; then
     _get_comp_words_by_ref() {
