@@ -92,3 +92,30 @@ test("hosted shells and browser assets are generated from the canonical local da
   assert.deepEqual(await readFile(resolve(root, "public", "dashboard-icon.png")), await readFile(resolve(dashboard, "icon.png")))
   await assert.rejects(access(resolve(root, "hosted")), { code: "ENOENT" })
 })
+
+test("hosted plan toolbar offers status changes and archive like the local dashboard", async () => {
+  const { HostedPlanContent } = await import("../../src/components/hosted-plan-portal")
+  const plan = { id: "abc", title: "Plan", status: "active" as const, tags: [], created: "2026-01-01T00:00:00.000Z", updated: "2026-01-01T00:00:00.000Z", revision: "0123456789" }
+  const html = renderToStaticMarkup(<HostedPlanContent plan={plan} markdown="# Plan" />)
+  assert.match(html, /<select class="status-select" aria-label="Plan status">/)
+  for (const status of ["active", "completed", "archived"]) assert.match(html, new RegExp(`<option value="${status}"`))
+  assert.match(html, /<option value="active" selected="">active<\/option>/)
+  assert.match(html, /Copy Markdown/)
+  assert.match(html, /class="btn danger"[^>]*>Archive</)
+  const archived = renderToStaticMarkup(<HostedPlanContent plan={{ ...plan, status: "archived" }} markdown="# Plan" />)
+  assert.doesNotMatch(archived, />Archive</)
+})
+
+test("hosted status changes post to the owner status route and surface API errors", async () => {
+  const { requestStatusChange } = await import("../../src/components/hosted-plan-portal")
+  const calls: Array<[string, RequestInit | undefined]> = []
+  const ok = (async (url: string, init?: RequestInit) => { calls.push([url, init]); return new Response("{}", { status: 200 }) }) as typeof fetch
+  await requestStatusChange("a/b", "completed", ok)
+  assert.equal(calls[0][0], "/api/plans/a%2Fb/status")
+  assert.equal(calls[0][1]?.method, "POST")
+  assert.equal(calls[0][1]?.body, JSON.stringify({ status: "completed" }))
+  const conflict = (async () => new Response(JSON.stringify({ error: "Plan changed concurrently" }), { status: 409 })) as typeof fetch
+  await assert.rejects(requestStatusChange("a", "archived", conflict), /Plan changed concurrently/)
+  const broken = (async () => new Response("nope", { status: 500 })) as typeof fetch
+  await assert.rejects(requestStatusChange("a", "archived", broken), /Request failed with 500/)
+})
