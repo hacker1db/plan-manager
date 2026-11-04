@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import { isPlanStatus, type PlanMetadata, type PlanStatus, type UnknownRecord } from './types.js'
 
 export const TRACKING_SCHEMA_VERSION = 1
@@ -8,7 +8,10 @@ export const EXECUTION_ROLES = ['planning', 'implementation', 'review'] as const
 export const ENVIRONMENT_TYPES = ['host', 'vm', 'container', 'remote'] as const
 export const PR_ROLES = ['implements', 'partial', 'followup', 'supporting'] as const
 export const PR_STATES = ['open', 'draft', 'closed', 'merged'] as const
-export const EVENT_TYPES = ['migrated', 'stage', 'session.attached', 'session.ended', 'pr.attached', 'pr.detached', 'pr.observed'] as const
+export const EVENT_TYPES = ['migrated', 'stage', 'session.attached', 'session.ended', 'pr.attached', 'pr.detached', 'pr.observed', 'plan.review', 'pr.review', 'completed', 'reopened'] as const
+export const PLAN_REVIEW_DECISIONS = ['approved', 'changes_requested'] as const
+export const PR_REVIEW_STATES = ['submitted', 'requested', 'approved', 'changes_requested', 'dismissed', 'unknown'] as const
+export const REOPEN_STAGES = ['in_progress', 'planning'] as const
 export const EVENT_SOURCES = ['cli', 'server', 'migration'] as const
 export const TRACKING_LIMITS = { events: 500, eventBytes: 4096, text: 512 }
 
@@ -20,6 +23,9 @@ export type PrRole = typeof PR_ROLES[number]
 export type PrState = typeof PR_STATES[number]
 export type EventType = typeof EVENT_TYPES[number]
 export type EventSource = typeof EVENT_SOURCES[number]
+export type PlanReviewDecision = typeof PLAN_REVIEW_DECISIONS[number]
+export type PrReviewState = typeof PR_REVIEW_STATES[number]
+export type ReopenStage = typeof REOPEN_STAGES[number]
 
 export interface MachineIdentity { installationId: string; displayName: string; hostname: string; os: string; arch: string }
 export interface EnvironmentIdentity { id: string; type: EnvironmentType; parentId?: string }
@@ -57,13 +63,28 @@ export interface TrackingEvent {
 export interface Tracking { events: TrackingEvent[] }
 
 export interface ProjectedExecution extends Execution { attachedEventId: string; startedAt: string; endedAt?: string }
-export interface ProjectedPr extends PrAssociation { attachedEventId: string; attachedAt: string; observed?: PrObservation & { observedAt: string } }
+export interface PrReview { state: PrReviewState; headSha: string; reviewedAt: string; stale: boolean }
+export interface ProjectedPr extends PrAssociation {
+  attachedEventId: string
+  attachedAt: string
+  observed?: PrObservation & { observedAt: string }
+  // Latest review per head SHA; `review` is the one for the observed head, or the latest one marked stale.
+  reviews: Record<string, Omit<PrReview, 'headSha' | 'stale'>>
+  review?: PrReview
+}
+export interface PlanApproval {
+  state: 'none' | 'pending' | PlanReviewDecision
+  bodyRevision: string | null
+  // True when the body no longer matches the submitted/reviewed revision; only known when the body is supplied.
+  stale: boolean
+}
 export interface TrackingProjection {
   stage: PlanStage
   // True when completion predates tracking, so its review gates are unknown rather than satisfied.
   legacyCompletion: boolean
   executions: ProjectedExecution[]
   prs: ProjectedPr[]
+  planApproval: PlanApproval
 }
 
 export class TrackingError extends Error {
@@ -73,6 +94,7 @@ export class TrackingError extends Error {
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 const SHA = /^[0-9a-f]{7,64}$/
+const DIGEST = /^[0-9a-f]{64}$/
 
 function fail(message: string): never { throw new TrackingError(message) }
 
@@ -111,6 +133,17 @@ function sha(value: unknown, field: string): string | undefined {
   if (value === undefined) return undefined
   if (typeof value !== 'string' || !SHA.test(value)) fail(`${field} must be a hex commit SHA`)
   return value
+}
+
+function digest(value: unknown, field: string): string {
+  if (typeof value !== 'string' || !DIGEST.test(value)) fail(`${field} must be a sha256 hex digest`)
+  return value
+}
+
+// The reviewed plan revision covers only the body, since every tracking write changes the frontmatter.
+// Leading newlines are dropped because writePlan normalizes the blank line after the frontmatter.
+export function bodyRevision(body: string): string {
+  return createHash('sha256').update(body.replace(/^\n+/, '')).digest('hex')
 }
 
 function clean<T extends UnknownRecord>(value: T): T {
@@ -190,8 +223,12 @@ function validateData(type: EventType, value: unknown): UnknownRecord {
       return { stage: oneOf(raw.stage, 'data.stage', PLAN_STAGES), fromStatus: raw.fromStatus, legacyCompletion: raw.legacyCompletion }
     }
     case 'stage': {
-      const raw = record(value, 'data', ['stage', 'reason'])
-      return clean({ stage: oneOf(raw.stage, 'data.stage', PLAN_STAGES), reason: optionalText(raw.reason, 'data.reason') })
+      const raw = record(value, 'data', ['stage', 'reason', 'bodyRevision'])
+      return clean({
+        stage: oneOf(raw.stage, 'data.stage', PLAN_STAGES),
+        reason: optionalText(raw.reason, 'data.reason'),
+        bodyRevision: raw.bodyRevision === undefined ? undefined : digest(raw.bodyRevision, 'data.bodyRevision'),
+      })
     }
     case 'session.attached': return { execution: validateExecution(record(value, 'data', ['execution']).execution) }
     case 'session.ended': return { executionId: uuid(record(value, 'data', ['executionId']).executionId, 'data.executionId') }
@@ -200,6 +237,28 @@ function validateData(type: EventType, value: unknown): UnknownRecord {
     case 'pr.observed': {
       const raw = record(value, 'data', ['prId', 'state', 'headSha', 'mergeSha'])
       return clean({ prId: uuid(raw.prId, 'data.prId'), state: oneOf(raw.state, 'data.state', PR_STATES), headSha: sha(raw.headSha, 'data.headSha'), mergeSha: sha(raw.mergeSha, 'data.mergeSha') })
+    }
+    case 'plan.review': {
+      const raw = record(value, 'data', ['decision', 'bodyRevision'])
+      return { decision: oneOf(raw.decision, 'data.decision', PLAN_REVIEW_DECISIONS), bodyRevision: digest(raw.bodyRevision, 'data.bodyRevision') }
+    }
+    case 'pr.review': {
+      const raw = record(value, 'data', ['prId', 'state', 'headSha'])
+      if (raw.headSha === undefined) fail('data.headSha is required')
+      return { prId: uuid(raw.prId, 'data.prId'), state: oneOf(raw.state, 'data.state', PR_REVIEW_STATES), headSha: sha(raw.headSha, 'data.headSha') as string }
+    }
+    case 'completed': {
+      const raw = record(value, 'data', ['reason', 'noPrRationale', 'coveredPrIds'])
+      if (!Array.isArray(raw.coveredPrIds)) fail('data.coveredPrIds must be an array')
+      return clean({
+        reason: text(raw.reason, 'data.reason'),
+        noPrRationale: optionalText(raw.noPrRationale, 'data.noPrRationale'),
+        coveredPrIds: raw.coveredPrIds.map((id, index) => uuid(id, `data.coveredPrIds[${index}]`)),
+      })
+    }
+    case 'reopened': {
+      const raw = record(value, 'data', ['stage', 'reason'])
+      return { stage: oneOf(raw.stage, 'data.stage', REOPEN_STAGES), reason: text(raw.reason, 'data.reason') }
     }
   }
 }
@@ -256,8 +315,8 @@ function legacyStage(status: PlanStatus): { stage: PlanStage; legacyCompletion: 
   return status === 'completed' ? { stage: 'completed', legacyCompletion: true } : { stage: 'planning', legacyCompletion: false }
 }
 
-export function projectEvents(events: TrackingEvent[], status: PlanStatus): TrackingProjection {
-  const projection: TrackingProjection = { ...legacyStage(status), executions: [], prs: [] }
+export function projectEvents(events: TrackingEvent[], status: PlanStatus, body?: string): TrackingProjection {
+  const projection: TrackingProjection = { ...legacyStage(status), executions: [], prs: [], planApproval: { state: 'none', bodyRevision: null, stale: false } }
   for (const event of events) {
     const data = event.data
     switch (event.type) {
@@ -268,6 +327,8 @@ export function projectEvents(events: TrackingEvent[], status: PlanStatus): Trac
       case 'stage':
         projection.stage = data.stage as PlanStage
         projection.legacyCompletion = false
+        // A submission opens a new review of exactly this body revision.
+        if (data.stage === 'awaiting_plan_review') projection.planApproval = { state: 'pending', bodyRevision: data.bodyRevision as string | undefined ?? null, stale: false }
         break
       case 'session.attached':
         projection.executions.push({ ...data.execution as Execution, attachedEventId: event.id, startedAt: event.observedAt ?? event.recordedAt })
@@ -278,7 +339,7 @@ export function projectEvents(events: TrackingEvent[], status: PlanStatus): Trac
         break
       }
       case 'pr.attached':
-        projection.prs.push({ ...data.pr as PrAssociation, attachedEventId: event.id, attachedAt: event.recordedAt })
+        projection.prs.push({ ...data.pr as PrAssociation, attachedEventId: event.id, attachedAt: event.recordedAt, reviews: {} })
         break
       case 'pr.detached':
         projection.prs = projection.prs.filter(item => item.id !== data.prId)
@@ -288,13 +349,99 @@ export function projectEvents(events: TrackingEvent[], status: PlanStatus): Trac
         if (pr) pr.observed = { ...data as unknown as PrObservation, observedAt: event.observedAt ?? event.recordedAt }
         break
       }
+      case 'plan.review':
+        projection.planApproval = { state: data.decision as PlanReviewDecision, bodyRevision: data.bodyRevision as string, stale: false }
+        if (data.decision === 'changes_requested') projection.stage = 'planning'
+        break
+      case 'pr.review': {
+        const pr = projection.prs.find(item => item.id === data.prId)
+        const reviewedAt = event.observedAt ?? event.recordedAt
+        if (pr) {
+          pr.reviews[data.headSha as string] = { state: data.state as PrReviewState, reviewedAt }
+          pr.review = { state: data.state as PrReviewState, headSha: data.headSha as string, reviewedAt, stale: false }
+        }
+        break
+      }
+      case 'completed':
+        projection.stage = 'completed'
+        projection.legacyCompletion = false
+        break
+      case 'reopened':
+        projection.stage = data.stage as PlanStage
+        projection.legacyCompletion = false
+        break
     }
   }
+  for (const pr of projection.prs) {
+    const head = pr.observed?.headSha
+    if (head && Object.hasOwn(pr.reviews, head)) pr.review = { ...pr.reviews[head], headSha: head, stale: false }
+    else if (pr.review && head) pr.review.stale = true
+  }
+  const approval = projection.planApproval
+  if (body !== undefined && approval.bodyRevision !== null) approval.stale = approval.bodyRevision !== bodyRevision(body)
   return projection
 }
 
-export function projectTracking(meta: PlanMetadata): TrackingProjection {
-  return projectEvents(readTracking(meta)?.events ?? [], meta.status)
+export function projectTracking(meta: PlanMetadata, body?: string): TrackingProjection {
+  return projectEvents(readTracking(meta)?.events ?? [], meta.status, body)
+}
+
+// Guards for the journey trigger table. Callers pass a projection built with the current body so staleness is known.
+const STAGE_SOURCES: Record<PlanStage, readonly PlanStage[]> = {
+  planning: ['awaiting_plan_review', 'in_progress', 'awaiting_pr_review'],
+  awaiting_plan_review: ['planning'],
+  in_progress: ['planning', 'awaiting_plan_review', 'awaiting_pr_review'],
+  awaiting_pr_review: ['in_progress'],
+  completed: [],
+}
+
+function assertCurrentApproval(projection: TrackingProjection, action: string): void {
+  const approval = projection.planApproval
+  if (approval.state !== 'approved') fail(`${action} requires an approved plan review (plan review record <id> plan --decision approved)`)
+  if (approval.stale) fail(`${action} requires a current plan approval; the plan body changed after approval, so resubmit it for review`)
+}
+
+// Returns false when the plan is already in the target stage, so retries record nothing.
+export function assertStageTransition(projection: TrackingProjection, target: PlanStage): boolean {
+  const from = projection.stage
+  if (target === 'completed') fail('Use plan complete to complete a plan; it checks plan approval and PR disposition')
+  if (from === 'completed') fail('Use plan reopen to move a completed plan back to work')
+  // Resubmitting is the one same-stage change: the body changed since the pending submission.
+  if (from === target) return target === 'awaiting_plan_review' && projection.planApproval.stale
+  if (!STAGE_SOURCES[target].includes(from)) fail(`Cannot move from ${from} to ${target}`)
+  if (target === 'in_progress') assertCurrentApproval(projection, 'Starting work')
+  if (target === 'awaiting_pr_review' && !projection.prs.some(pr => pr.observed?.state === 'open')) {
+    fail('awaiting_pr_review requires an attached PR open for review (a draft PR does not count); run plan pr attach or plan pr refresh')
+  }
+  return true
+}
+
+export function assertPlanReview(projection: TrackingProjection): void {
+  if (projection.stage !== 'awaiting_plan_review') fail(`Plan reviews are recorded in awaiting_plan_review, not ${projection.stage}; submit with plan stage <id> awaiting_plan_review`)
+  if (projection.planApproval.stale) fail('The plan body changed since it was submitted; resubmit with plan stage <id> awaiting_plan_review')
+}
+
+// Returns the implementing PR IDs that the completion covers.
+export function assertCompletion(projection: TrackingProjection, noPrRationale?: string): string[] {
+  if (projection.stage !== 'in_progress' && projection.stage !== 'awaiting_pr_review') fail(`Cannot complete from ${projection.stage}`)
+  assertCurrentApproval(projection, 'Completing')
+  if (projection.prs.length === 0) {
+    if (!noPrRationale) fail('No PRs are attached; completing requires --no-pr-rationale <text>')
+    return []
+  }
+  if (noPrRationale) fail('--no-pr-rationale is only for plans without attached PRs')
+  const implementing = projection.prs.filter(pr => pr.role === 'implements')
+  if (implementing.length === 0) fail('Only partial, followup or supporting PRs are attached; attach the implementing PR with --role implements')
+  for (const pr of implementing) {
+    if (pr.observed?.state !== 'merged') fail(`${pr.url} is ${pr.observed?.state ?? 'not observed'}, not merged; run plan pr refresh`)
+    if (pr.review?.state !== 'approved' || pr.review.stale) fail(`${pr.url} has no approved review of its current head; record one with plan review record <id> pr`)
+  }
+  return implementing.map(pr => pr.id)
+}
+
+export function assertReopen(projection: TrackingProjection, target: ReopenStage): void {
+  if (projection.stage !== 'completed') fail(`Only completed plans can be reopened; this plan is ${projection.stage}`)
+  if (target === 'in_progress') assertCurrentApproval(projection, 'Reopening into in_progress')
 }
 
 // Stage is null when tracking cannot be read, so callers show it as unknown instead of guessing.
@@ -308,7 +455,7 @@ export function assertStageMatchesStatus(meta: PlanMetadata): void {
   let stage: PlanStage
   try { stage = projectTracking(meta).stage } catch { return }
   if ((stage === 'completed') !== (meta.status === 'completed')) {
-    throw new TrackingError(`Status "${meta.status}" contradicts tracked stage "${stage}"; change it with plan stage`, 'ESTAGECONFLICT')
+    throw new TrackingError(`Status "${meta.status}" contradicts tracked stage "${stage}"; change it with plan stage, plan complete or plan reopen`, 'ESTAGECONFLICT')
   }
 }
 

@@ -18,7 +18,7 @@ import { cmdAuth, cmdPush } from './commands/remote.js'
 import { cmdCompletion } from './commands/completion.js'
 import { cmdBlocks } from './commands/blocks.js'
 import { cmdCheck } from './commands/check.js'
-import { cmdSession, cmdPr, cmdStage } from './commands/tracking.js'
+import { cmdSession, cmdPr, cmdStage, cmdReview, cmdComplete, cmdReopen } from './commands/tracking.js'
 import { EXIT } from './exit.js'
 import { fileURLToPath } from 'node:url'
 import { checkBuildFreshness, packageVersion } from '../lib/build.js'
@@ -43,6 +43,11 @@ function parseArgs(argv) {
     else if (a === '--role') { opts.role = argv[++i] }
     else if (a === '--reason') { opts.reason = argv[++i] }
     else if (a === '--evidence') { opts.evidence = argv[++i] }
+    else if (a === '--decision') { opts.decision = argv[++i] }
+    else if (a === '--state') { opts.state = argv[++i] }
+    else if (a === '--head') { opts.head = argv[++i] }
+    else if (a === '--no-pr-rationale') { opts.noPrRationale = argv[++i] }
+    else if (a === '--stage') { opts.stage = argv[++i] }
     else if (a === '--all' || !a.startsWith('--')) { args.push(a) }
     i++
   }
@@ -71,9 +76,16 @@ Usage:
     [--stdin|--file <file>] [--if-revision <rev>] [--json]
   plan status <id-or-slug> <active|completed|archived>
   plan archive <id-or-slug>
-  plan stage <id-or-slug> <stage> Record the plan's journey stage
+  plan stage <id-or-slug> <stage> Move the plan's journey stage (guarded)
     [--reason <text>]            (planning, awaiting_plan_review, in_progress,
-                                  awaiting_pr_review, completed)
+                                  awaiting_pr_review)
+  plan review record <id-or-slug> plan --decision approved|changes_requested
+                                 Review the submitted plan body revision
+  plan review record <id-or-slug> pr <pr-url|pr-id> --head <sha>
+    --state submitted|requested|approved|changes_requested|dismissed|unknown
+  plan complete <id-or-slug> --reason <text> [--no-pr-rationale <text>]
+                                 Complete after plan approval and merged, approved PRs
+  plan reopen <id-or-slug> --stage in_progress|planning --reason <text>
   plan session attach <id-or-slug> --stdin|--file <json>
                                  Attach an agent session (provider, nativeSessionId,
                                  role, repository, worktree, branch, commit, environment)
@@ -136,6 +148,9 @@ export async function run(argv) {
     case 'stage': return cmdStage(args, opts)
     case 'session': return cmdSession(args, opts)
     case 'pr': return cmdPr(args, opts)
+    case 'review': return cmdReview(args, opts)
+    case 'complete': return cmdComplete(args, opts)
+    case 'reopen': return cmdReopen(args, opts)
     case 'completion': return cmdCompletion(args)
     default: {
       const hint = checkBuildFreshness(DIST_DIR)?.stale ? 'This build is out of date; run pnpm build:cli.\n' : ''
