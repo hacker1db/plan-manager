@@ -1,3 +1,7 @@
+type EnvironmentSource = Readonly<Record<string, string | undefined>>
+let activeSource: EnvironmentSource = process.env
+export function setEnvironmentSource(source: EnvironmentSource) { activeSource = source }
+export function environmentSource() { return activeSource }
 export const WORKOS_CLI_SCOPE = "plans:write"
 
 type HostedEnvironment = {
@@ -64,15 +68,15 @@ function redirectUrl(value: string | undefined): string {
   }
 }
 
-export function getOwnerWorkosUserIds(source: Readonly<Record<string, string | undefined>> = process.env): string[] {
+export function getOwnerWorkosUserIds(source: Readonly<Record<string, string | undefined>> = environmentSource()): string[] {
   return uniqueList(source.PLAN_MANAGER_OWNER_WORKOS_USER_IDS?.trim() ?? "")
 }
 
-export function isAllowedOwner(userId: string | null | undefined, source: Readonly<Record<string, string | undefined>> = process.env): boolean {
+export function isAllowedOwner(userId: string | null | undefined, source: Readonly<Record<string, string | undefined>> = environmentSource()): boolean {
   return typeof userId === "string" && getOwnerWorkosUserIds(source).includes(userId)
 }
 
-export function getHostedEnvironment(source: Readonly<Record<string, string | undefined>> = process.env): HostedEnvironment {
+export function getHostedEnvironment(source: Readonly<Record<string, string | undefined>> = environmentSource()): HostedEnvironment {
   const ownerWorkosUserIds = getOwnerWorkosUserIds(source)
   const missing = [
     ...REQUIRED_KEYS.filter(key => !source[key]?.trim()),
@@ -92,7 +96,7 @@ export function getHostedEnvironment(source: Readonly<Record<string, string | un
   }
 }
 
-export function ownerConfigured(source: Readonly<Record<string, string | undefined>> = process.env): boolean {
+export function ownerConfigured(source: Readonly<Record<string, string | undefined>> = environmentSource()): boolean {
   try {
     getHostedEnvironment(source)
     return true
@@ -101,7 +105,7 @@ export function ownerConfigured(source: Readonly<Record<string, string | undefin
   }
 }
 
-export function getCliOAuthConfiguration(source: Readonly<Record<string, string | undefined>> = process.env): WorkOSCliConfiguration {
+export function getCliOAuthConfiguration(source: Readonly<Record<string, string | undefined>> = environmentSource()): WorkOSCliConfiguration {
   const clientId = source.PLAN_MANAGER_WORKOS_CLI_CLIENT_ID?.trim()
   const audience = source.PLAN_MANAGER_WORKOS_CLI_AUDIENCE?.trim()
   if (!clientId || !audience) {
@@ -127,7 +131,7 @@ export function workosCliClaimsCanAccess(
   userId: unknown,
   clientId: unknown,
   scope: unknown,
-  source: Readonly<Record<string, string | undefined>> = process.env,
+  source: Readonly<Record<string, string | undefined>> = environmentSource(),
 ): boolean {
   const config = getCliOAuthConfiguration(source)
   const scopes = typeof scope === "string" ? scope.split(/\s+/).filter(Boolean) : []

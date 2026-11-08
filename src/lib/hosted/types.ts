@@ -1,4 +1,4 @@
-import type { PlanStatus } from "@/lib/types"
+import type { PlanStatus } from "../types.ts"
 
 export const PLAN_SCOPES = ["plans:read", "plans:write"] as const
 

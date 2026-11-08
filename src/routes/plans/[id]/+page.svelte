@@ -1,9 +1,8 @@
 <script lang="ts">
-  let { data } = $props()
+  import SharedDashboard from "#lib/components/SharedDashboard.svelte"
+  import type { PageData } from "./$types"
+
+  let { data }: { data: PageData } = $props()
 </script>
 
-<svelte:head>
-  <title>{data.title} · Plan Library</title>
-  <script src="/plan.js" defer></script>
-</svelte:head>
-{@html data.shell}
+<SharedDashboard view={{ kind: "plan", plan: data.plan, markdown: data.markdown, html: data.html }} />

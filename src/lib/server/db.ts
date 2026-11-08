@@ -1,5 +1,5 @@
 import { neon, type NeonQueryFunction } from "@neondatabase/serverless"
-import { getHostedEnvironment } from "./env"
+import { getHostedEnvironment } from "./env.ts"
 
 let sql: NeonQueryFunction<false, false> | undefined
 

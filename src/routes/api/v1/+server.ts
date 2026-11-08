@@ -1,4 +1,4 @@
-import { getCliOAuthConfiguration, HostedConfigurationError } from '@/hosted/lib/env'
+import { getCliOAuthConfiguration, HostedConfigurationError } from '#lib/server/env.ts'
 import type { RequestHandler } from './$types'
 
 export const GET: RequestHandler = () => {

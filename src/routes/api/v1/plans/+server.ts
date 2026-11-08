@@ -1,15 +1,14 @@
-import { apiError, publicPlan } from '@/hosted/lib/api'
-import { requireOwnerResponse } from '@/hosted/lib/auth'
-import { listPlans, readMarkdown } from '@/hosted/lib/store'
-import type { RequestHandler } from './$types'
+import { apiError, jsonResponse, PRIVATE_NO_STORE, publicPlan } from "#lib/server/api.ts"
+import { requireOwnerResponse } from "#lib/server/auth.ts"
+import { searchPlans } from "#lib/server/plan-search.ts"
+import { listPlans, readMarkdown } from "#lib/server/store.ts"
+import type { RequestHandler } from "./$types"
 
-export const GET: RequestHandler = async ({ locals, url }) => {
-  const denied = requireOwnerResponse(locals.auth)
+export const GET: RequestHandler = async ({ url, locals }) => {
+  const denied = await requireOwnerResponse(locals.auth)
   if (denied) return denied
   try {
-    const plans = await listPlans()
-    const query = url.searchParams.get('q')?.trim().toLowerCase().slice(0, 256)
-    const matches = !query ? plans : (await Promise.all(plans.map(async plan => `${plan.title} ${plan.tags.join(' ')} ${await readMarkdown(plan)}`.toLowerCase().includes(query) ? plan : null))).filter(plan => plan !== null)
-    return Response.json({ version: 1, plans: matches.map(publicPlan) }, { headers: { 'Cache-Control': 'private, no-store' } })
+    const matches = await searchPlans(await listPlans(), url, readMarkdown)
+    return jsonResponse({ version: 1, plans: matches.map(publicPlan) }, { headers: PRIVATE_NO_STORE })
   } catch (error) { return apiError(error) }
 }

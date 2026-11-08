@@ -467,7 +467,7 @@ function renderBlock(record: BlockRecord, children: ReactNode): ReactElement | n
   }
 }
 
-export function PlanMdx({ source, problems }: { source: string; problems?: string[] }) {
+export function PlanMdx({ source, problems, components: extra }: { source: string; problems?: string[]; components?: Components }) {
   const records: BlockRecord[] = []
   const components = {
     'plan-block': ({ children, ...rest }: { children?: ReactNode; 'data-block'?: string }) => {
@@ -479,6 +479,7 @@ export function PlanMdx({ source, problems }: { source: string; problems?: strin
       ? <input type="checkbox" defaultChecked={Boolean(checked)} disabled data-plan-task="true" />
       : null,
     img: ({ alt }: { alt?: string }) => <span>{alt}</span>,
+    ...extra,
   } as unknown as Components
   try {
     return Markdown({

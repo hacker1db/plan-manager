@@ -1,12 +1,12 @@
-import { apiError, forbidden } from '@/hosted/lib/api'
-import { requireOwnerResponse } from '@/hosted/lib/auth'
-import { isSameOriginRequest } from '@/hosted/lib/security'
-import { revokeToken } from '@/hosted/lib/store'
-import type { RequestHandler } from './$types'
+import { apiError, forbidden, jsonResponse } from "#lib/server/api.ts"
+import { requireOwnerResponse } from "#lib/server/auth.ts"
+import { isSameOriginRequest } from "#lib/server/security.ts"
+import { revokeToken } from "#lib/server/store.ts"
+import type { RequestHandler } from "./$types"
 
-export const DELETE: RequestHandler = async ({ locals, params, request }) => {
-  const denied = requireOwnerResponse(locals.auth)
+export const DELETE: RequestHandler = async ({ request, params, locals }) => {
+  const denied = await requireOwnerResponse(locals.auth)
   if (denied) return denied
   if (!isSameOriginRequest(request)) return forbidden()
-  try { return Response.json({ revoked: await revokeToken(params.id) }) } catch (error) { return apiError(error) }
+  try { return jsonResponse({ revoked: await revokeToken(params.id) }) } catch (error) { return apiError(error) }
 }

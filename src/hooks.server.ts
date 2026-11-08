@@ -1,6 +1,9 @@
 import { authKitHandle, configureAuthKit } from '@workos/authkit-sveltekit'
 import type { Handle } from '@sveltejs/kit/hooks'
-import { getHostedEnvironment, HostedConfigurationError, isAllowedOwner } from '@/hosted/lib/env'
+import * as env from '$app/env/private'
+import { setEnvironmentSource, getHostedEnvironment, HostedConfigurationError, isAllowedOwner } from '#lib/server/env.ts'
+
+setEnvironmentSource(env)
 
 const publicAssets = new Set(['/app.js', '/plan.js', '/dashboard-icon.png', '/globals.css'])
 const authRoutes = new Set(['/sign-in', '/callback', '/sign-out', '/auth/error'])

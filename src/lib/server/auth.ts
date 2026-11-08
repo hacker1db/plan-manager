@@ -3,7 +3,7 @@ import { getHostedEnvironment, HostedConfigurationError } from "./env"
 import { forbidden, unauthorized } from "./api"
 import { findToken } from "./store"
 import { parseBearer, tokenAuthorizes } from "./token"
-import type { PlanScope } from "./types"
+import type { PlanScope } from "../hosted/types.ts"
 import { verifyWorkosCliToken } from "./workos-cli"
 
 export { verifyWorkosCliToken } from "./workos-cli"

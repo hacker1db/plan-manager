@@ -1,12 +1,12 @@
 import { del, get, put } from "@vercel/blob"
 import yaml from "js-yaml"
-import { getHostedEnvironment } from "./env"
-import { getSql } from "./db"
-import { requirePlanId, requireRevision, safeTags, safeText, sanitizeMarkdown } from "./sanitize"
-import { computeRevision } from "@/lib/ids"
-import { isPlanStatus, type PlanStatus } from "@/lib/types"
-import { createStatusVersion } from "./status-version"
-import type { CliToken, HostedPlan, HostedPlanInput, PlanScope, TokenRecord } from "./types"
+import { getHostedEnvironment } from "./env.ts"
+import { getSql } from "./db.ts"
+import { requirePlanId, requireRevision, safeTags, safeText, sanitizeMarkdown } from "./sanitize.ts"
+import { computeRevision } from "../ids.ts"
+import { isPlanStatus, type PlanStatus } from "../types.ts"
+import { createStatusVersion } from "./status-version.ts"
+import type { CliToken, HostedPlan, HostedPlanInput, PlanScope, TokenRecord } from "../hosted/types.ts"
 
 type PlanRow = {
   id: string

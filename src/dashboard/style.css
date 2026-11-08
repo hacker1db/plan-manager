@@ -1120,3 +1120,19 @@ span.pm-block-error { display: inline; margin: 0; padding: 0 0.3em; }
   .card:hover { transform: none; }
   .action:hover { transform: none; }
 }
+
+/* Mermaid diagrams (hosted viewer renders ```mermaid fences client-side) */
+.mermaid-diagram {
+  margin: 1.4em 0;
+  padding: 1.1em;
+  border: 1px solid var(--edge);
+  background: var(--paper);
+  overflow-x: auto;
+}
+.mermaid-diagram[data-mermaid="rendered"] { text-align: center; }
+.mermaid-diagram pre { margin: 0; }
+.mermaid-diagram .pm-block-error { margin: 0 0 0.8em; }
+.mermaid-diagram img { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+.mermaid-diagram details { margin-top: 0.8em; text-align: left; }
+.mermaid-diagram summary { cursor: pointer; color: var(--muted); font-size: 0.85em; }
+.mermaid-diagram details pre { margin-top: 0.6em; }

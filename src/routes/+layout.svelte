@@ -1,16 +1,16 @@
 <script lang="ts">
-  import { onMount } from 'svelte'
-  import { dev } from '$app/env'
-  import { inject } from '@vercel/analytics'
-  import './globals.css'
+  import "../app.css"
+  import { onMount } from "svelte"
+  import { dev } from "$app/env"
+  import { injectAnalytics } from "@vercel/analytics/sveltekit"
+  import type { Snippet } from "svelte"
+  import type { LayoutData } from "./$types"
 
-  let { children } = $props()
-  onMount(() => inject({ mode: dev ? 'development' : 'production' }))
+  let { data, children }: { data: LayoutData; children: Snippet } = $props()
+
+  onMount(() => {
+    injectAnalytics({ mode: dev ? "development" : "production" })
+  })
 </script>
-
-<svelte:head>
-  <title>Plan Manager</title>
-  <meta name="description" content="Private plan library" />
-</svelte:head>
 
 {@render children()}

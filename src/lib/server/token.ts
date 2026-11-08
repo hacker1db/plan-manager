@@ -1,6 +1,6 @@
 import { randomBytes, scrypt as rawScrypt, timingSafeEqual } from "node:crypto"
 import { promisify } from "node:util"
-import { PLAN_SCOPES, type CliToken, type PlanScope, type TokenRecord } from "./types"
+import { PLAN_SCOPES, type CliToken, type PlanScope, type TokenRecord } from "../hosted/types.ts"
 
 const scrypt = promisify(rawScrypt)
 

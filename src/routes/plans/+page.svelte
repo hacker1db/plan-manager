@@ -1,6 +1,5 @@
 <script lang="ts">
-  let { data } = $props()
+  import SharedDashboard from "#lib/components/SharedDashboard.svelte"
 </script>
 
-<svelte:head><script src="/app.js" defer></script></svelte:head>
-{@html data.shell}
+<SharedDashboard view={{ kind: "library" }} />

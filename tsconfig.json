@@ -1,21 +1,24 @@
 {
   "extends": "$app/tsconfig",
   "compilerOptions": {
-    "allowJs": true,
+    "allowJs": false,
     "checkJs": false,
-    "allowImportingTsExtensions": true,
-    "esModuleInterop": true,
-    "jsx": "react-jsx",
-    "lib": ["dom", "dom.iterable", "es2022"],
-    "moduleResolution": "bundler",
-    "resolveJsonModule": true,
-    "skipLibCheck": true,
+    "sourceMap": true,
     "strict": true,
-    "target": "ES2022",
-    "paths": {
-      "@/*": ["./src/*"]
-    }
+    "jsx": "react-jsx",
+    "types": ["$app/types", "node"]
   },
-  "include": ["src", "test", "*"],
-  "exclude": ["src/service-worker"]
+  "include": [
+    "vite.config.ts",
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "src/**/*.svelte",
+    "test/**/*.ts",
+    "test/**/*.tsx",
+    "scripts/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules/**",
+    "dist/**"
+  ]
 }

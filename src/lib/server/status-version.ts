@@ -1,6 +1,6 @@
 import yaml from "js-yaml"
-import { computeRevision } from "@/lib/ids"
-import { isPlanStatus, type PlanStatus, type UnknownRecord } from "@/lib/types"
+import { computeRevision } from "../ids.ts"
+import { isPlanStatus, type PlanStatus, type UnknownRecord } from "../types.ts"
 
 type StatusMetadata = {
   id: string

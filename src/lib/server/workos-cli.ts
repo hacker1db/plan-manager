@@ -1,5 +1,5 @@
 import { createRemoteJWKSet, jwtVerify, type JWTVerifyGetKey } from "jose"
-import { getCliOAuthConfiguration, workosCliClaimsCanAccess } from "./env"
+import { getCliOAuthConfiguration, workosCliClaimsCanAccess, environmentSource } from "./env"
 
 const remoteJwks = new Map<string, JWTVerifyGetKey>()
 
@@ -14,7 +14,7 @@ function jwksFor(url: string): JWTVerifyGetKey {
 
 export async function verifyWorkosCliToken(
   token: string,
-  source: Readonly<Record<string, string | undefined>> = process.env,
+  source: Readonly<Record<string, string | undefined>> = environmentSource(),
   getKey?: JWTVerifyGetKey,
 ): Promise<boolean> {
   const config = getCliOAuthConfiguration(source)

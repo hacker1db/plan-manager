@@ -1,12 +1,12 @@
 import assert from "node:assert/strict"
 import { test } from "node:test"
 import { createLocalJWKSet, exportJWK, generateKeyPair, SignJWT } from "jose"
-import { verifyWorkosCliToken } from "../../src/hosted/lib/workos-cli"
-import { HostedConfigurationError, getCliOAuthConfiguration, getHostedEnvironment, getOwnerWorkosUserIds, isAllowedOwner, ownerConfigured, workosCliClaimsCanAccess } from "../../src/hosted/lib/env"
-import { publicPlan } from "../../src/hosted/lib/api"
-import { requirePlanId, requireRevision, sanitizeMarkdown } from "../../src/hosted/lib/sanitize"
-import { generateToken, hashSecret, parseBearer, tokenAuthorizes, verifySecret } from "../../src/hosted/lib/token"
-import { isJsonRequest, isSameOriginRequest } from "../../src/hosted/lib/security"
+import { verifyWorkosCliToken } from "../../src/lib/server/workos-cli"
+import { HostedConfigurationError, getCliOAuthConfiguration, getHostedEnvironment, getOwnerWorkosUserIds, isAllowedOwner, ownerConfigured, workosCliClaimsCanAccess } from "../../src/lib/server/env"
+import { publicPlan } from "../../src/lib/server/api"
+import { requirePlanId, requireRevision, sanitizeMarkdown } from "../../src/lib/server/sanitize"
+import { generateToken, hashSecret, parseBearer, tokenAuthorizes, verifySecret } from "../../src/lib/server/token"
+import { isJsonRequest, isSameOriginRequest } from "../../src/lib/server/security"
 import { isPlanStatus } from "../../src/lib/types"
 
 test("hosted configuration fails closed when a required key is absent", () => {
