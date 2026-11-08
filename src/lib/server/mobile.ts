@@ -37,3 +37,14 @@ export async function changeMobileStatus(id: string, input: { status: PlanStatus
   const result = await dependencies.write({ ...plan, ...version, status: input.status, updated, expectedRevision: input.expectedRevision })
   return result.conflict ? { status: 409, error: "Plan changed. Refresh before retrying.", currentRevision: result.plan?.revision } : {status: 200, plan: result.plan}
 }
+
+export function pagePlans(plans: HostedPlan[], url: URL) {
+  const status = url.searchParams.get("status")
+  if (status && !isPlanStatus(status)) throw new RangeError("Invalid status filter")
+  const filtered = status ? plans.filter(plan => plan.status === status) : plans
+  if (!url.searchParams.has("limit")) return {plans: filtered}
+  const limit = Number(url.searchParams.get("limit"))
+  const offset = Number(url.searchParams.get("offset") ?? "0")
+  if (!Number.isInteger(limit) || limit < 1 || limit > 100 || !Number.isSafeInteger(offset) || offset < 0) throw new RangeError("Invalid pagination")
+  return {plans: filtered.slice(offset, offset + limit), nextOffset: offset + limit < filtered.length ? offset + limit : null}
+}

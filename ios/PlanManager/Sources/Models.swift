@@ -9,11 +9,13 @@ struct Plan: Codable, Identifiable, Hashable, Sendable {
     let updated: String
     let revision: String
 }
-struct Library: Decodable, Sendable { let plans: [Plan] }
+struct Library: Decodable, Sendable { let plans: [Plan]; let nextOffset: Int? }
+struct Heading: Decodable, Identifiable, Sendable { let id: String; let path: [String]; let title: String; let fingerprint: String }
 struct Document: Decodable, Sendable {
     let plan: Plan
     let html: String
     let statusUnavailableReason: String?
+    var headings: [Heading]? = nil
 }
 enum APIError: Error, LocalizedError {
     case signedOut, forbidden, notFound, conflict, unavailable, invalidConfiguration, transport
@@ -24,7 +26,7 @@ enum APIError: Error, LocalizedError {
         case .notFound: "This plan is no longer available."
         case .conflict: "The plan changed. Refresh and review it before retrying."
         case .unavailable: "The service could not complete this request. Try again."
-        case .invalidConfiguration: "Configure an HTTPS development service and Clerk publishable key."
+        case .invalidConfiguration: "Configure the shared WorkOS environment and HTTPS development service."
         case .transport: "Unable to connect. Check your connection and retry."
         }
     }
@@ -46,10 +48,12 @@ enum APIError: Error, LocalizedError {
     }()
     init(base: URL, token: @escaping @MainActor () async throws -> String?) { self.base = base; self.token = token }
     nonisolated func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse, newRequest request: URLRequest, completionHandler: @escaping @Sendable (URLRequest?) -> Void) { completionHandler(nil) }
-    private func request<T: Decodable>(_ path: String, body: Data? = nil) async throws -> T {
+    private func request<T: Decodable>(_ path: String, body: Data? = nil, query: [URLQueryItem] = []) async throws -> T {
         guard base.scheme == "https", base.host != nil, base.user == nil, base.password == nil else { throw APIError.invalidConfiguration }
         guard let jwt = try await token() else { throw APIError.signedOut }
-        var request = URLRequest(url: base.appendingPathComponent("api/v1/plans").appendingPathComponent(path))
+        var components = URLComponents(url: base.appendingPathComponent("api/v1/plans").appendingPathComponent(path), resolvingAgainstBaseURL: false)!
+        components.queryItems = query.isEmpty ? nil : query
+        var request = URLRequest(url: components.url!)
         request.setValue("Bearer \(jwt)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         if let body { request.httpMethod = "POST"; request.httpBody = body; request.setValue("application/json", forHTTPHeaderField: "Content-Type") }
@@ -64,7 +68,19 @@ enum APIError: Error, LocalizedError {
         default: throw APIError.unavailable
         }
     }
-    func library() async throws -> [Plan] { let result: Library = try await request(""); return result.plans }
+    func library() async throws -> [Plan] {
+        var plans: [Plan] = []
+        var offset = 0
+        repeat {
+            try Task.checkCancellation()
+            let page: Library = try await request("", query: [URLQueryItem(name: "limit", value: "100"), URLQueryItem(name: "offset", value: String(offset))])
+            plans.append(contentsOf: page.plans)
+            guard let next = page.nextOffset else { return Array(Dictionary(plans.map { ($0.id, $0) }, uniquingKeysWith: { _, latest in latest }).values).sorted { $0.updated > $1.updated } }
+            guard next > offset else { throw APIError.unavailable }
+            offset = next
+        } while offset < 100_000
+        throw APIError.unavailable
+    }
     func document(_ id: String) async throws -> Document { try await request("\(id)/render") }
     func status(_ plan: Plan, to status: String) async throws -> Plan {
         try await request("\(plan.id)/status", body: JSONEncoder().encode(["status": status, "expectedRevision": plan.revision]))

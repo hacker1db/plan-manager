@@ -7,9 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0A0D0B98682CB59C1F41720B /* NativeSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2D10FC1C39D56C8DB78ED70 /* NativeSession.swift */; };
 		205C8BDABF79829560A4D526 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = F99211F8EF1F7E1E6EAA5CC0 /* Models.swift */; };
 		3FFC3F31D34CA89C49C1603A /* Reader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C17056AA4D002BDC09DF629 /* Reader.swift */; };
-		997DAC9BE8C9BFDDB2E61818 /* ClerkKit in Frameworks */ = {isa = PBXBuildFile; productRef = DD2E46EE1FFC2DC21FAB3483 /* ClerkKit */; };
+		997DAC9BE8C9BFDDB2E61818 /* WorkOS in Frameworks */ = {isa = PBXBuildFile; productRef = 7B64EED19E953BF17A9A4A7E /* WorkOS */; };
 		A293780475552D0986CA6B16 /* PlanManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87DDD125CEE6EE582CED400A /* PlanManagerTests.swift */; };
 		F555AAEC5638E6B945155BB9 /* PlanManagerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FDC17D2ACE416C94EC98BDD /* PlanManagerApp.swift */; };
 /* End PBXBuildFile section */
@@ -30,6 +31,7 @@
 		5D83C33337A209F918C7C289 /* PlanManager.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = PlanManager.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		87DDD125CEE6EE582CED400A /* PlanManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanManagerTests.swift; sourceTree = "<group>"; };
 		8FDC17D2ACE416C94EC98BDD /* PlanManagerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanManagerApp.swift; sourceTree = "<group>"; };
+		E2D10FC1C39D56C8DB78ED70 /* NativeSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeSession.swift; sourceTree = "<group>"; };
 		F99211F8EF1F7E1E6EAA5CC0 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -38,7 +40,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				997DAC9BE8C9BFDDB2E61818 /* ClerkKit in Frameworks */,
+				997DAC9BE8C9BFDDB2E61818 /* WorkOS in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -75,6 +77,7 @@
 			isa = PBXGroup;
 			children = (
 				F99211F8EF1F7E1E6EAA5CC0 /* Models.swift */,
+				E2D10FC1C39D56C8DB78ED70 /* NativeSession.swift */,
 				8FDC17D2ACE416C94EC98BDD /* PlanManagerApp.swift */,
 				0C17056AA4D002BDC09DF629 /* Reader.swift */,
 			);
@@ -97,7 +100,7 @@
 			);
 			name = PlanManager;
 			packageProductDependencies = (
-				DD2E46EE1FFC2DC21FAB3483 /* ClerkKit */,
+				7B64EED19E953BF17A9A4A7E /* WorkOS */,
 			);
 			productName = PlanManager;
 			productReference = 5D83C33337A209F918C7C289 /* PlanManager.app */;
@@ -142,7 +145,7 @@
 			mainGroup = 11C19A3589D7793302B28A25;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				CEF4803B7D014670F5053D10 /* XCRemoteSwiftPackageReference "clerk-ios" */,
+				F00BDF1499F5953C1C43889D /* XCRemoteSwiftPackageReference "workos-ios" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 62EBC11EC73DE7FD38235923 /* Products */;
@@ -161,6 +164,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				205C8BDABF79829560A4D526 /* Models.swift in Sources */,
+				0A0D0B98682CB59C1F41720B /* NativeSession.swift in Sources */,
 				F555AAEC5638E6B945155BB9 /* PlanManagerApp.swift in Sources */,
 				3FFC3F31D34CA89C49C1603A /* Reader.swift in Sources */,
 			);
@@ -232,7 +236,6 @@
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CLERK_PUBLISHABLE_KEY = "";
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -252,9 +255,10 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_ClerkPublishableKey = "$(CLERK_PUBLISHABLE_KEY)";
 				INFOPLIST_KEY_PlanServiceURL = "$(PLAN_SERVICE_URL)";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_WorkOSClientID = "$(WORKOS_CLIENT_ID)";
+				INFOPLIST_KEY_WorkOSRedirectURI = "$(WORKOS_REDIRECT_URI)";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
@@ -267,6 +271,8 @@
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
+				WORKOS_CLIENT_ID = "";
+				WORKOS_REDIRECT_URI = "";
 			};
 			name = Debug;
 		};
@@ -303,7 +309,6 @@
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CLERK_PUBLISHABLE_KEY = "";
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
@@ -317,9 +322,10 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_ClerkPublishableKey = "$(CLERK_PUBLISHABLE_KEY)";
 				INFOPLIST_KEY_PlanServiceURL = "$(PLAN_SERVICE_URL)";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_WorkOSClientID = "$(WORKOS_CLIENT_ID)";
+				INFOPLIST_KEY_WorkOSRedirectURI = "$(WORKOS_REDIRECT_URI)";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
@@ -331,6 +337,8 @@
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
+				WORKOS_CLIENT_ID = "";
+				WORKOS_REDIRECT_URI = "";
 			};
 			name = Release;
 		};
@@ -411,21 +419,21 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		CEF4803B7D014670F5053D10 /* XCRemoteSwiftPackageReference "clerk-ios" */ = {
+		F00BDF1499F5953C1C43889D /* XCRemoteSwiftPackageReference "workos-ios" */ = {
 			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/clerk/clerk-ios";
+			repositoryURL = "https://github.com/workos/workos-ios";
 			requirement = {
 				kind = exactVersion;
-				version = 1.7.1;
+				version = 0.9.0;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		DD2E46EE1FFC2DC21FAB3483 /* ClerkKit */ = {
+		7B64EED19E953BF17A9A4A7E /* WorkOS */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = CEF4803B7D014670F5053D10 /* XCRemoteSwiftPackageReference "clerk-ios" */;
-			productName = ClerkKit;
+			package = F00BDF1499F5953C1C43889D /* XCRemoteSwiftPackageReference "workos-ios" */;
+			productName = WorkOS;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

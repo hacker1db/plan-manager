@@ -1,34 +1,29 @@
 import SwiftUI
-import ClerkKit
 
 @main struct PlanManagerApp: App {
     private let fixture = ProcessInfo.processInfo.arguments.contains("--fixtures")
-    private let configured: Bool
-    init() {
-        let key = Bundle.main.object(forInfoDictionaryKey: "ClerkPublishableKey") as? String ?? ""
-        configured = key.hasPrefix("pk_test_") || key.hasPrefix("pk_live_")
-        if configured && !ProcessInfo.processInfo.arguments.contains("--fixtures") { Clerk.configure(publishableKey: key) }
-    }
     var body: some Scene {
         WindowGroup {
             if fixture { LibraryView(repository: FixtureRepository(), fixture: true, signOut: {}) }
-            else if configured { AuthenticatedRoot().environment(Clerk.shared) }
-            else { ContentUnavailableView("Development configuration required", systemImage: "gear", description: Text("Set the Clerk publishable key and HTTPS service URL. Use --fixtures for an offline preview.")) }
+            else { AuthenticatedRoot() }
         }
     }
 }
 struct AuthenticatedRoot: View {
-    @Environment(Clerk.self) private var clerk
+    @State private var auth = NativeSession()
     @State private var error: String?
     var body: some View {
         Group {
-            if let user = clerk.user, let base = URL(string: Bundle.main.object(forInfoDictionaryKey: "PlanServiceURL") as? String ?? ""), base.scheme == "https" {
-                LibraryView(repository: APIRepository(base: base, token: { try await clerk.auth.getToken() }), fixture: false, signOut: { try await clerk.auth.signOut() }).id(user.id)
+            if !auth.configured {
+                ContentUnavailableView("Development configuration required", systemImage: "gear", description: Text("Configure the shared WorkOS environment, approved native redirect and HTTPS Plan Manager service. Use --fixtures for an offline preview."))
+            } else if auth.signedIn, let base = auth.serviceURL {
+                LibraryView(repository: APIRepository(base: base, token: { try await auth.token() }), fixture: false, signOut: { try auth.signOut() }).id(auth.sessionGeneration)
             } else {
                 VStack(spacing: 20) {
                     Text("Plan Manager").font(.largeTitle)
-                    Text("Sign in to your private hosted library.")
-                    Button("Sign in") { Task { do { try await clerk.auth.startHostedAuth(mode: .signIn) } catch { self.error = "Sign-in could not complete. Please retry." } } }
+                    Text("Sign in with your existing Plan Manager account.")
+                    Button("Sign in") { Task { do { try await auth.signIn() } catch { self.error = "Sign-in could not complete. Please retry." } } }.disabled(auth.signingIn)
+                    if auth.signingIn { ProgressView() }
                     if let error { Text(error).foregroundStyle(.red) }
                 }.padding()
             }

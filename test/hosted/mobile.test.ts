@@ -29,3 +29,25 @@ test("two clients cannot silently overwrite and a refreshed no-op does not write
   assert.equal((await changeMobileStatus(initial.id, {status: "completed", expectedRevision: current.revision}, dependencies)).status, 200)
   assert.equal(writes, 1)
 })
+
+ test("pagination is opt-in and bounded, with status filters", async () => {
+  const {pagePlans} = await import("../../src/lib/server/mobile.ts")
+  const plans = [initial, {...initial, id: "plan_5678", status: "completed" as const}]
+  assert.equal(pagePlans(plans, new URL("https://example.test")).plans.length, 2)
+  assert.equal(pagePlans(plans, new URL("https://example.test?limit=1")).nextOffset, 1)
+  assert.equal(pagePlans(plans, new URL("https://example.test?limit=1&offset=1")).nextOffset, null)
+  assert.equal(pagePlans(plans, new URL("https://example.test?status=completed")).plans[0].id, "plan_5678")
+  assert.throws(() => pagePlans(plans, new URL("https://example.test?limit=101")), RangeError)
+})
+
+test("rendered headings have deterministic anchors without executing MDX or raw HTML", async () => {
+  const {mobileDocument, resolveAnchor} = await import("../../src/lib/server/mobile-document.ts")
+  const original = mobileDocument("# Root\n\n## Review\n\nKeep context\n<script>alert(1)</script>")
+  assert.equal(original.headings.length, 2)
+  assert.doesNotMatch(original.html, /<script/)
+  assert.deepEqual(original, mobileDocument("# Root\n\n## Review\n\nKeep context\n<script>alert(1)</script>"))
+  assert.equal(resolveAnchor(original.headings[1], []), null)
+  const duplicate = mobileDocument("# Root\n\n## Review\n\nKeep context\n\n## Review\n\nKeep context")
+  assert.equal(resolveAnchor(duplicate.headings[1], duplicate.headings), null)
+  assert.notEqual(duplicate.headings[1].id, duplicate.headings[2].id)
+})
