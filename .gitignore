@@ -19,3 +19,10 @@ src/lib/hosted/generated-dashboard.ts
 .claude/*
 !.claude/skills/
 .omc/
+
+# Native local builds and configuration
+ios/**/build/
+ios/**/DerivedData/
+ios/**/*.xcuserstate
+ios/**/xcuserdata/
+ios/**/Local.xcconfig
