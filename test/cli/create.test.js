@@ -227,11 +227,11 @@ test('plan rejects a non-https site URL', async () => {
   })
 })
 
-test('legacy pasted-token login explains the Clerk device-login replacement', async () => {
+test('legacy pasted-token login rejects process arguments and requires stdin', async () => {
   await withHome(async dir => {
     const login = planCmd(['auth', 'login', '--token', 'not-a-plan-manager-token'], { HOME: dir })
     assert.equal(login.status, 2)
-    assert.match(login.stderr, /Token format is invalid.*plan auth login/)
+    assert.match(login.stderr, /--token option is not accepted.*--stdin/)
   })
 })
 

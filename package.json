@@ -5,7 +5,7 @@
   "type": "module",
   "packageManager": "pnpm@10.17.1",
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=22.17.0"
   },
   "bin": {
     "plan": "./bin/plan"
@@ -14,13 +14,13 @@
     "prepare": "pnpm build:cli",
     "build": "pnpm build:cli && pnpm build:web",
     "build:cli": "tsc --project tsconfig.cli.json && node scripts/copy-dashboard-assets.mjs",
-    "build:web": "node scripts/sync-dashboard-style.mjs && next build",
+    "build:web": "node scripts/sync-dashboard-style.mjs && vite build",
     "dev": "tsx watch scripts/dev.mts serve --foreground",
-    "dev:web": "node scripts/sync-dashboard-style.mjs && next dev",
-    "start:web": "next start",
+    "dev:web": "node scripts/sync-dashboard-style.mjs && vite dev",
+    "start:web": "vite preview",
     "typecheck": "pnpm typecheck:cli && pnpm typecheck:web",
     "typecheck:cli": "tsc --project tsconfig.cli.json --noEmit",
-    "typecheck:web": "node scripts/sync-dashboard-style.mjs && next typegen && tsc --noEmit",
+    "typecheck:web": "node scripts/sync-dashboard-style.mjs && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "test": "pnpm build:cli && node --test 'test/lib/*.js' 'test/cli/*.js' && node --import tsx --test 'test/cli/**/*.test.ts' && pnpm test:web",
     "test:web": "node scripts/sync-dashboard-style.mjs && node --import tsx --test 'test/hosted/**/*.test.ts' 'test/hosted/**/*.test.tsx'",
     "test:lib": "pnpm build:cli && node --test 'test/lib/*.js'",
@@ -28,27 +28,33 @@
     "db:migrate": "node --env-file=.env.local --import tsx scripts/migrate-hosted.ts"
   },
   "dependencies": {
-    "@clerk/nextjs": "^7.0.0",
     "@neondatabase/serverless": "^1.0.2",
+    "@sveltejs/kit": "3.1.0",
     "@vercel/analytics": "^2.0.1",
     "@vercel/blob": "^2.1.0",
+    "@workos/authkit-sveltekit": "0.3.0",
+    "jose": "^6.2.13",
     "js-yaml": "^4.1.0",
     "nanoid": "^5.0.7",
-    "next": "16.4.1",
     "proper-lockfile": "4.1.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
-    "remark-mdx": "^3.1.1"
+    "remark-mdx": "^3.1.1",
+    "svelte": "5.57.2"
   },
   "devDependencies": {
+    "@sveltejs/adapter-vercel": "7.0.1",
+    "@sveltejs/vite-plugin-svelte": "7.3.1",
     "@types/js-yaml": "4.0.9",
     "@types/node": "24.3.1",
     "@types/proper-lockfile": "4.1.4",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "svelte-check": "4.7.7",
     "tsx": "4.20.6",
-    "typescript": "5.9.2"
+    "typescript": "6.0.3",
+    "vite": "8.3.5"
   }
 }

@@ -3,6 +3,7 @@ import { test } from "node:test"
 import { renderToStaticMarkup } from "react-dom/server"
 import PlanMarkdown, { markdownBody } from "../../src/components/plan-markdown"
 import { libraryBody, planBody } from "../../src/components/generated-dashboard"
+import { hostedPlanShell } from "../../src/hosted/lib/dashboard"
 import { access, readFile } from "node:fs/promises"
 import { fileURLToPath } from "node:url"
 import { resolve } from "node:path"
@@ -36,6 +37,19 @@ test("hosted rendering switches to MDX blocks when frontmatter declares format: 
   assert.doesNotMatch(plain, /pm-callout/)
 })
 
+test("hosted shell preserves dollar replacement sequences in rendered plan content", () => {
+  const shell = hostedPlanShell({
+    id: "plan_1",
+    title: "Dollar literals",
+    status: "active",
+    tags: [],
+    created: "2026-10-25T00:00:00.000Z",
+    updated: "2026-10-25T00:00:00.000Z",
+    revision: "0123456789abcdef",
+  }, "# Replacement\n\nThe literal sequence is `$&`.")
+  assert.match(shell, /The literal sequence is <code>\$&amp;<\/code>\./)
+})
+
 test("hosted shells and browser assets are generated from the canonical local dashboard", async () => {
   const root = resolve(fileURLToPath(new URL("..", import.meta.url)), "..")
   const dashboard = resolve(root, "src/dashboard")
@@ -50,16 +64,16 @@ test("hosted shells and browser assets are generated from the canonical local da
   assert.equal(libraryBody.trim(), await readBody("index.html"))
   assert.equal(planBody.trim(), await readBody("plan.html"))
   for (const filename of ["app.js", "plan.js"]) {
-    assert.equal(await readFile(resolve(root, "public", filename), "utf8"), await readFile(resolve(dashboard, filename), "utf8"))
+    assert.equal(await readFile(resolve(root, "static", filename), "utf8"), await readFile(resolve(dashboard, filename), "utf8"))
   }
-  const libraryScript = await readFile(resolve(root, "public", "app.js"), "utf8")
-  const detailScript = await readFile(resolve(root, "public", "plan.js"), "utf8")
+  const libraryScript = await readFile(resolve(root, "static", "app.js"), "utf8")
+  const detailScript = await readFile(resolve(root, "static", "plan.js"), "utf8")
   assert.match(libraryScript, /status\.className = 'status-select'/)
   assert.match(libraryScript, /for \(const value of \['active', 'completed', 'archived'\]\)/)
   assert.match(libraryScript, /if \(!hosted\) \{\s+actions\.append\(/)
   assert.match(libraryScript, /setInterval\(\(\) => loadPlans\(\)/)
   assert.match(detailScript, /if \(hosted\) \{[\s\S]*?setInterval\(reconcileHostedRevision, 15000\)/)
-  assert.equal(await readFile(resolve(root, "src", "app", "globals.css"), "utf8"), await readFile(resolve(dashboard, "style.css"), "utf8"))
-  assert.deepEqual(await readFile(resolve(root, "public", "dashboard-icon.png")), await readFile(resolve(dashboard, "icon.png")))
+  assert.equal(await readFile(resolve(root, "src", "routes", "globals.css"), "utf8"), await readFile(resolve(dashboard, "style.css"), "utf8"))
+  assert.deepEqual(await readFile(resolve(root, "static", "dashboard-icon.png")), await readFile(resolve(dashboard, "icon.png")))
   await assert.rejects(access(resolve(root, "hosted")), { code: "ENOENT" })
 })

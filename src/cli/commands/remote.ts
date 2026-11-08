@@ -1,8 +1,6 @@
 import { mkdir, readFile, writeFile, chmod } from 'node:fs/promises'
 import { join } from 'node:path'
 import { spawn, spawnSync } from 'node:child_process'
-import { createHash, randomBytes, timingSafeEqual } from 'node:crypto'
-import { createServer } from 'node:http'
 import { getConfigDir } from '../../lib/config.js'
 import { initStorage, listPlanFiles, resolveByIdOrSlug } from '../../lib/storage.js'
 import { readPlan } from '../../lib/metadata.js'
@@ -12,13 +10,18 @@ import { EXIT } from '../exit.js'
 
 type Site = { url: string }
 type SiteConfig = { version: 1; revisions: Record<string, string> }
-type OAuthConfig = { clientId: string; issuerUrl: string }
-type OAuthMetadata = { authorization_endpoint?: string; token_endpoint?: string }
+type OAuthConfig = { version: 2; clientId: string; issuerUrl: string; audience: string; scope: string; deviceAuthorizationEndpoint: string; tokenEndpoint: string; jwksUrl: string }
+type DeviceAuthorizationResponse = { device_code?: string; user_code?: string; verification_uri?: string; verification_uri_complete?: string; expires_in?: number; interval?: number }
 type OAuthTokenResponse = { access_token?: string; refresh_token?: string; token_type?: string; expires_in?: number; error?: string; error_description?: string }
-type StoredOAuthCredential = { version: 1; accessToken: string; refreshToken: string; accessTokenExpiresAt: number; tokenEndpoint: string; clientId: string }
+type StoredOAuthCredential = { version: 2; provider: 'workos-cli'; siteUrl: string; accessToken: string; refreshToken: string; accessTokenExpiresAt: number; tokenEndpoint: string; clientId: string; issuerUrl: string; audience: string; scope: string }
 
 const DEFAULT_SITE_URL = 'https://planmanager.hacker1db.dev'
 const KEYCHAIN_SERVICE = 'plan-manager:site'
+type StoredLegacyCredential = { version: 2; provider: 'legacy-token'; siteUrl: string; token: string }
+const LEGACY_TOKEN = /^pm_[A-Za-z0-9_-]{8,64}_[A-Za-z0-9_-]{32,128}$/
+const UNBOUND_CREDENTIAL = 'Stored credential is not bound to this site. Run "plan auth login" to sign in again.'
+const PROVIDER_REQUEST_TIMEOUT_MS = 30_000
+const MAX_PROVIDER_RESPONSE_BYTES = 1 << 20
 
 
 function configPath(): string {
@@ -29,9 +32,13 @@ function securityCommand(): string {
   return process.env.PLAN_MANAGER_SECURITY_COMMAND ?? '/usr/bin/security'
 }
 
+const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]'])
+
 function validSiteUrl(value: string): string {
   const url = new URL(value)
-  if (url.protocol !== 'https:' || url.username || url.password || url.pathname !== '/' || url.search || url.hash) throw new Error('PLAN_MANAGER_URL must be a bare https URL')
+  // Plain http is allowed only for loopback, where traffic never leaves the machine.
+  const secure = url.protocol === 'https:' || (url.protocol === 'http:' && LOOPBACK_HOSTS.has(url.hostname))
+  if (!secure || url.username || url.password || url.pathname !== '/' || url.search || url.hash) throw new Error('PLAN_MANAGER_URL must be a bare https URL, or http://localhost for local testing')
   return url.toString().replace(/\/$/, '')
 }
 
@@ -72,60 +79,110 @@ async function saveConfig(config: SiteConfig): Promise<void> {
   await chmod(path, 0o600)
 }
 
-function credentialFromKeychain(): string {
-  const result = spawnSync(securityCommand(), ['find-generic-password', '-a', 'plan-manager', '-s', KEYCHAIN_SERVICE, '-w'], { encoding: 'utf8' })
-  if (result.status !== 0) throw new Error('Not signed in. Run "plan auth login".')
+// Keychain records are namespaced by normalized site origin ("plan-manager:site:<origin>"),
+// matching the Go CLI, so a credential issued for one site is never looked up for another.
+function siteKeychainService(site: Site): string {
+  return `${KEYCHAIN_SERVICE}:${site.url}`
+}
+
+function credentialFromKeychain(site: Site): string {
+  const result = spawnSync(securityCommand(), ['find-generic-password', '-a', 'plan-manager', '-s', siteKeychainService(site), '-w'], { encoding: 'utf8' })
+  if (result.status !== 0) {
+    // A record under the old, unnamespaced service is not bound to any site.
+    const legacy = spawnSync(securityCommand(), ['find-generic-password', '-a', 'plan-manager', '-s', KEYCHAIN_SERVICE, '-w'], { encoding: 'utf8' })
+    if (legacy.status === 0 && legacy.stdout.trim() && !legacy.stdout.includes('"siteUrl"')) throw new Error(UNBOUND_CREDENTIAL)
+    throw new Error('Not signed in. Run "plan auth login".')
+  }
   return result.stdout.trim()
 }
 
-function storeCredential(value: string): void {
-  const result = spawnSync(securityCommand(), ['add-generic-password', '-U', '-a', 'plan-manager', '-s', KEYCHAIN_SERVICE, '-w', value], { encoding: 'utf8' })
+function storeCredential(site: Site, value: string): void {
+  const result = spawnSync(securityCommand(), ['add-generic-password', '-U', '-a', 'plan-manager', '-s', siteKeychainService(site), '-w'], { encoding: 'utf8', input: `${value}\n` })
   if (result.status !== 0) throw new Error(`Unable to store credential in macOS Keychain: ${result.stderr.trim()}`)
 }
 
-function storeLegacyToken(token: string): void {
-  if (!/^pm_[A-Za-z0-9_-]{8,64}_[A-Za-z0-9_-]{32,128}$/.test(token)) throw new Error('Token format is invalid. Clerk login no longer needs a pasted token; run "plan auth login" instead.')
-  storeCredential(token)
+export function storeLegacyToken(site: Site, token: string): void {
+  if (!LEGACY_TOKEN.test(token)) throw new Error('Token format is invalid. WorkOS login does not use a pasted token; run "plan auth login" instead.')
+  const credential: StoredLegacyCredential = { version: 2, provider: 'legacy-token', siteUrl: site.url, token }
+  storeCredential(site, JSON.stringify(credential))
 }
 
 function parseStoredOAuthCredential(value: string): StoredOAuthCredential | null {
   try {
     const parsed = JSON.parse(value) as StoredOAuthCredential
-    if (parsed.version === 1 && typeof parsed.accessToken === 'string' && typeof parsed.refreshToken === 'string' && typeof parsed.accessTokenExpiresAt === 'number' && typeof parsed.tokenEndpoint === 'string' && typeof parsed.clientId === 'string') return parsed
+    if (parsed.version === 2 && parsed.provider === 'workos-cli' && typeof parsed.siteUrl === 'string' && typeof parsed.accessToken === 'string' && typeof parsed.refreshToken === 'string' && typeof parsed.accessTokenExpiresAt === 'number' && typeof parsed.tokenEndpoint === 'string' && typeof parsed.clientId === 'string' && typeof parsed.issuerUrl === 'string' && typeof parsed.audience === 'string' && parsed.scope === 'plans:write') return parsed
   } catch { }
   return null
 }
 
 function validateHttpsEndpoint(value: string, label: string): string {
   const url = new URL(value)
-  if (url.protocol !== 'https:' || url.username || url.password) throw new Error(`${label} must be an HTTPS URL`)
-  return url.toString()
+  if (url.protocol !== 'https:' || url.username || url.password || url.search || url.hash) throw new Error(`${label} must be an HTTPS URL`)
+  return url.toString().replace(/\/$/, '')
 }
 
-async function responseJson<T>(response: Response, label: string): Promise<T> {
-  const body = await response.json().catch(() => ({})) as T & OAuthTokenResponse
+async function boundedResponseJson<T>(response: Response, label: string): Promise<T & OAuthTokenResponse> {
+  if (!response.body) return {} as T & OAuthTokenResponse
+  const reader = response.body.getReader()
+  const chunks: Uint8Array[] = []
+  let length = 0
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+    length += value.byteLength
+    if (length > MAX_PROVIDER_RESPONSE_BYTES) {
+      await reader.cancel()
+      throw new Error(`${label} response exceeded 1 MiB`)
+    }
+    chunks.push(value)
+  }
+  const data = new Uint8Array(length)
+  let offset = 0
+  for (const chunk of chunks) {
+    data.set(chunk, offset)
+    offset += chunk.byteLength
+  }
+  const text = new TextDecoder().decode(data)
+  if (!text) return {} as T & OAuthTokenResponse
+  try {
+    return JSON.parse(text) as T & OAuthTokenResponse
+  } catch {
+    if (!response.ok) return {} as T & OAuthTokenResponse
+    throw new Error(`${label} returned invalid JSON`)
+  }
+}
+
+export async function fetchJsonWithDeadline<T>(input: string, init: RequestInit, label: string, timeoutMs = PROVIDER_REQUEST_TIMEOUT_MS): Promise<{ response: Response; body: T & OAuthTokenResponse }> {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
+  try {
+    const response = await fetch(input, { ...init, signal: controller.signal })
+    const body = await boundedResponseJson<T>(response, label)
+    return { response, body }
+  } catch (error) {
+    if (controller.signal.aborted) throw new Error(`${label} timed out`)
+    throw error
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
+function requireOkJson<T>(response: Response, body: T & OAuthTokenResponse, label: string): T {
   if (!response.ok) throw new Error(body.error_description ?? body.error ?? `${label} failed (${response.status})`)
   return body
 }
 
 async function getOAuthConfiguration(site: Site): Promise<OAuthConfig> {
-  const response = await fetch(`${site.url}/api/v1`, { headers: { accept: 'application/json' } })
-  const value = await responseJson<OAuthConfig>(response, 'Plan Manager auth configuration')
-  if (typeof value.clientId !== 'string' || !value.clientId || typeof value.issuerUrl !== 'string') throw new Error('Plan Manager returned an invalid OAuth configuration')
-  return { clientId: value.clientId, issuerUrl: validateHttpsEndpoint(value.issuerUrl, 'Clerk issuer') }
-}
-
-async function getOAuthMetadata(issuerUrl: string): Promise<OAuthMetadata> {
-  const metadataUrl = new URL('/.well-known/oauth-authorization-server', issuerUrl)
-  const response = await fetch(metadataUrl, { headers: { accept: 'application/json' } })
-  const metadata = await responseJson<OAuthMetadata>(response, 'Clerk OAuth metadata')
-  if (!metadata.authorization_endpoint || !metadata.token_endpoint) {
-    throw new Error('This Clerk instance does not advertise Authorization Code with PKCE. Enable it for the Plan Manager CLI application in Clerk.')
-  }
-  return {
-    authorization_endpoint: validateHttpsEndpoint(metadata.authorization_endpoint, 'Authorization endpoint'),
-    token_endpoint: validateHttpsEndpoint(metadata.token_endpoint, 'Token endpoint'),
-  }
+  const { response, body } = await fetchJsonWithDeadline<OAuthConfig>(`${site.url}/api/v1`, { headers: { accept: 'application/json' }, redirect: 'error' }, 'Plan Manager auth configuration')
+  const value = requireOkJson<OAuthConfig>(response, body, 'Plan Manager auth configuration')
+  if (value.version !== 2 || typeof value.clientId !== 'string' || !value.clientId || typeof value.audience !== 'string' || !value.audience || value.scope !== 'plans:write') throw new Error('Plan Manager returned an invalid WorkOS CLI configuration')
+  const issuerUrl = validateHttpsEndpoint(value.issuerUrl, 'WorkOS issuer')
+  const deviceAuthorizationEndpoint = validateHttpsEndpoint(value.deviceAuthorizationEndpoint, 'Device authorization endpoint')
+  const tokenEndpoint = validateHttpsEndpoint(value.tokenEndpoint, 'Token endpoint')
+  const jwksUrl = validateHttpsEndpoint(value.jwksUrl, 'JWKS endpoint')
+  const issuerOrigin = new URL(issuerUrl).origin
+  if (new URL(issuerUrl).pathname !== '/' || new URL(deviceAuthorizationEndpoint).origin !== issuerOrigin || new URL(deviceAuthorizationEndpoint).pathname !== '/oauth2/device_authorization' || new URL(tokenEndpoint).origin !== issuerOrigin || new URL(tokenEndpoint).pathname !== '/oauth2/token' || new URL(jwksUrl).origin !== issuerOrigin || new URL(jwksUrl).pathname !== '/oauth2/jwks') throw new Error('Plan Manager returned cross-origin or nonstandard WorkOS CLI endpoints')
+  return { ...value, issuerUrl, deviceAuthorizationEndpoint, tokenEndpoint, jwksUrl }
 }
 
 function openVerificationUrl(value: string): void {
@@ -137,110 +194,86 @@ function openVerificationUrl(value: string): void {
   child.unref()
 }
 
-function base64Url(value: Buffer): string {
-  return value.toString('base64url')
-}
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
-function sameState(expected: string, received: string): boolean {
-  const left = Buffer.from(expected)
-  const right = Buffer.from(received)
-  return left.length === right.length && timingSafeEqual(left, right)
-}
-
-type AuthorizationCallback = { code: string }
-
-async function startAuthorizationCallback(state: string): Promise<{ redirectUri: string; result: Promise<AuthorizationCallback> }> {
-  let resolveResult!: (value: AuthorizationCallback) => void
-  let rejectResult!: (reason: Error) => void
-  const result = new Promise<AuthorizationCallback>((resolve, reject) => { resolveResult = resolve; rejectResult = reject })
-  const server = createServer((request, response) => {
-    const url = new URL(request.url ?? '/', 'http://127.0.0.1')
-    if (url.pathname !== '/callback') {
-      response.writeHead(404).end('Not found')
-      return
+export async function pollForDeviceToken(config: OAuthConfig, authorization: Required<Pick<DeviceAuthorizationResponse, 'device_code' | 'expires_in'>> & Pick<DeviceAuthorizationResponse, 'interval'>, wait: (ms: number) => Promise<unknown> = sleep): Promise<OAuthTokenResponse> {
+  const deadline = Date.now() + authorization.expires_in * 1000
+  let intervalSeconds = Math.min(60, Math.max(1, authorization.interval ?? 5))
+  while (Date.now() < deadline) {
+    const { response, body } = await fetchJsonWithDeadline<OAuthTokenResponse>(config.tokenEndpoint, {
+      method: 'POST',
+      redirect: 'error',
+      headers: { 'content-type': 'application/x-www-form-urlencoded', accept: 'application/json' },
+      body: new URLSearchParams({ client_id: config.clientId, grant_type: 'urn:ietf:params:oauth:grant-type:device_code', device_code: authorization.device_code }),
+    }, 'WorkOS device authorization')
+    if (response.ok) return body
+    if (body.error === 'authorization_pending') {
+      await wait(intervalSeconds * 1000)
+      continue
     }
-    const receivedState = url.searchParams.get('state')
-    const code = url.searchParams.get('code')
-    const error = url.searchParams.get('error')
-    if (!receivedState || !sameState(state, receivedState)) {
-      response.writeHead(400, { 'content-type': 'text/html; charset=utf-8' }).end('<p>Plan Manager sign-in could not be verified. Return to the sign-in page and try again.</p>')
-    } else if (error) {
-      response.writeHead(400, { 'content-type': 'text/html; charset=utf-8' }).end('<p>Plan Manager sign-in was cancelled. You may close this window.</p>')
-      rejectResult(new Error(`Clerk authorization failed: ${error}`))
-      server.close()
-    } else if (!code) {
-      response.writeHead(400, { 'content-type': 'text/html; charset=utf-8' }).end('<p>Plan Manager sign-in failed. Return to the sign-in page and try again.</p>')
-    } else {
-      response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }).end('<p>Plan Manager sign-in complete. You may close this window.</p>')
-      resolveResult({ code })
-      server.close()
+    if (body.error === 'slow_down') {
+      intervalSeconds = Math.min(60, intervalSeconds + 5)
+      await wait(intervalSeconds * 1000)
+      continue
     }
-  })
-  await new Promise<void>((resolve, reject) => {
-    server.once('error', reject)
-    server.listen(0, '127.0.0.1', () => {
-      server.off('error', reject)
-      resolve()
-    })
-  })
-  const address = server.address()
-  if (!address || typeof address === 'string') {
-    server.close()
-    throw new Error('Unable to start the local OAuth callback server')
+    throw new Error(body.error_description ?? body.error ?? `WorkOS device authorization failed (${response.status})`)
   }
-  const timeout = setTimeout(() => {
-    server.close()
-    rejectResult(new Error('Sign-in timed out. Run plan auth login again to start a new sign-in.'))
-  }, 5 * 60_000)
-  result.finally(() => clearTimeout(timeout)).catch(() => undefined)
-  return { redirectUri: `http://127.0.0.1:${address.port}/callback`, result }
+  throw new Error('WorkOS device authorization expired. Run plan auth login again.')
 }
 
-export async function requestAuthorizationCodeToken(site: Site): Promise<void> {
+export async function requestDeviceToken(site: Site, wait: (ms: number) => Promise<unknown> = sleep): Promise<void> {
   const config = await getOAuthConfiguration(site)
-  const metadata = await getOAuthMetadata(config.issuerUrl)
-  const state = base64Url(randomBytes(32))
-  const verifier = base64Url(randomBytes(48))
-  const challenge = base64Url(createHash('sha256').update(verifier).digest())
-  const callback = await startAuthorizationCallback(state)
-  const authorizationUrl = new URL(metadata.authorization_endpoint!)
-  authorizationUrl.search = new URLSearchParams({ response_type: 'code', client_id: config.clientId, redirect_uri: callback.redirectUri, scope: 'openid offline_access', state, code_challenge: challenge, code_challenge_method: 'S256' }).toString()
-  process.stdout.write(`Sign in to Plan Manager\nOpen: ${authorizationUrl.toString()}\nWaiting for approval...\n`)
-  openVerificationUrl(authorizationUrl.toString())
-  const { code } = await callback.result
-  const tokenResponse = await fetch(metadata.token_endpoint!, {
+  const { response, body } = await fetchJsonWithDeadline<DeviceAuthorizationResponse>(config.deviceAuthorizationEndpoint, {
     method: 'POST',
+    redirect: 'error',
     headers: { 'content-type': 'application/x-www-form-urlencoded', accept: 'application/json' },
-    body: new URLSearchParams({ client_id: config.clientId, grant_type: 'authorization_code', code, redirect_uri: callback.redirectUri, code_verifier: verifier }),
-  })
-  const token = await responseJson<OAuthTokenResponse>(tokenResponse, 'Clerk authorization code exchange')
-  if (!token.access_token || !token.refresh_token || token.token_type?.toLowerCase() !== 'bearer' || !Number.isFinite(token.expires_in)) throw new Error('Clerk returned an invalid token response')
-  const credential: StoredOAuthCredential = { version: 1, accessToken: token.access_token, refreshToken: token.refresh_token, accessTokenExpiresAt: Date.now() + token.expires_in! * 1000, tokenEndpoint: metadata.token_endpoint!, clientId: config.clientId }
-  storeCredential(JSON.stringify(credential))
-  process.stdout.write(`Signed in to ${site.url} and stored the Clerk credential in macOS Keychain.\n`)
+    body: new URLSearchParams({ client_id: config.clientId, scope: `openid offline_access ${config.scope}` }),
+  }, 'WorkOS device authorization')
+  const authorization = requireOkJson<DeviceAuthorizationResponse>(response, body, 'WorkOS device authorization')
+  if (!authorization.device_code || !authorization.user_code || !authorization.verification_uri || !Number.isFinite(authorization.expires_in) || authorization.expires_in! <= 0) throw new Error('WorkOS returned an invalid device authorization response')
+  const verificationUri = validateHttpsEndpoint(authorization.verification_uri_complete ?? authorization.verification_uri, 'Verification URI')
+  if (new URL(verificationUri).origin !== new URL(config.issuerUrl).origin) throw new Error('WorkOS returned a cross-origin verification URI')
+  process.stdout.write(`Sign in to Plan Manager\nCode: ${authorization.user_code}\nOpen: ${verificationUri}\nWaiting for approval...\n`)
+  openVerificationUrl(verificationUri)
+  const token = await pollForDeviceToken(config, { device_code: authorization.device_code, expires_in: authorization.expires_in!, interval: authorization.interval }, wait)
+  if (!token.access_token || !token.refresh_token || token.token_type?.toLowerCase() !== 'bearer' || !Number.isFinite(token.expires_in) || token.expires_in! <= 0) throw new Error('WorkOS returned an invalid token response')
+  const credential: StoredOAuthCredential = { version: 2, provider: 'workos-cli', siteUrl: site.url, accessToken: token.access_token, refreshToken: token.refresh_token, accessTokenExpiresAt: Date.now() + token.expires_in! * 1000, tokenEndpoint: config.tokenEndpoint, clientId: config.clientId, issuerUrl: config.issuerUrl, audience: config.audience, scope: config.scope }
+  storeCredential(site, JSON.stringify(credential))
+  process.stdout.write(`Signed in to ${site.url} and stored the WorkOS credential in macOS Keychain.\n`)
 }
 
-export async function tokenFromKeychain(): Promise<string> {
-  const value = credentialFromKeychain()
-  if (/^pm_[A-Za-z0-9_-]{8,64}_[A-Za-z0-9_-]{32,128}$/.test(value)) return value
+// Returns a bearer token only when the stored credential is bound to exactly this site's origin;
+// nothing is refreshed or sent otherwise.
+export async function tokenFromKeychain(site: Site = getSite()): Promise<string> {
+  const value = credentialFromKeychain(site)
+  if (LEGACY_TOKEN.test(value)) throw new Error(UNBOUND_CREDENTIAL)
+  let header: { version?: unknown; provider?: unknown; siteUrl?: unknown; token?: unknown } = {}
+  try { header = JSON.parse(value) ?? {} } catch { }
+  if (header.version === 1) throw new Error('Stored Clerk credential is obsolete. Run "plan auth login" to sign in with WorkOS.')
+  if (header.siteUrl !== site.url) throw new Error(UNBOUND_CREDENTIAL)
+  if (header.provider === 'legacy-token') {
+    if (header.version !== 2 || typeof header.token !== 'string' || !LEGACY_TOKEN.test(header.token)) throw new Error('Stored credential has an invalid format. Run "plan auth login" to sign in again.')
+    return header.token
+  }
   let credential = parseStoredOAuthCredential(value)
   if (!credential) throw new Error('Stored credential has an invalid format. Run "plan auth login" to sign in again.')
   if (credential.accessTokenExpiresAt <= Date.now() + 30_000) {
-    const response = await fetch(credential.tokenEndpoint, {
+    const { response, body } = await fetchJsonWithDeadline<OAuthTokenResponse>(credential.tokenEndpoint, {
       method: 'POST',
+      redirect: 'error',
       headers: { 'content-type': 'application/x-www-form-urlencoded', accept: 'application/json' },
       body: new URLSearchParams({ client_id: credential.clientId, grant_type: 'refresh_token', refresh_token: credential.refreshToken }),
-    })
-    const token = await responseJson<OAuthTokenResponse>(response, 'Clerk token refresh')
-    if (!token.access_token || !Number.isFinite(token.expires_in)) throw new Error('Clerk returned an invalid refreshed token')
-    credential = { ...credential, accessToken: token.access_token, refreshToken: token.refresh_token ?? credential.refreshToken, accessTokenExpiresAt: Date.now() + token.expires_in! * 1000 }
-    storeCredential(JSON.stringify(credential))
+    }, 'WorkOS token refresh')
+    const token = requireOkJson<OAuthTokenResponse>(response, body, 'WorkOS token refresh')
+    if (!token.access_token || !token.refresh_token || token.token_type?.toLowerCase() !== 'bearer' || !Number.isFinite(token.expires_in) || token.expires_in! <= 0) throw new Error('WorkOS returned an invalid refreshed token pair; sign in again')
+    credential = { ...credential, accessToken: token.access_token, refreshToken: token.refresh_token, accessTokenExpiresAt: Date.now() + token.expires_in! * 1000 }
+    storeCredential(site, JSON.stringify(credential))
   }
   return credential.accessToken
 }
 
-function removeToken(): void {
-  const result = spawnSync(securityCommand(), ['delete-generic-password', '-a', 'plan-manager', '-s', KEYCHAIN_SERVICE], { encoding: 'utf8' })
+function removeToken(site: Site): void {
+  const result = spawnSync(securityCommand(), ['delete-generic-password', '-a', 'plan-manager', '-s', siteKeychainService(site)], { encoding: 'utf8' })
   if (result.status !== 0 && !/could not be found/i.test(result.stderr)) throw new Error(`Unable to remove Keychain credential: ${result.stderr.trim()}`)
 }
 
@@ -259,29 +292,30 @@ function fail(message: string, code = EXIT.INVALID_INPUT): never {
   process.exit(code)
 }
 
-export async function cmdAuth(args: string[], opts: { stdin?: boolean; token?: string; json?: boolean }): Promise<void> {
+export async function cmdAuth(args: string[], opts: { stdin?: boolean; rejectedTokenFlag?: boolean; json?: boolean }): Promise<void> {
   const [sub] = args
   try {
     const site = getSite()
     if (sub === 'login') {
-      if (opts.stdin || opts.token) {
-        const token = opts.stdin ? await readStdin() : opts.token!
-        storeLegacyToken(token)
+      if (opts.rejectedTokenFlag) throw new Error('The --token option is not accepted because it exposes the credential in process arguments. Pipe a legacy pm_ token to "plan auth login --stdin" instead.')
+      if (opts.stdin) {
+        const token = await readStdin()
+        storeLegacyToken(site, token)
         process.stdout.write(opts.json ? JSON.stringify({ site: site.url, credential: 'configured', type: 'legacy' }) + '\n' : `Stored Plan Manager token for ${site.url} in macOS Keychain.\n`)
       } else {
-        await requestAuthorizationCodeToken(site)
-        if (opts.json) process.stdout.write(JSON.stringify({ site: site.url, credential: 'configured', type: 'clerk-oauth' }) + '\n')
+        await requestDeviceToken(site)
+        if (opts.json) process.stdout.write(JSON.stringify({ site: site.url, credential: 'configured', type: 'workos-cli' }) + '\n')
       }
       return
     }
     if (sub === 'logout') {
-      removeToken()
+      removeToken(site)
       process.stdout.write(opts.json ? JSON.stringify({ site: site.url, credential: 'removed' }) + '\n' : `Removed credential for ${site.url}.\n`)
       return
     }
     if (sub === 'status') {
       let configured = false
-      try { await tokenFromKeychain(); configured = true } catch { }
+      try { await tokenFromKeychain(site); configured = true } catch { }
       const result = { version: 1, site: site.url, credential: configured ? 'configured' : 'missing' }
       process.stdout.write(opts.json ? JSON.stringify(result) + '\n' : `${site.url}: ${configured ? 'signed in' : 'not signed in'}\n`)
       return
@@ -299,6 +333,7 @@ async function pushOne(site: Site, token: string, identifier: string, expectedRe
   const envelope = await buildEnvelope(parsed)
   const response = await fetch(`${site.url}/api/v1/plans/${encodeURIComponent(envelope.id)}/versions`, {
     method: 'PUT',
+    redirect: 'error',
     headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json', accept: 'application/json' },
     body: JSON.stringify({ id: envelope.id, title: envelope.title, status: envelope.status, tags: envelope.tags, created: envelope.created, updated: envelope.updated, markdown: parsed.raw, revision: envelope.revision, expectedRevision }),
   })
@@ -315,7 +350,7 @@ export async function cmdPush(args: string[], opts: { json?: boolean }): Promise
     await initStorage()
     const site = getSite()
     const config = await loadConfig(site)
-    const token = await tokenFromKeychain()
+    const token = await tokenFromKeychain(site)
     const identifiers = identifier === '--all' ? await Promise.all((await listPlanFiles()).map(async path => (await readPlan(path)).meta.id)) : [identifier]
     const results = []
     for (const item of identifiers) {

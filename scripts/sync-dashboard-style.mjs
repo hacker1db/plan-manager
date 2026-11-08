@@ -4,9 +4,9 @@ import { fileURLToPath } from 'node:url'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const dashboard = resolve(root, 'src/dashboard')
-const publicDir = resolve(root, 'public')
+const publicDir = resolve(root, 'static')
 const componentDir = resolve(root, 'src/components')
-const appDir = resolve(root, 'src/app')
+const appDir = resolve(root, 'src/routes')
 await mkdir(publicDir, { recursive: true })
 await mkdir(componentDir, { recursive: true })
 
