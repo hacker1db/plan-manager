@@ -5,7 +5,7 @@ import { writePlan } from "#lib/server/store.ts"
 import type { HostedPlanInput } from "#lib/hosted/types.ts"
 import type { RequestHandler } from "./$types"
 
-// CLI upload (`plan push`): pm_ tokens with plans:write, or Clerk OAuth tokens for the CLI app.
+// CLI upload (`plan push`): pm_ tokens with plans:write, or WorkOS Connect tokens for the CLI app.
 export const PUT: RequestHandler = async ({ request, params, locals }) => {
   const denied = await requireWriteToken(request, "plans:write")
   if (denied) return denied

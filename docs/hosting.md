@@ -81,3 +81,5 @@ pnpm build
 ```
 
 Roll back through the existing Vercel project's deployment history. Revoking an upload token or taking the hosted service offline leaves local Markdown intact. Database and Blob backups require their own retention policy; Git backs up application source, not hosted plan data. Local mocked checks do not make the migration production-ready; live preview and production verification remain required.
+
+SvelteKit 3 requires all private deployment variables to be declared in `src/env.ts`. Keep the WorkOS variables declared there when changing deployment configuration. The runtime is Node 22; local tooling requires Node >=22.17.0.
