@@ -18,7 +18,7 @@ A local-first library for Markdown plans. Plans are plain `.md` files with YAML 
 - **Safe writes.** Writes are atomic and use a lock. Paths that escape the plan home are rejected, and `--if-revision` guards against overwriting someone else's changes.
 - **Local dashboard.** Browse, search, filter by status, and check off tasks at `http://plans.localhost:4173`. The page refreshes live when files change on disk.
 - **Capture.** Turn an existing Markdown or HTML file into a plan. HTML is converted with Pandoc. Capturing the same source again updates the existing plan instead of creating a duplicate.
-- **Optional hosted viewer.** `plan push` uploads plans to the private Next.js app in `src/app` (see [`docs/hosting.md`](docs/hosting.md)). Your local Markdown stays the source of truth.
+- **Optional hosted viewer.** `plan push` uploads plans to the private SvelteKit app in `src/routes` (see [`docs/hosting.md`](docs/hosting.md)). Your local Markdown stays the source of truth.
 
 ## Requirements
 
@@ -194,9 +194,11 @@ src/lib/            Storage, frontmatter, IDs, revisions, locking, service manag
 src/lib/mdx/        MDX block registry, static prop parser, and shared renderer
 src/server/         Local dashboard HTTP server and JSON API
 src/dashboard/      Canonical static dashboard assets (HTML, JS, CSS)
-src/app/            Next.js routes for the same private hosted service
-src/components/     Shared and hosted dashboard React components
-src/hosted/         Hosted-only auth, storage, database, and migrations
+src/routes/         SvelteKit pages and +server.ts APIs for the private hosted service
+src/hooks.server.ts Clerk authentication and the hosted owner gate
+src/lib/server/     Hosted-only auth, storage, database, renderer, and migrations
+src/lib/hosted/     Browser-safe hosted helpers (Clerk loader, Mermaid, status requests)
+src/lib/components/ Svelte components for the hosted dashboard
 test/               node:test suites for lib and CLI
 docs/hosting.md     Hosted deployment and authentication guide
 docs/recaps/        MDX recaps checked in alongside the changes they describe
@@ -207,10 +209,10 @@ docs/recaps/        MDX recaps checked in alongside the changes they describe
 
 ```sh
 pnpm dev           # local dashboard at plans.localhost:4173
-pnpm dev:web       # Next.js app used by Vercel, locally
+pnpm dev:web       # SvelteKit app used by Vercel, locally
 pnpm typecheck     # local CLI and hosted web app
 pnpm test          # CLI/lib and hosted security/dashboard tests
-pnpm build         # CLI and Vercel Next.js production builds
+pnpm build         # CLI and Vercel SvelteKit production builds
 pnpm test:lib
 pnpm test:cli
 ```

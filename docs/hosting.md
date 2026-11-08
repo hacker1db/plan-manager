@@ -1,16 +1,16 @@
 # Hosted Plan Manager
 
-The Next.js application in `src/app` serves the private plan library at `https://planmanager.hacker1db.dev`. The CLI, local server, and hosted app share the root pnpm package and `src/` source tree. Canonical local Markdown remains in `~/notes/SecondBrain/4.Resources/plans`; uploads are explicit.
+The SvelteKit application in `src/routes` serves the private plan library at `https://planmanager.hacker1db.dev`. The CLI, local server, and hosted app share the root pnpm package and `src/` source tree. Canonical local Markdown remains in `~/notes/SecondBrain/4.Resources/plans`; uploads are explicit.
 
 ## GitHub and Vercel
 
 Push the complete plan-manager repository to GitHub, then connect that repository to the existing `hacker1dbs-projects/plan-manager` Vercel project. Keep the existing project so its domain, integrations, and environment variables are preserved.
 
-Set the existing Vercel project's root directory to the repository root (`.`). Use the Next.js framework preset, `pnpm install --frozen-lockfile` as the install command, and `pnpm build` as the build command. Next.js manages the output directory. Select the desired production branch after it exists on GitHub. The build creates the CLI output and then builds the Next.js app from `src/app`.
+Set the existing Vercel project's root directory to the repository root (`.`). The checked-in `vercel.json` selects the SvelteKit framework preset, `pnpm install --frozen-lockfile` as the install command, and `pnpm build` as the build command, so no project setting needs to change by hand. `@sveltejs/adapter-vercel` writes the Build Output API directory and pins the Node.js 22 serverless runtime. Select the desired production branch after it exists on GitHub. The build creates the CLI output, builds the SvelteKit app, and then fails if server-only names (secret environment variables, Clerk backend, database, or the React renderer) appear in browser assets (`scripts/check-client-bundle.mjs`).
 
-Commit application source, migrations, tests, `pnpm-lock.yaml`, and `.env.example`. Local `.env*` secrets, `.vercel/`, `.next/`, `node_modules/`, and TypeScript caches are ignored. Never commit credentials or deployment-protection bypass tokens. The local `.vercel/` directory only identifies the linked project; it is not a Git backup.
+Commit application source, migrations, tests, `pnpm-lock.yaml`, `vercel.json`, and `.env.example`. Local `.env*` secrets, `.vercel/`, `.svelte-kit/`, `node_modules/`, and TypeScript caches are ignored. Never commit credentials or deployment-protection bypass tokens. The local `.vercel/` directory only identifies the linked project; it is not a Git backup.
 
-The canonical browser UI lives in `src/dashboard/`. Hosted library and detail pages package the same HTML shells and JavaScript used by the local server, and generate their stylesheet, scripts, and favicon from that directory before web development and builds. Hosted APIs adapt authenticated cloud data to the browser contract; local filesystem and editor actions remain local-only. Do not maintain a second hosted dashboard implementation or a separate app package.
+The canonical browser UI lives in `src/dashboard/`. Hosted library and detail pages package the same HTML shells and JavaScript used by the local server, and generate their stylesheet (`src/app.css`), scripts and favicon (`static/`), and shell bodies (`src/lib/hosted/generated-dashboard.ts`) from that directory before web development, checks, and builds. Hosted APIs adapt authenticated cloud data to the browser contract; local filesystem and editor actions remain local-only. Do not maintain a second hosted dashboard implementation or a separate app package.
 
 ## Local development
 
@@ -27,9 +27,11 @@ pnpm dev:web
 
 All required keys in `.env.example` must be configured at runtime; `PLAN_MANAGER_OAUTH_CLIENT_ID` is needed only for CLI Authorization Code + PKCE login. Keep template values empty. The owner ID and token pepper must be configured as well as the Clerk, Neon, and private Blob integration variables. Environment pulls can overwrite an existing local file; preserve local-only values before pulling.
 
-After linking and verifying environment configuration, apply the initial database schema with `pnpm db:migrate`. It loads root `.env.local` and runs an idempotent transaction. Run migrations intentionally rather than as part of every deployment.
+`pnpm dev:web` runs `vite dev`; SvelteKit loads `.env.local` into the server environment. After linking and verifying environment configuration, apply the initial database schema with `pnpm db:migrate`. It loads root `.env.local` and runs an idempotent transaction. Run migrations intentionally rather than as part of every deployment.
 
 ## Access and uploads
+
+The hosted app uses Clerk's framework-independent SDKs with the existing Clerk instance and unchanged variable names (`NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, optional `NEXT_PUBLIC_CLERK_SIGN_IN_URL`): `@clerk/backend` `authenticateRequest` runs in `src/hooks.server.ts` for every page and API request (including Clerk handshakes), and the browser loads clerk-js and Clerk's prebuilt UI from the instance's Frontend API to keep sessions fresh and to mount sign-in at `/sign-in`. Signed-out visitors go to `NEXT_PUBLIC_CLERK_SIGN_IN_URL` when set, otherwise to the Clerk Account Portal, with the original URL as `redirect_url`. No Clerk dashboard, application, key, or callback changes are required. Server modules live in `src/lib/server`, which SvelteKit refuses to import into browser code; only the publishable key reaches the client.
 
 Clerk authenticates browser sessions; only IDs listed in `PLAN_MANAGER_OWNER_CLERK_USER_IDS` may view or manage plans. Set it to a comma-separated allowlist of Clerk user IDs. The legacy `PLAN_MANAGER_OWNER_CLERK_USER_ID` remains supported as a single-user fallback. Disable public sign-up in Clerk and invite only the accounts that should share this plan library. The current deployment uses a Clerk development instance; production Clerk setup remains a separate deployment task.
 

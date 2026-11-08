@@ -1,17 +1,16 @@
 node_modules/
 dist/
-.next/
+.svelte-kit/
 .vercel/
 *.tsbuildinfo
-next-env.d.ts
 .env*
 !.env.example
 *.local
-public/app.js
-public/plan.js
-public/dashboard-icon.png
-src/app/globals.css
-src/components/generated-dashboard.ts
+static/app.js
+static/plan.js
+static/dashboard-icon.png
+src/app.css
+src/lib/hosted/generated-dashboard.ts
 .vercel
 .temp.values.txt
 
