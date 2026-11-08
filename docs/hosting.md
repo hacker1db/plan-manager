@@ -25,7 +25,7 @@ pnpm test
 pnpm dev:web
 ```
 
-All required keys in `.env.example` must be configured at runtime; `PLAN_MANAGER_OAUTH_CLIENT_ID` is needed only for CLI Authorization Code + PKCE login. Keep template values empty. The owner ID and token pepper must be configured as well as the Clerk, Neon, and private Blob integration variables. Environment pulls can overwrite an existing local file; preserve local-only values before pulling.
+All required keys in `.env.example` must be configured at runtime; `PLAN_MANAGER_OAUTH_CLIENT_ID` is needed only for CLI Authorization Code + PKCE login. Keep template values empty. The owner ID and token pepper must be configured as well as the Clerk, Neon, and private Blob integration variables. Environment pulls can overwrite an existing local file; preserve local-only values before pulling. SvelteKit 3 only exposes environment variables declared in `src/env.ts`, so declare any new hosted variable there as well (they are all private and optional, so missing values still fail closed with a 503).
 
 `pnpm dev:web` runs `vite dev`; SvelteKit loads `.env.local` into the server environment. After linking and verifying environment configuration, apply the initial database schema with `pnpm db:migrate`. It loads root `.env.local` and runs an idempotent transaction. Run migrations intentionally rather than as part of every deployment.
 

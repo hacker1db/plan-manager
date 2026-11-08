@@ -1,9 +1,9 @@
 <script lang="ts">
   import "../app.css"
   import { onMount } from "svelte"
-  import { dev } from "$app/environment"
+  import { dev } from "$app/env"
   import { injectAnalytics } from "@vercel/analytics/sveltekit"
-  import { loadClerk } from "$lib/hosted/clerk-browser.ts"
+  import { loadClerk } from "#lib/hosted/clerk-browser.ts"
   import type { Snippet } from "svelte"
   import type { LayoutData } from "./$types"
 

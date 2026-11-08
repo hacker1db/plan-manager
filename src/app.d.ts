@@ -1,4 +1,4 @@
-import type { AuthReader } from "$lib/server/auth.ts"
+import type { AuthReader } from "#lib/server/auth.ts"
 
 declare global {
   namespace App {

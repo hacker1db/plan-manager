@@ -1,6 +1,6 @@
 type EnvironmentSource = Readonly<Record<string, string | undefined>>
 
-// Server-only: SvelteKit's hook installs $env/dynamic/private here so .env files work in
+// Server-only: SvelteKit's hook installs $app/env/private (declared in src/env.ts) here so .env files work in
 // `vite dev`; on Vercel this is process.env. Variable names are unchanged from the Next.js app.
 let activeSource: EnvironmentSource = process.env
 

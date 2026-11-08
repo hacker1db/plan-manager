@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte"
-  import { loadClerk } from "$lib/hosted/clerk-browser.ts"
+  import { loadClerk } from "#lib/hosted/clerk-browser.ts"
   import type { PageData } from "./$types"
 
   let { data }: { data: PageData } = $props()

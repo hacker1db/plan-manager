@@ -1,8 +1,8 @@
-import { apiError, forbidden, jsonResponse, PRIVATE_NO_STORE, publicPlan } from "$lib/server/api.ts"
-import { requireWriteToken } from "$lib/server/auth.ts"
-import { requirePlanId } from "$lib/server/sanitize.ts"
-import { writePlan } from "$lib/server/store.ts"
-import type { HostedPlanInput } from "$lib/hosted/types.ts"
+import { apiError, forbidden, jsonResponse, PRIVATE_NO_STORE, publicPlan } from "#lib/server/api.ts"
+import { requireWriteToken } from "#lib/server/auth.ts"
+import { requirePlanId } from "#lib/server/sanitize.ts"
+import { writePlan } from "#lib/server/store.ts"
+import type { HostedPlanInput } from "#lib/hosted/types.ts"
 import type { RequestHandler } from "./$types"
 
 // CLI upload (`plan push`): pm_ tokens with plans:write, or Clerk OAuth tokens for the CLI app.

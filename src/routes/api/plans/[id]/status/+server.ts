@@ -1,8 +1,8 @@
-import { apiError, forbidden, jsonResponse, notFound, PRIVATE_NO_STORE, publicPlan } from "$lib/server/api.ts"
-import { requireOwnerResponse } from "$lib/server/auth.ts"
-import { isSameOriginRequest } from "$lib/server/security.ts"
-import { updatePlanStatus } from "$lib/server/store.ts"
-import { isPlanStatus } from "$lib/types.ts"
+import { apiError, forbidden, jsonResponse, notFound, PRIVATE_NO_STORE, publicPlan } from "#lib/server/api.ts"
+import { requireOwnerResponse } from "#lib/server/auth.ts"
+import { isSameOriginRequest } from "#lib/server/security.ts"
+import { updatePlanStatus } from "#lib/server/store.ts"
+import { isPlanStatus } from "#lib/types.ts"
 import type { RequestHandler } from "./$types"
 
 export const POST: RequestHandler = async ({ request, params, locals }) => {
