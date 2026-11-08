@@ -1,7 +1,7 @@
-import { apiError, forbidden, jsonResponse } from "$lib/server/api.ts"
-import { requireOwnerResponse } from "$lib/server/auth.ts"
-import { isSameOriginRequest } from "$lib/server/security.ts"
-import { revokeToken } from "$lib/server/store.ts"
+import { apiError, forbidden, jsonResponse } from "#lib/server/api.ts"
+import { requireOwnerResponse } from "#lib/server/auth.ts"
+import { isSameOriginRequest } from "#lib/server/security.ts"
+import { revokeToken } from "#lib/server/store.ts"
 import type { RequestHandler } from "./$types"
 
 export const DELETE: RequestHandler = async ({ request, params, locals }) => {

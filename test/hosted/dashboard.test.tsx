@@ -156,5 +156,5 @@ test("plan markup is rendered on the server and the client bundle never imports 
   const content = await readFile(resolve(fileURLToPath(new URL("../..", import.meta.url)), "src/lib/components/HostedPlanContent.svelte"), "utf8")
   const imports = content.match(/^\s*import .*$/gm) ?? []
   assert.ok(imports.length > 0)
-  for (const line of imports) assert.doesNotMatch(line, /react|plan-markdown|\$lib\/server/)
+  for (const line of imports) assert.doesNotMatch(line, /react|plan-markdown|[$#]lib\/server/)
 })

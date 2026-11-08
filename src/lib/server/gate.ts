@@ -1,4 +1,4 @@
-import type { Handle } from "@sveltejs/kit"
+import type { Handle } from "@sveltejs/kit/hooks"
 import { environmentSource, getOwnerClerkUserIds, isAllowedOwner } from "./env.ts"
 import { handshakeResponse, signedOut, type Authenticator } from "./clerk.ts"
 

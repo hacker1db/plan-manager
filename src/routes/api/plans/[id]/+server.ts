@@ -1,6 +1,6 @@
-import { apiError, jsonResponse, notFound, PRIVATE_NO_STORE, publicPlan } from "$lib/server/api.ts"
-import { requireOwnerResponse } from "$lib/server/auth.ts"
-import { findPlan, readMarkdown } from "$lib/server/store.ts"
+import { apiError, jsonResponse, notFound, PRIVATE_NO_STORE, publicPlan } from "#lib/server/api.ts"
+import { requireOwnerResponse } from "#lib/server/auth.ts"
+import { findPlan, readMarkdown } from "#lib/server/store.ts"
 import type { RequestHandler } from "./$types"
 
 export const GET: RequestHandler = async ({ params, locals }) => {

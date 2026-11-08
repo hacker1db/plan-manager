@@ -1,6 +1,17 @@
+import adapter from "@sveltejs/adapter-vercel"
 import { sveltekit } from "@sveltejs/kit/vite"
+import { vitePreprocess } from "@sveltejs/vite-plugin-svelte"
 import { defineConfig } from "vite"
 
+// SvelteKit 3 reads project configuration from the Vite plugin; svelte.config.js is no longer used.
 export default defineConfig({
-  plugins: [sveltekit()],
+  plugins: [
+    sveltekit({
+      preprocess: vitePreprocess(),
+      // Node runtime: token hashing uses node:crypto scrypt and Neon/Blob server SDKs.
+      adapter: adapter({ runtime: "nodejs22.x" }),
+      // SvelteKit's CSRF origin check stays on for form submissions; JSON mutations
+      // also verify the Origin header in their handlers (src/lib/server/security.ts).
+    }),
+  ],
 })

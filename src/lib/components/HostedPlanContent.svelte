@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { sourceFormat } from "$lib/mdx/format.ts"
-  import { PLAN_STATUSES, type PlanStatus } from "$lib/types.ts"
-  import type { DashboardPlan } from "$lib/hosted/types.ts"
-  import { requestStatusChange } from "$lib/hosted/status.ts"
-  import { mermaidDiagrams } from "$lib/hosted/mermaid.ts"
+  import { sourceFormat } from "#lib/mdx/format.ts"
+  import { PLAN_STATUSES, type PlanStatus } from "#lib/types.ts"
+  import type { DashboardPlan } from "#lib/hosted/types.ts"
+  import { requestStatusChange } from "#lib/hosted/status.ts"
+  import { mermaidDiagrams } from "#lib/hosted/mermaid.ts"
 
   // `html` is escaped static markup produced on the server by src/lib/server/plan-markdown.tsx.
   let { plan, markdown, html }: { plan: DashboardPlan; markdown: string; html: string } = $props()

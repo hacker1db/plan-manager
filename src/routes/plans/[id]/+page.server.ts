@@ -1,8 +1,8 @@
 import { error } from "@sveltejs/kit"
-import { publicPlan } from "$lib/server/api.ts"
-import { requireOwnerResponse } from "$lib/server/auth.ts"
-import { renderPlanHtml } from "$lib/server/plan-markdown.tsx"
-import { findPlan, readMarkdown } from "$lib/server/store.ts"
+import { publicPlan } from "#lib/server/api.ts"
+import { requireOwnerResponse } from "#lib/server/auth.ts"
+import { renderPlanHtml } from "#lib/server/plan-markdown.tsx"
+import { findPlan, readMarkdown } from "#lib/server/store.ts"
 import type { PageServerLoad } from "./$types"
 
 const PLAN_ID = /^[A-Za-z0-9_-]{8,128}$/

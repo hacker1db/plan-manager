@@ -22,7 +22,7 @@ A local-first library for Markdown plans. Plans are plain `.md` files with YAML 
 
 ## Requirements
 
-- Node.js 20 or later
+- Node.js 22.17 or later (required by SvelteKit 3)
 - pnpm 10 (`corepack enable`)
 - [Pandoc](https://pandoc.org/), only needed to capture HTML
 - macOS, only needed for remote credentials (stored in Keychain)

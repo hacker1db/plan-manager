@@ -1,5 +1,5 @@
-import { jsonResponse } from "$lib/server/api.ts"
-import { HostedConfigurationError, getCliOAuthConfiguration } from "$lib/server/env.ts"
+import { jsonResponse } from "#lib/server/api.ts"
+import { HostedConfigurationError, getCliOAuthConfiguration } from "#lib/server/env.ts"
 import type { RequestHandler } from "./$types"
 
 // Public: the CLI discovers its Clerk OAuth client ID and issuer here before login.

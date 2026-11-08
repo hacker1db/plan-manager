@@ -11,7 +11,8 @@
     "skipLibCheck": true,
     "verbatimModuleSyntax": true,
     "jsx": "react-jsx",
-    "rewriteRelativeImportExtensions": true
+    "rewriteRelativeImportExtensions": true,
+    "types": ["node"]
   },
   "include": [
     "src/**/*.ts",
@@ -23,6 +24,7 @@
     "src/lib/hosted/**",
     "src/lib/components/**",
     "src/hooks.server.ts",
+    "src/env.ts",
     "src/app.d.ts"
   ]
 }
