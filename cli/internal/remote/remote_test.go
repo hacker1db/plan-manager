@@ -20,7 +20,15 @@ const fakeSecurity = `#!/bin/sh
 action="$1"; shift
 case "$action" in
   add-generic-password)
-    while [ $# -gt 0 ]; do if [ "$1" = "-w" ]; then printf '%s' "$2" > "$PLAN_MANAGER_TEST_KEYCHAIN"; fi; shift; done ;;
+    # Like the real tool with a trailing -w: the password arrives on stdin
+    # (entered twice), never in argv. Record argv so tests can prove the
+    # secret is not exposed on the process argument list.
+    printf '%s\n' "$@" > "$PLAN_MANAGER_TEST_KEYCHAIN.argv"
+    for last; do :; done
+    [ "$last" = "-w" ] || exit 2
+    IFS= read -r first; IFS= read -r second
+    [ "$first" = "$second" ] || exit 1
+    printf '%s' "$first" > "$PLAN_MANAGER_TEST_KEYCHAIN" ;;
   find-generic-password)
     [ -f "$PLAN_MANAGER_TEST_KEYCHAIN" ] || exit 1
     cat "$PLAN_MANAGER_TEST_KEYCHAIN" ;;
@@ -165,6 +173,28 @@ func TestPKCELoginStoresCredential(t *testing.T) {
 	data, _ := os.ReadFile(keychain)
 	if err := json.Unmarshal(data, &stored); err != nil || stored.AccessToken != "clerk-access-token" || stored.RefreshToken != "clerk-refresh-token" || stored.ClientID != "oauthapp_public" {
 		t.Fatalf("bad stored credential: %s", data)
+	}
+}
+
+func TestStoreCredentialKeepsSecretOutOfArgv(t *testing.T) {
+	keychain := withKeychain(t)
+	token := "pm_" + strings.Repeat("a", 18) + "_" + strings.Repeat("b", 43)
+	if err := StoreLegacyToken(token); err != nil {
+		t.Fatal(err)
+	}
+	if data, _ := os.ReadFile(keychain); string(data) != token {
+		t.Fatalf("credential not stored via stdin: %s", data)
+	}
+	argv, err := os.ReadFile(keychain + ".argv")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(argv), token) {
+		t.Fatalf("secret leaked into security(1) argv: %s", argv)
+	}
+	fields := strings.Fields(string(argv))
+	if len(fields) == 0 || fields[len(fields)-1] != "-w" {
+		t.Fatalf("security must read the secret from stdin via a trailing -w; argv=%s", argv)
 	}
 }
 

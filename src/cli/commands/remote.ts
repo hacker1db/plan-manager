@@ -79,7 +79,10 @@ function credentialFromKeychain(): string {
 }
 
 function storeCredential(value: string): void {
-  const result = spawnSync(securityCommand(), ['add-generic-password', '-U', '-a', 'plan-manager', '-s', KEYCHAIN_SERVICE, '-w', value], { encoding: 'utf8' })
+  // A trailing -w makes `security` read the password from stdin (entered
+  // twice: enter + retype), keeping the secret out of the process argument
+  // list, where any same-user process could read it.
+  const result = spawnSync(securityCommand(), ['add-generic-password', '-U', '-a', 'plan-manager', '-s', KEYCHAIN_SERVICE, '-w'], { encoding: 'utf8', input: `${value}\n${value}\n` })
   if (result.status !== 0) throw new Error(`Unable to store credential in macOS Keychain: ${result.stderr.trim()}`)
 }
 

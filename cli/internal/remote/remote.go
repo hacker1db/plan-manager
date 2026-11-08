@@ -154,7 +154,11 @@ func credentialFromKeychain() (string, error) {
 
 func storeCredential(value string) error {
 	var stderr bytes.Buffer
-	c := exec.Command(securityCommand(), "add-generic-password", "-U", "-a", "plan-manager", "-s", keychainService, "-w", value)
+	// A trailing -w makes `security` prompt for the password on stdin (twice:
+	// enter + retype), keeping the secret out of the process argument list,
+	// where any same-user process could read it.
+	c := exec.Command(securityCommand(), "add-generic-password", "-U", "-a", "plan-manager", "-s", keychainService, "-w")
+	c.Stdin = strings.NewReader(value + "\n" + value + "\n")
 	c.Stderr = &stderr
 	if err := c.Run(); err != nil {
 		return fmt.Errorf("Unable to store credential in macOS Keychain: %s", strings.TrimSpace(stderr.String()))

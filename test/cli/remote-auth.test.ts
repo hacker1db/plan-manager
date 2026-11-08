@@ -23,7 +23,16 @@ const fs = require('node:fs')
 const args = process.argv.slice(2)
 const action = args[0]
 const file = process.env.PLAN_MANAGER_TEST_KEYCHAIN
-if (action === 'add-generic-password') fs.writeFileSync(file, args[args.indexOf('-w') + 1])
+if (action === 'add-generic-password') {
+  // Like the real tool with a trailing -w: the password arrives on stdin
+  // (entered twice), never in argv. Record argv so tests can prove the
+  // secret is not exposed on the process argument list.
+  fs.writeFileSync(file + '.argv', JSON.stringify(args))
+  if (args[args.length - 1] !== '-w') process.exit(2)
+  const [first, second] = fs.readFileSync(0, 'utf8').split('\\n')
+  if (first !== second) process.exit(1)
+  fs.writeFileSync(file, first)
+}
 else if (action === 'find-generic-password') {
   if (!fs.existsSync(file)) process.exit(1)
   process.stdout.write(fs.readFileSync(file, 'utf8'))
@@ -55,6 +64,18 @@ function visit(url: string): Promise<number> {
     get(url, response => { response.resume(); response.once("end", () => resolve(response.statusCode ?? 0)) }).once("error", reject)
   })
 }
+
+test("stored credentials never appear in the security(1) argument list", async () => {
+  await withKeychain(async keychainPath => {
+    const token = `pm_${"a".repeat(18)}_${"b".repeat(43)}`
+    await cmdAuth(["login"], { token, json: true })
+    assert.equal(await readFile(keychainPath, "utf8"), token)
+    const argv: string[] = JSON.parse(await readFile(`${keychainPath}.argv`, "utf8"))
+    assert.ok(!argv.includes(token), "secret must not be passed as an argv value")
+    assert.ok(!argv.some(arg => arg.includes(token)), "secret must not be embedded in any argument")
+    assert.equal(argv[argv.length - 1], "-w", "security must read the secret from stdin via a trailing -w")
+  })
+})
 
 test("Clerk PKCE login receives a loopback code and stores the OAuth pair in Keychain", async () => {
   await withKeychain(async keychainPath => {

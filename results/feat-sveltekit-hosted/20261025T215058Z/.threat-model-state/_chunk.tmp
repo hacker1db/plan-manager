@@ -1,0 +1,14 @@
+
+## 8. Recommended mitigations
+
+| mitigation | threat_ids | closes_class | effort |
+|---|---|---|---|
+| Upgrade and continuously audit pinned dependencies (next → 16.4.1, js-yaml → 4.3.2, x/net → 0.55.0) and add an advisory gate to CI | T1,T11,T12 | partial | S |
+| Pass secrets to `security(1)` on stdin (trailing `-w`), never on argv; drop the `--token` argv path in favor of stdin | T4 | yes | S |
+| Never expand untrusted plan ids in shell completion — prefix-match candidates literally (or emit the Cobra `__complete` protocol as the Go port does) | T5 | yes | S |
+| Bound and attribute `pm_` tokens: enforce a maximum expiry, add `created_by`/`created_at`/`last_used`, a list endpoint, and per-owner tenancy | T6,T9 | partial | M |
+| Set hosted security headers (CSP `default-src 'self'`, `X-Frame-Options`/`frame-ancestors 'none'`) in `next.config.ts` or the proxy, matching the local server | T10,T13 | partial | S |
+| Authenticate the local dashboard beyond the ambient CSRF token: require an Origin header, and gate `/_session` so an origin-less local client cannot obtain it | T7 | partial | M |
+| Harden CLI egress: bind the stored credential to its issuing site, refuse redirects on credential-bearing requests, and cap response size/time (as the Go port already does) | T8 | partial | M |
+| Centralize secrets with least privilege: a read/write-scoped Neon runtime role separate from migration, scoped Blob tokens, and a rotate-on-teardown checklist | T2,T3 | partial | L |
+| Add a plan-content purge/retention path and pre-push secret scanning | T14 | partial | M |

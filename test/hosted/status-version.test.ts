@@ -1,7 +1,7 @@
 import assert from "node:assert/strict"
 import { test } from "node:test"
 import yaml from "js-yaml"
-import { createStatusVersion } from "../../src/hosted/lib/status-version"
+import { createStatusVersion } from "../../src/lib/server/status-version"
 import { computeRevision } from "../../src/lib/ids"
 
 test("status changes create a new revision while preserving the Markdown body and metadata", async () => {

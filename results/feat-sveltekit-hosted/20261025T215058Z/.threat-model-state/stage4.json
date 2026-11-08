@@ -1,0 +1,14 @@
+{
+  "stage": 4,
+  "gapfill_added": ["T2","T3","T7","T8","T10","T13","T14"],
+  "section5_deprioritized": [
+    {"threat":"SQL injection in hosted Postgres","reason":"All queries use Neon tagged-template parameters; tags/scopes passed as jsonb params. No string-built SQL."},
+    {"threat":"Write/read outside PLAN_HOME (path traversal / symlink)","reason":"CLI uses realpath + no-symlink checks before and after write; servers use lexical containment + lstat regular-file checks; archive containment verified. Residual very low."},
+    {"threat":"Stored XSS via hosted markdown/MDX renderer","reason":"react-markdown skipHtml with images reduced to alt text and default urlTransform; MDX parsed never evaluated, lowercase tags allowlisted with attributes dropped, block props must be static literals, prototype keys filtered; no rehype-raw. Residual tracked as T10 (missing headers) only."},
+    {"threat":"DNS rebinding against the local dashboard","reason":"Host-header allowlist + Origin check block browser-driven rebinding; residual is non-browser local clients, tracked as T7."},
+    {"threat":"Prototype pollution via plan frontmatter","reason":"metadata.ts strips __proto__/constructor/prototype and caps unknown fields; static-props evaluator rejects those keys."},
+    {"threat":"plan capture pandoc without --sandbox","reason":"HTML->gfm reader has no strong local-file-read primitive by default and the artifact is a user-chosen local path; recommended as hardening (add --sandbox) but not a confirmed code defect, so not patched."},
+    {"threat":"Repudiation / weak audit trail","reason":"Single-owner model with a short allowlist; no multi-user attribution required. Logged as a low-sensitivity asset, risk accepted pending multi-tenant use."}
+  ],
+  "note": "Full §4 table (T1-T14) and §6/§8 written directly into THREAT_MODEL.md at emit."
+}

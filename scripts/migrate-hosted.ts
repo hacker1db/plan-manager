@@ -4,7 +4,7 @@ import { neon } from "@neondatabase/serverless"
 
 async function migrate(): Promise<void> {
   if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL is required")
-  const migration = await readFile(join(process.cwd(), "src/hosted/migrations/001_initial.sql"), "utf8")
+  const migration = await readFile(join(process.cwd(), "src/lib/server/migrations/001_initial.sql"), "utf8")
   const sql = neon(process.env.DATABASE_URL)
   const statements = migration.split(";").map(statement => statement.trim()).filter(Boolean)
   await sql.transaction(statements.map(statement => sql.query(statement)))

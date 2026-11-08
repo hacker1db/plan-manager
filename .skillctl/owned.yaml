@@ -1,0 +1,10 @@
+version: 1
+paths:
+    /Users/hacker1db/Developer/plan-manager/feat-sveltekit-hosted/.agents/skills/patch:
+        hash: 1b25f76911e5e83f6013b41ccde197793efea860b80a9b39d18081dcf7480e39
+    /Users/hacker1db/Developer/plan-manager/feat-sveltekit-hosted/.agents/skills/threat-model:
+        hash: 5a0b57af56dd6a9619d76768e1005ee755d27f4a9c68ef4b17dafc907dc3de13
+    /Users/hacker1db/Developer/plan-manager/feat-sveltekit-hosted/.claude/skills/patch:
+        hash: 1b25f76911e5e83f6013b41ccde197793efea860b80a9b39d18081dcf7480e39
+    /Users/hacker1db/Developer/plan-manager/feat-sveltekit-hosted/.claude/skills/threat-model:
+        hash: 5a0b57af56dd6a9619d76768e1005ee755d27f4a9c68ef4b17dafc907dc3de13
