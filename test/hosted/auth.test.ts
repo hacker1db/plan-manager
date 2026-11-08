@@ -136,6 +136,8 @@ test("owner APIs: 401 signed out, 403 non-owner or OAuth-only, 503 unconfigured"
     ["/src/routes/api/v1/plans/+server.ts", "GET", {}, {}],
     ["/src/routes/api/v1/plans/[id]/+server.ts", "GET", { id: "plan_1234" }, {}],
     ["/src/routes/api/v1/plans/[id]/content/+server.ts", "GET", { id: "plan_1234" }, {}],
+    ["/src/routes/api/v1/plans/[id]/render/+server.ts", "GET", { id: "plan_1234" }, {}],
+    ["/src/routes/api/v1/plans/[id]/status/+server.ts", "POST", { id: "plan_1234" }, { method: "POST" }],
     ["/src/routes/api/v1/tokens/+server.ts", "POST", {}, { method: "POST" }],
     ["/src/routes/api/v1/tokens/[id]/+server.ts", "DELETE", { id: "tok" }, { method: "DELETE" }],
   ]
@@ -264,4 +266,13 @@ test("real Clerk SDK: anonymous and non-Clerk bearer requests are signed out; si
   const target = new URL(localRedirect.headers.get("location")!)
   assert.equal(`${target.origin}${target.pathname}`, "https://plans.example/sign-in")
   assert.equal(target.searchParams.get("redirect_url"), "https://plans.example/plans/abc")
+})
+
+test("native status rejects cookie CSRF and mixed credentials before storage", async () => {
+  const post = await route("/src/routes/api/v1/plans/[id]/status/+server.ts", "POST")
+  const call = (headers: Record<string, string>) => post(event("https://plans.example/api/v1/plans/plan_1234/status", session("user_owner"), {method: "POST", headers, body: "not json"}, {id: "plan_1234"}))
+  assert.equal((await call({"Content-Type": "application/json"})).status, 403)
+  assert.equal((await call({"Content-Type": "application/json", Origin: "https://evil.example"})).status, 403)
+  assert.equal((await call({"Content-Type": "application/json", Authorization: "Bearer forged", Cookie: "__session=valid"})).status, 403)
+  assert.equal((await call({"Content-Type": "application/json", Origin: "https://plans.example"})).status, 400)
 })
