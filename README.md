@@ -22,22 +22,29 @@ A local-first library for Markdown plans. Plans are plain `.md` files with YAML 
 
 ## Requirements
 
-- Node.js 22.17 or later (Vercel uses the configured Node.js 24 runtime)
-- pnpm 10 (`corepack enable`)
-- [Pandoc](https://pandoc.org/), only needed to capture HTML
-- macOS, only needed for remote credentials (stored in Keychain)
+- Go (version specified in `cli/go.mod`) to build the CLI; no Node runtime is needed to run it.
+- Node.js 22.17+ and pnpm 10 for the hosted SvelteKit app and JavaScript contract tests.
+- Pandoc for HTML capture; macOS Keychain for remote credentials.
 
 ## Installation
 
 ```sh
-pnpm install
-pnpm build
-pnpm link --global   # puts `plan` on your PATH
-plan init            # creates the plan home and archive directory
-plan doctor          # checks your setup
+cd cli
+go install ./cmd/plan
+# Ensure $(go env GOPATH)/bin is on PATH.
+plan doctor --json
 ```
 
-The linked `plan` runs the compiled `dist/` build, so after `git pull` run `pnpm install` (or `pnpm build:cli`) to pick up changes. `plan doctor` reports when the build is stale.
+Re-run `go install ./cmd/plan` after pulling CLI updates. Remove any old npm-linked
+`plan` shim from PATH and verify `command -v plan` points to the Go binary.
+
+For zsh, initialize `compinit`, then `source <(plan completion zsh)` in `.zshrc`.
+For bash, use `source <(plan completion bash)`. Fish and PowerShell scripts are
+available through `plan completion fish` and `plan completion powershell`.
+
+The TypeScript CLI has been removed. The Go command tree (`plan --help`) is the
+supported CLI surface. Historical TypeScript-only tracking/journey and MDX
+`blocks`/`check` commands are not implemented by Go; hosted MDX rendering remains.
 
 ## Usage
 
@@ -186,33 +193,23 @@ There is a single hosted site, `https://planmanager.hacker1db.dev`; set `PLAN_MA
 
 ## Project layout
 
-```
-bin/plan            CLI entry point (runs dist/cli/index.js)
-cli/                Go build of the CLI with the TUI and shell completion
-src/cli/            Argument parsing and one module per command
-src/lib/            Storage, frontmatter, IDs, revisions, locking, service management
-src/lib/mdx/        MDX block registry, static prop parser, and shared renderer
-src/server/         Local dashboard HTTP server and JSON API
-src/dashboard/      Canonical static dashboard assets (HTML, JS, CSS)
-src/routes/         SvelteKit routes for the same private hosted service
-src/components/     Shared safe Markdown/MDX rendering components
-src/hosted/         Hosted-only auth, storage, database, and migrations
-test/               node:test suites for lib and CLI
-docs/hosting.md     Hosted deployment and authentication guide
-docs/recaps/        MDX recaps checked in alongside the changes they describe
-.claude/skills/     visual-plan and visual-recap agent skills
-```
+- `cli/`: Go CLI, local HTTP server, TUI, completion, and tests.
+- `src/dashboard/`: canonical dashboard assets embedded by Go and used by the hosted app.
+- `src/routes/` and `src/lib/server/`: hosted SvelteKit app.
+- `src/lib/`: shared plan metadata and safe Markdown/MDX rendering helpers.
+- `test/lib/` and `test/hosted/`: shared-library and hosted tests, run directly with tsx.
 
 ## Development
 
 ```sh
-pnpm dev           # local dashboard at plans.localhost:4173
-pnpm dev:web       # SvelteKit app used by Vercel, locally
-pnpm typecheck     # local CLI and hosted web app
-pnpm test          # CLI/lib and hosted security/dashboard tests
-pnpm build         # CLI and Vercel SvelteKit production builds
-pnpm test:lib
-pnpm test:cli
+pnpm install
+pnpm dev           # Go local dashboard
+pnpm dev:web       # hosted SvelteKit app
+pnpm build:cli     # Go binary at cli/bin/plan
+pnpm typecheck:cli # go vet
+pnpm test:cli      # Go tests, including completions
+pnpm test:contracts # historical black-box contracts against Go
+pnpm typecheck     # hosted/shared TypeScript
+pnpm test          # Go, shared libraries, hosted tests
+pnpm build         # hosted production build; no TypeScript CLI emitted
 ```
-
-Tests run against the compiled `dist/` output, which is why each test script builds first.

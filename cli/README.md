@@ -1,6 +1,6 @@
 # plan (Go)
 
-A Go build of the `plan` CLI. It has the same commands, flags, JSON envelopes, and exit codes as the TypeScript CLI, and adds:
+The supported `plan` CLI, implemented in Go. It provides:
 
 - **`plan tui`**: a full-screen manager for browsing, previewing, and changing plans.
 - **Shell completion** for bash, zsh, fish, and PowerShell that completes plan slugs, statuses, subcommands, and file paths.
@@ -85,7 +85,7 @@ Output from the command appears in the preview pane. Commands that need the term
 
 The command bar uses the same completion logic as the shell scripts, so the TUI and the shell always offer the same suggestions.
 
-## Differences from the TypeScript CLI
+## Compatibility with the retired TypeScript CLI
 
 - Unknown frontmatter keys are kept when a plan is rewritten. The TypeScript CLI dropped them.
 - `plan doctor --json` reports `runtime: {ok, name, version}` instead of `node`.
@@ -93,13 +93,13 @@ The command bar uses the same completion logic as the shell scripts, so the TUI 
 - `plan push <id> --all` is rejected with exit code 2 instead of pushing only `<id>`.
 - Frontmatter timestamps are written with double quotes (`"2026-…Z"`) instead of single quotes. Both implementations read either form.
 - `plan completion` accepts zsh, fish, and powershell in addition to bash; the TypeScript CLI accepts only bash and exits 2 for anything else.
-- Completion suggests slugs (with the title and status as the description) and falls back to IDs only for ambiguous slugs; the TypeScript CLI suggests IDs. Both scripts define and register `_plan`, and both work without the bash-completion package.
+- Completion suggests slugs (with the title and status as the description) and falls back to IDs only for ambiguous slugs; the TypeScript CLI suggests IDs. The Go bash script registers `_plan` and works without the bash-completion package.
 
 ## Development
 
 ```sh
 go test ./...            # unit tests
-./scripts/parity.sh      # runs the TypeScript CLI's node:test contract suites against this binary
+./scripts/contracts.sh      # runs historical black-box contracts against this binary
 go generate ./...        # refreshes the embedded dashboard from ../src/dashboard
 ```
 
@@ -116,4 +116,6 @@ go generate ./...        # refreshes the embedded dashboard from ../src/dashboar
 | `internal/remote`   | Keychain credentials, WorkOS device login, and push          |
 | `internal/tui`      | Bubble Tea TUI, command bar, and pickers                     |
 
-Because the write lock uses the same on-disk protocol as `proper-lockfile`, the Go and TypeScript CLIs (and the dashboard servers) can run against the same plan home at the same time.
+The Go write lock retains the `proper-lockfile` on-disk protocol for compatibility with existing plan libraries. The TypeScript CLI and local server have been removed.
+
+The contract harness retains six explicitly skipped MDX cases as migration gaps. The Go CLI does not yet implement the retired tracking/journey commands, MDX creation/rendering, or `blocks`/`check`; consult `plan --help` for the supported surface.

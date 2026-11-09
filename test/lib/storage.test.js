@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { mkdtemp, rm, writeFile, mkdir, readFile, readdir, symlink } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { atomicWrite, containedPath, containedPathReal, initStorage, planHome, listPlanFiles, uniqueSlug } from '../../dist/lib/storage.js'
+import { atomicWrite, containedPath, containedPathReal, initStorage, planHome, listPlanFiles, uniqueSlug } from '../../src/lib/storage.ts'
 
 async function withHome(fn) {
   const dir = await mkdtemp(join(tmpdir(), 'plan-storage-test-'))

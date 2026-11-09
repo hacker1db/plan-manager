@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { generateId, slugify, computeRevision } from '../../dist/lib/ids.js'
+import { generateId, slugify, computeRevision } from '../../src/lib/ids.ts'
 
 test('generateId returns 21-char string', () => {
   const id = generateId()

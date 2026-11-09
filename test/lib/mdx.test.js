@@ -3,12 +3,12 @@ import assert from 'node:assert/strict'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { BLOCKS, blocksReference } from '../../dist/lib/mdx/blocks.js'
-import { renderMdxToHtml } from '../../dist/lib/mdx/html.js'
-import { diffLines } from '../../dist/lib/mdx/render.js'
-import { formatFromPath, sourceFormat, stripFrontmatter } from '../../dist/lib/mdx/format.js'
-import { listPlanFiles, resolveByIdOrSlug, uniqueSlug } from '../../dist/lib/storage.js'
-import { readPlan, writePlan } from '../../dist/lib/metadata.js'
+import { BLOCKS, blocksReference } from '../../src/lib/mdx/blocks.ts'
+import { renderMdxToHtml } from '../../src/lib/mdx/html.tsx'
+import { diffLines } from '../../src/lib/mdx/render.tsx'
+import { formatFromPath, sourceFormat, stripFrontmatter } from '../../src/lib/mdx/format.ts'
+import { listPlanFiles, resolveByIdOrSlug, uniqueSlug } from '../../src/lib/storage.ts'
+import { readPlan, writePlan } from '../../src/lib/metadata.ts'
 
 function wrapped(block) {
   return block.parent ? `<${block.parent}>\n${block.example.replace('...', 'Body')}\n</${block.parent}>` : block.example
@@ -131,7 +131,7 @@ test('storage lists .mdx plans, shares slugs across formats, and writes format f
 
 test('checked-in MDX docs pass plan check', async () => {
   const { readdir, readFile } = await import('node:fs/promises')
-  const { checkMdx } = await import('../../dist/lib/mdx/html.js')
+  const { checkMdx } = await import('../../src/lib/mdx/html.tsx')
   const root = new URL('../../docs/', import.meta.url)
   const entries = await readdir(root, { recursive: true })
   const docs = entries.filter(name => name.endsWith('.mdx'))
