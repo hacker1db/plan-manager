@@ -32,7 +32,7 @@ function parseArgs(argv) {
     if (a === '--json') { opts.json = true }
     else if (a === '--stdin') { opts.stdin = true }
     else if (a === '--foreground') { opts.foreground = true }
-    else if (a === '--token') { opts.token = argv[++i] }
+    else if (a === '--token') { opts.rejectedTokenFlag = true; i++ }
     else if (a === '--title') { opts.title = argv[++i] }
     else if (a === '--file') { opts.file = argv[++i] }
     else if (a === '--format') { opts.format = argv[++i] }

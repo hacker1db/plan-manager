@@ -113,7 +113,7 @@ go generate ./...        # refreshes the embedded dashboard from ../src/dashboar
 | `internal/lock`     | Write lock, compatible with the npm `proper-lockfile` layout |
 | `internal/server`   | Local dashboard HTTP server, SSE, and HTML sanitizer         |
 | `internal/service`  | Background dashboard probe and launcher                      |
-| `internal/remote`   | Keychain credentials, Clerk PKCE login, and push             |
+| `internal/remote`   | Keychain credentials, WorkOS device login, and push          |
 | `internal/tui`      | Bubble Tea TUI, command bar, and pickers                     |
 
 Because the write lock uses the same on-disk protocol as `proper-lockfile`, the Go and TypeScript CLIs (and the dashboard servers) can run against the same plan home at the same time.

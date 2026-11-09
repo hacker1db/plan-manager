@@ -7,6 +7,9 @@ const root = resolve(fileURLToPath(new URL('..', import.meta.url)))
 const client = resolve(root, process.argv[2] ?? '.svelte-kit/output/client')
 const FORBIDDEN = [
   'CLERK_SECRET_KEY',
+  'WORKOS_API_KEY',
+  'WORKOS_COOKIE_PASSWORD',
+  'PLAN_MANAGER_OWNER_WORKOS_USER_IDS',
   'PLAN_MANAGER_TOKEN_PEPPER',
   'DATABASE_URL',
   'BLOB_READ_WRITE_TOKEN',

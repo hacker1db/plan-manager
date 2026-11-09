@@ -22,7 +22,7 @@ A local-first library for Markdown plans. Plans are plain `.md` files with YAML 
 
 ## Requirements
 
-- Node.js 22.17 or later (required by SvelteKit 3)
+- Node.js 22.17 or later (Vercel uses the configured Node.js 24 runtime)
 - pnpm 10 (`corepack enable`)
 - [Pandoc](https://pandoc.org/), only needed to capture HTML
 - macOS, only needed for remote credentials (stored in Keychain)
@@ -165,12 +165,12 @@ Commands that change or return a plan print a versioned envelope when you pass `
 ### Pushing to a hosted remote
 
 ```sh
-plan auth login          # opens Clerk authorization in your browser
+plan auth login          # starts WorkOS device authorization
 plan push --all
 plan auth status
 ```
 
-There is a single hosted site, `https://planmanager.hacker1db.dev`; set `PLAN_MANAGER_URL` to point the CLI elsewhere (for example, a preview deployment). Push revisions are saved in `~/.config/plan-manager/site.json`. If the hosted copy changed since your last push, `plan push` refuses to overwrite it and exits with code 5. See [`docs/hosting.md`](docs/hosting.md) for Clerk Authorization Code + PKCE setup and legacy token management.
+There is a single hosted site, `https://planmanager.hacker1db.dev`; set `PLAN_MANAGER_URL` to point the CLI elsewhere (for example, a preview deployment). Push revisions are saved in `~/.config/plan-manager/site.json`. If the hosted copy changed since your last push, `plan push` refuses to overwrite it and exits with code 5. See [`auth.md`](auth.md) and [`docs/hosting.md`](docs/hosting.md) for WorkOS setup and legacy-token boundaries.
 
 ## Configuration
 
@@ -194,11 +194,9 @@ src/lib/            Storage, frontmatter, IDs, revisions, locking, service manag
 src/lib/mdx/        MDX block registry, static prop parser, and shared renderer
 src/server/         Local dashboard HTTP server and JSON API
 src/dashboard/      Canonical static dashboard assets (HTML, JS, CSS)
-src/routes/         SvelteKit pages and +server.ts APIs for the private hosted service
-src/hooks.server.ts Clerk authentication and the hosted owner gate
-src/lib/server/     Hosted-only auth, storage, database, renderer, and migrations
-src/lib/hosted/     Browser-safe hosted helpers (Clerk loader, Mermaid, status requests)
-src/lib/components/ Svelte components for the hosted dashboard
+src/routes/         SvelteKit routes for the same private hosted service
+src/components/     Shared safe Markdown/MDX rendering components
+src/hosted/         Hosted-only auth, storage, database, and migrations
 test/               node:test suites for lib and CLI
 docs/hosting.md     Hosted deployment and authentication guide
 docs/recaps/        MDX recaps checked in alongside the changes they describe

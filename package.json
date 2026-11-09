@@ -31,7 +31,6 @@
     "db:migrate": "node --env-file=.env.local --import tsx scripts/migrate-hosted.ts"
   },
   "dependencies": {
-    "@clerk/backend": "3.22.0",
     "@neondatabase/serverless": "^1.0.2",
     "@vercel/analytics": "^2.0.1",
     "@vercel/blob": "^2.1.0",
@@ -44,7 +43,9 @@
     "react-dom": "^19.0.0",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
-    "remark-mdx": "^3.1.1"
+    "remark-mdx": "^3.1.1",
+    "@workos/authkit-sveltekit": "0.3.0",
+    "jose": "^6.2.13"
   },
   "devDependencies": {
     "@sveltejs/adapter-vercel": "7.0.2",

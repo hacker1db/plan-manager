@@ -1,6 +1,8 @@
 import assert from "node:assert/strict"
 import { test } from "node:test"
-import { HostedConfigurationError, getCliOAuthConfiguration, getClerkIssuerUrl, getHostedEnvironment, getOwnerClerkUserIds, isAllowedOwner, oauthTokenCanAccess, ownerConfigured } from "../../src/lib/server/env"
+import { createLocalJWKSet, exportJWK, generateKeyPair, SignJWT } from "jose"
+import { verifyWorkosCliToken } from "../../src/lib/server/workos-cli"
+import { HostedConfigurationError, getCliOAuthConfiguration, getHostedEnvironment, getOwnerWorkosUserIds, isAllowedOwner, ownerConfigured, workosCliClaimsCanAccess } from "../../src/lib/server/env"
 import { publicPlan } from "../../src/lib/server/api"
 import { requirePlanId, requireRevision, sanitizeMarkdown } from "../../src/lib/server/sanitize"
 import { generateToken, hashSecret, parseBearer, tokenAuthorizes, verifySecret } from "../../src/lib/server/token"
@@ -11,43 +13,64 @@ test("hosted configuration fails closed when a required key is absent", () => {
   assert.throws(() => getHostedEnvironment({}), HostedConfigurationError)
 })
 
-test("hosted configuration accepts only a complete server environment", () => {
+const completeEnvironment = {
+  WORKOS_CLIENT_ID: "client_web",
+  WORKOS_API_KEY: "sk_test_example",
+  WORKOS_COOKIE_PASSWORD: "fixture-only-".repeat(4),
+  WORKOS_REDIRECT_URI: "https://plans.example/callback",
+  PLAN_MANAGER_OWNER_WORKOS_USER_IDS: "user_owner, user_second, user_owner",
+  DATABASE_URL: "postgres://example",
+  BLOB_READ_WRITE_TOKEN: "blob_value",
+  PLAN_MANAGER_TOKEN_PEPPER: "pepper_value",
+}
+
+const cliEnvironment = {
+  PLAN_MANAGER_OWNER_WORKOS_USER_IDS: "user_owner,user_second",
+  PLAN_MANAGER_WORKOS_AUTHKIT_DOMAIN: "https://auth.example",
+  PLAN_MANAGER_WORKOS_CLI_CLIENT_ID: "client_cli",
+  PLAN_MANAGER_WORKOS_CLI_AUDIENCE: "https://plans.example/api/v1",
+}
+
+test("hosted configuration accepts only a complete WorkOS server environment", () => {
   const environment = getHostedEnvironment({
-    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_value",
-    CLERK_SECRET_KEY: "sk_test_value",
-    PLAN_MANAGER_OWNER_CLERK_USER_IDS: "user_owner, user_second, user_owner",
+    ...completeEnvironment,
     DATABASE_URL: "postgres://example",
     BLOB_READ_WRITE_TOKEN: "blob_value",
     PLAN_MANAGER_TOKEN_PEPPER: "pepper_value",
   })
-  assert.deepEqual(environment.ownerClerkUserIds, ["user_owner", "user_second"])
+  assert.deepEqual(environment.ownerWorkosUserIds, ["user_owner", "user_second"])
 })
 
-test("owner allowlist supports the legacy single-owner variable during migration", () => {
-  assert.deepEqual(getOwnerClerkUserIds({ PLAN_MANAGER_OWNER_CLERK_USER_ID: "user_owner" }), ["user_owner"])
-  assert.deepEqual(getOwnerClerkUserIds({ PLAN_MANAGER_OWNER_CLERK_USER_IDS: "user_new", PLAN_MANAGER_OWNER_CLERK_USER_ID: "user_old" }), ["user_new"])
-  assert.equal(isAllowedOwner("user_new", { PLAN_MANAGER_OWNER_CLERK_USER_IDS: "user_new,user_other" }), true)
-  assert.equal(isAllowedOwner("user_old", { PLAN_MANAGER_OWNER_CLERK_USER_IDS: "user_new,user_other" }), false)
-  assert.equal(isAllowedOwner(null, { PLAN_MANAGER_OWNER_CLERK_USER_ID: "user_old" }), false)
-  assert.equal(ownerConfigured({ CLERK_SECRET_KEY: "sk", NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk", PLAN_MANAGER_OWNER_CLERK_USER_IDS: "user_one,user_two" }), true)
-  assert.equal(ownerConfigured({ CLERK_SECRET_KEY: "sk", NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk" }), false)
+test("owner authorization uses only the fail-closed WorkOS allowlist", () => {
+  assert.deepEqual(getOwnerWorkosUserIds({ PLAN_MANAGER_OWNER_WORKOS_USER_IDS: "user_new,user_other,user_new" }), ["user_new", "user_other"])
+  assert.deepEqual(getOwnerWorkosUserIds({ PLAN_MANAGER_OWNER_CLERK_USER_IDS: "legacy_owner" }), [])
+  assert.equal(isAllowedOwner("user_new", { PLAN_MANAGER_OWNER_WORKOS_USER_IDS: "user_new,user_other" }), true)
+  assert.equal(isAllowedOwner("user_old", { PLAN_MANAGER_OWNER_WORKOS_USER_IDS: "user_new,user_other" }), false)
+  assert.equal(isAllowedOwner(null, { PLAN_MANAGER_OWNER_WORKOS_USER_IDS: "user_old" }), false)
+  assert.equal(ownerConfigured(completeEnvironment), true)
+  assert.equal(ownerConfigured({ ...completeEnvironment, PLAN_MANAGER_OWNER_WORKOS_USER_IDS: "" }), false)
   assert.throws(() => getHostedEnvironment({
-    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_value",
-    CLERK_SECRET_KEY: "sk_test_value",
+    ...completeEnvironment,
+    PLAN_MANAGER_OWNER_WORKOS_USER_IDS: "",
     DATABASE_URL: "postgres://example",
     BLOB_READ_WRITE_TOKEN: "blob_value",
     PLAN_MANAGER_TOKEN_PEPPER: "pepper_value",
   }), HostedConfigurationError)
 })
 
-test("CLI OAuth config exposes the Clerk issuer and requires a public client ID", () => {
-  const publishableKey = `pk_test_${Buffer.from("example.clerk.accounts.dev$").toString("base64url")}`
-  assert.equal(getClerkIssuerUrl({ NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: publishableKey }), "https://example.clerk.accounts.dev")
-  assert.deepEqual(getCliOAuthConfiguration({ NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: publishableKey, PLAN_MANAGER_OAUTH_CLIENT_ID: "oauthapp_public" }), {
-    clientId: "oauthapp_public",
-    issuerUrl: "https://example.clerk.accounts.dev",
+test("CLI config exposes only pinned WorkOS Connect endpoints and identifiers", () => {
+  assert.deepEqual(getCliOAuthConfiguration(cliEnvironment), {
+    version: 2,
+    clientId: "client_cli",
+    issuerUrl: "https://auth.example",
+    audience: "https://plans.example/api/v1",
+    scope: "plans:write",
+    deviceAuthorizationEndpoint: "https://auth.example/oauth2/device_authorization",
+    tokenEndpoint: "https://auth.example/oauth2/token",
+    jwksUrl: "https://auth.example/oauth2/jwks",
   })
-  assert.throws(() => getCliOAuthConfiguration({ NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: publishableKey }), HostedConfigurationError)
+  assert.throws(() => getCliOAuthConfiguration({ ...cliEnvironment, PLAN_MANAGER_WORKOS_AUTHKIT_DOMAIN: "http://auth.example" }), HostedConfigurationError)
+  assert.throws(() => getCliOAuthConfiguration({ ...cliEnvironment, PLAN_MANAGER_WORKOS_CLI_CLIENT_ID: "" }), HostedConfigurationError)
 })
 
 test("token verifier accepts the generated bearer only for the correct secret", async () => {
@@ -67,15 +90,58 @@ test("expired, revoked, and insufficient-scope credentials cannot write", async 
   assert.equal(await tokenAuthorizes({ ...base, expiresAt: new Date(Date.now() + 60_000), revokedAt: null }, "A".repeat(43), "pepper", "plans:write"), false)
 })
 
-test("OAuth credentials require an allowlisted Clerk owner and a token issued to the CLI app", () => {
-  const env = { PLAN_MANAGER_OWNER_CLERK_USER_IDS: "user_owner,user_second", PLAN_MANAGER_OAUTH_CLIENT_ID: "cli_client" }
-  assert.equal(oauthTokenCanAccess("user_owner", "cli_client", ["openid", "offline_access"], env), true)
-  assert.equal(oauthTokenCanAccess("user_second", "cli_client", ["openid"], env), true)
-  assert.equal(oauthTokenCanAccess("user_other", "cli_client", ["openid"], env), false)
-  assert.equal(oauthTokenCanAccess("user_owner", "other_client", ["openid"], env), false)
-  assert.equal(oauthTokenCanAccess("user_owner", null, ["openid"], env), false)
-  assert.equal(oauthTokenCanAccess("user_owner", "cli_client", ["offline_access"], env), false)
-  assert.equal(oauthTokenCanAccess("user_owner", "cli_client", ["openid"], { PLAN_MANAGER_OWNER_CLERK_USER_IDS: "user_owner" }), false)
+test("CLI claims require the allowlisted owner, exact client, and write scope", () => {
+  assert.equal(workosCliClaimsCanAccess("user_owner", "client_cli", "openid offline_access plans:write", cliEnvironment), true)
+  assert.equal(workosCliClaimsCanAccess("user_other", "client_cli", "plans:write", cliEnvironment), false)
+  assert.equal(workosCliClaimsCanAccess("user_owner", "other_client", "plans:write", cliEnvironment), false)
+  assert.equal(workosCliClaimsCanAccess("user_owner", "client_cli", "openid offline_access", cliEnvironment), false)
+  assert.equal(workosCliClaimsCanAccess(null, "client_cli", "plans:write", cliEnvironment), false)
+})
+
+test("CLI JWT verification rejects the wrong issuer, audience, algorithm, client, and scope", async () => {
+  const { publicKey, privateKey } = await generateKeyPair("RS256")
+  const publicJwk = await exportJWK(publicKey)
+  const getKey = createLocalJWKSet({ keys: [{ ...publicJwk, kid: "test", alg: "RS256", use: "sig" }] })
+  const sign = (claims: Record<string, unknown> = {}, issuer = cliEnvironment.PLAN_MANAGER_WORKOS_AUTHKIT_DOMAIN, audience = cliEnvironment.PLAN_MANAGER_WORKOS_CLI_AUDIENCE) =>
+    new SignJWT({ client_id: "client_cli", scope: "openid offline_access plans:write", ...claims })
+      .setProtectedHeader({ alg: "RS256", kid: "test" })
+      .setSubject("user_owner")
+      .setIssuer(issuer)
+      .setAudience(audience)
+      .setIssuedAt()
+      .setExpirationTime("5m")
+      .sign(privateKey)
+
+  assert.equal(await verifyWorkosCliToken(await sign(), cliEnvironment, getKey), true)
+  assert.equal(await verifyWorkosCliToken(await sign({ client_id: "other" }), cliEnvironment, getKey), false)
+  assert.equal(await verifyWorkosCliToken(await sign({ scope: "openid" }), cliEnvironment, getKey), false)
+  await assert.rejects(verifyWorkosCliToken(await sign({}, "https://wrong.example"), cliEnvironment, getKey))
+  await assert.rejects(verifyWorkosCliToken(await sign({}, cliEnvironment.PLAN_MANAGER_WORKOS_AUTHKIT_DOMAIN, "wrong-audience"), cliEnvironment, getKey))
+
+  const symmetric = new TextEncoder().encode("0123456789abcdef0123456789abcdef")
+  const wrongAlgorithm = await new SignJWT({ client_id: "client_cli", scope: "plans:write" })
+    .setProtectedHeader({ alg: "HS256", kid: "test" })
+    .setSubject("user_owner")
+    .setIssuer(cliEnvironment.PLAN_MANAGER_WORKOS_AUTHKIT_DOMAIN)
+    .setAudience(cliEnvironment.PLAN_MANAGER_WORKOS_CLI_AUDIENCE)
+    .setExpirationTime("5m")
+    .sign(symmetric)
+  await assert.rejects(verifyWorkosCliToken(wrongAlgorithm, cliEnvironment, getKey))
+})
+
+test("CLI JWT verification rejects tokens without exp or sub", async () => {
+  const { publicKey, privateKey } = await generateKeyPair("RS256")
+  const publicJwk = await exportJWK(publicKey)
+  const getKey = createLocalJWKSet({ keys: [{ ...publicJwk, kid: "test", alg: "RS256", use: "sig" }] })
+  const base = () => new SignJWT({ client_id: "client_cli", scope: "openid offline_access plans:write" })
+    .setProtectedHeader({ alg: "RS256", kid: "test" })
+    .setIssuer(cliEnvironment.PLAN_MANAGER_WORKOS_AUTHKIT_DOMAIN)
+    .setAudience(cliEnvironment.PLAN_MANAGER_WORKOS_CLI_AUDIENCE)
+    .setIssuedAt()
+  const noExp = await base().setSubject("user_owner").sign(privateKey)
+  await assert.rejects(verifyWorkosCliToken(noExp, cliEnvironment, getKey), /"exp" claim/)
+  const noSub = await base().setExpirationTime("5m").sign(privateKey)
+  await assert.rejects(verifyWorkosCliToken(noSub, cliEnvironment, getKey), /"sub" claim/)
 })
 
 test("plan IDs, revisions, and markdown reject malformed input", () => {

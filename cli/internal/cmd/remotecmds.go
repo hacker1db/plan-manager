@@ -15,7 +15,6 @@ import (
 )
 
 func newAuthCmd(opts *options) *cobra.Command {
-	var token string
 	var stdin bool
 	c := &cobra.Command{
 		Use:       "auth <login|logout|status>",
@@ -35,12 +34,10 @@ func newAuthCmd(opts *options) *cobra.Command {
 			out := c.OutOrStdout()
 			switch sub {
 			case "login":
-				if stdin || token != "" {
-					if stdin {
-						data, _ := io.ReadAll(os.Stdin)
-						token = strings.TrimSpace(string(data))
-					}
-					if err := remote.StoreLegacyToken(token); err != nil {
+				if stdin {
+					data, _ := io.ReadAll(os.Stdin)
+					token := strings.TrimSpace(string(data))
+					if err := remote.StoreLegacyToken(site, token); err != nil {
 						return fail(err)
 					}
 					if opts.json {
@@ -53,11 +50,11 @@ func newAuthCmd(opts *options) *cobra.Command {
 					return fail(err)
 				}
 				if opts.json {
-					return writeJSON(out, map[string]any{"site": site.URL, "credential": "configured", "type": "clerk-oauth"})
+					return writeJSON(out, map[string]any{"site": site.URL, "credential": "configured", "type": "workos-cli"})
 				}
 				return nil
 			case "logout":
-				if err := remote.RemoveToken(); err != nil {
+				if err := remote.RemoveToken(site); err != nil {
 					return fail(err)
 				}
 				if opts.json {
@@ -66,7 +63,7 @@ func newAuthCmd(opts *options) *cobra.Command {
 				fmt.Fprintf(out, "Removed credential for %s.\n", site.URL)
 				return nil
 			case "status":
-				_, err := remote.TokenFromKeychain()
+				_, err := remote.TokenFromKeychain(site)
 				if opts.json {
 					cred := "configured"
 					if err != nil {
@@ -87,9 +84,7 @@ func newAuthCmd(opts *options) *cobra.Command {
 			return invalid("Unknown auth subcommand: %s\nUsage: plan auth <login|logout|status>", sub)
 		},
 	}
-	c.Flags().StringVar(&token, "token", "", "store a legacy pm_ token instead of signing in")
 	c.Flags().BoolVar(&stdin, "stdin", false, "read a legacy token from stdin")
-	_ = c.RegisterFlagCompletionFunc("token", cobra.NoFileCompletions)
 	return c
 }
 
@@ -143,7 +138,7 @@ func PushPlans(args []string, all bool) ([]remote.PushResult, error) {
 	if err != nil {
 		return nil, err
 	}
-	token, err := remote.TokenFromKeychain()
+	token, err := remote.TokenFromKeychain(site)
 	if err != nil {
 		return nil, err
 	}

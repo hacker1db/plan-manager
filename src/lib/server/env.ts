@@ -1,68 +1,95 @@
 type EnvironmentSource = Readonly<Record<string, string | undefined>>
-
-// Server-only: SvelteKit's hook installs $app/env/private (declared in src/env.ts) here so .env files work in
-// `vite dev`; on Vercel this is process.env. Variable names are unchanged from the Next.js app.
 let activeSource: EnvironmentSource = process.env
-
-export function setEnvironmentSource(next: EnvironmentSource): void {
-  activeSource = next
-}
-
-export function environmentSource(): EnvironmentSource {
-  return activeSource
-}
+export function setEnvironmentSource(source: EnvironmentSource) { activeSource = source }
+export function environmentSource() { return activeSource }
+export const WORKOS_CLI_SCOPE = "plans:write"
 
 type HostedEnvironment = {
-  clerkPublishableKey: string
-  clerkSecretKey: string
-  ownerClerkUserIds: string[]
+  workosClientId: string
+  workosApiKey: string
+  workosCookiePassword: string
+  workosRedirectUri: string
+  ownerWorkosUserIds: string[]
   databaseUrl: string
   blobReadWriteToken: string
   tokenPepper: string
 }
 
+export type WorkOSCliConfiguration = {
+  version: 2
+  clientId: string
+  issuerUrl: string
+  audience: string
+  scope: typeof WORKOS_CLI_SCOPE
+  deviceAuthorizationEndpoint: string
+  tokenEndpoint: string
+  jwksUrl: string
+}
+
 export class HostedConfigurationError extends Error {
   constructor(public readonly missing: string[]) {
-    super(`Hosted Plan Manager is not configured: missing ${missing.join(", ")}`)
+    super(`Hosted Plan Manager is not configured: missing or invalid ${missing.join(", ")}`)
     this.name = "HostedConfigurationError"
   }
 }
 
 const REQUIRED_KEYS = [
-  "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",
-  "CLERK_SECRET_KEY",
+  "WORKOS_CLIENT_ID",
+  "WORKOS_API_KEY",
+  "WORKOS_COOKIE_PASSWORD",
+  "WORKOS_REDIRECT_URI",
   "DATABASE_URL",
   "BLOB_READ_WRITE_TOKEN",
   "PLAN_MANAGER_TOKEN_PEPPER",
 ] as const
 
-export function getOwnerClerkUserIds(source: Readonly<Record<string, string | undefined>> = environmentSource()): string[] {
-  const value = source.PLAN_MANAGER_OWNER_CLERK_USER_IDS?.trim() || source.PLAN_MANAGER_OWNER_CLERK_USER_ID?.trim() || ""
-  return [...new Set(value.split(",").map(userId => userId.trim()).filter(Boolean))]
+function uniqueList(value: string): string[] {
+  return [...new Set(value.split(",").map(item => item.trim()).filter(Boolean))]
+}
+
+function httpsUrl(value: string | undefined, key: string, originOnly = false): string {
+  try {
+    const url = new URL(value ?? "")
+    if (url.protocol !== "https:" || url.username || url.password || url.search || url.hash || (originOnly && url.pathname !== "/")) throw new Error()
+    return originOnly ? url.origin : url.toString().replace(/\/$/, "")
+  } catch {
+    throw new HostedConfigurationError([key])
+  }
+}
+
+function redirectUrl(value: string | undefined): string {
+  try {
+    const url = new URL(value ?? "")
+    const loopback = url.protocol === "http:" && ["localhost", "127.0.0.1"].includes(url.hostname)
+    if ((!loopback && url.protocol !== "https:") || url.username || url.password || url.search || url.hash || url.pathname !== "/callback") throw new Error()
+    return url.toString()
+  } catch {
+    throw new HostedConfigurationError(["WORKOS_REDIRECT_URI"])
+  }
+}
+
+export function getOwnerWorkosUserIds(source: Readonly<Record<string, string | undefined>> = environmentSource()): string[] {
+  return uniqueList(source.PLAN_MANAGER_OWNER_WORKOS_USER_IDS?.trim() ?? "")
 }
 
 export function isAllowedOwner(userId: string | null | undefined, source: Readonly<Record<string, string | undefined>> = environmentSource()): boolean {
-  return typeof userId === "string" && getOwnerClerkUserIds(source).includes(userId)
-}
-
-// Clerk custom scopes can only be created in the dashboard, so CLI access is bound to the
-// Plan Manager CLI OAuth application instead: tokens minted for any other client are rejected.
-export function oauthTokenCanAccess(userId: string | null, clientId: string | null, scopes: readonly string[], source: Readonly<Record<string, string | undefined>> = environmentSource()): boolean {
-  const cliClientId = source.PLAN_MANAGER_OAUTH_CLIENT_ID?.trim()
-  return isAllowedOwner(userId, source) && Boolean(cliClientId) && clientId === cliClientId && scopes.includes("openid")
+  return typeof userId === "string" && getOwnerWorkosUserIds(source).includes(userId)
 }
 
 export function getHostedEnvironment(source: Readonly<Record<string, string | undefined>> = environmentSource()): HostedEnvironment {
-  const ownerClerkUserIds = getOwnerClerkUserIds(source)
+  const ownerWorkosUserIds = getOwnerWorkosUserIds(source)
   const missing = [
     ...REQUIRED_KEYS.filter(key => !source[key]?.trim()),
-    ...(ownerClerkUserIds.length === 0 ? ["PLAN_MANAGER_OWNER_CLERK_USER_IDS"] : []),
+    ...(ownerWorkosUserIds.length === 0 ? ["PLAN_MANAGER_OWNER_WORKOS_USER_IDS"] : []),
+    ...((source.WORKOS_COOKIE_PASSWORD?.length ?? 0) < 32 ? ["WORKOS_COOKIE_PASSWORD"] : []),
   ]
-  if (missing.length > 0) throw new HostedConfigurationError([...missing])
+  if (missing.length > 0) throw new HostedConfigurationError([...new Set(missing)])
   return {
-    clerkPublishableKey: source.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY!,
-    clerkSecretKey: source.CLERK_SECRET_KEY!,
-    ownerClerkUserIds,
+    workosClientId: source.WORKOS_CLIENT_ID!,
+    workosApiKey: source.WORKOS_API_KEY!,
+    workosCookiePassword: source.WORKOS_COOKIE_PASSWORD!,
+    workosRedirectUri: redirectUrl(source.WORKOS_REDIRECT_URI),
+    ownerWorkosUserIds,
     databaseUrl: source.DATABASE_URL!,
     blobReadWriteToken: source.BLOB_READ_WRITE_TOKEN!,
     tokenPepper: source.PLAN_MANAGER_TOKEN_PEPPER!,
@@ -70,32 +97,43 @@ export function getHostedEnvironment(source: Readonly<Record<string, string | un
 }
 
 export function ownerConfigured(source: Readonly<Record<string, string | undefined>> = environmentSource()): boolean {
-  return Boolean(source.CLERK_SECRET_KEY && source.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY && getOwnerClerkUserIds(source).length > 0)
-}
-
-export function getClerkIssuerUrl(source: Readonly<Record<string, string | undefined>> = environmentSource()): string {
-  const key = source.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.trim() ?? ""
-  const encodedDomain = key.split("_").slice(2).join("_")
-  if (!/^pk_(test|live)_[A-Za-z0-9_-]+$/.test(key) || !encodedDomain) throw new HostedConfigurationError(["NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY"])
-  let domain: string
   try {
-    const base64 = encodedDomain.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(encodedDomain.length / 4) * 4, "=")
-    domain = atob(base64).replace(/\$$/, "")
+    getHostedEnvironment(source)
+    return true
   } catch {
-    throw new HostedConfigurationError(["NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY"])
+    return false
   }
-  if (!/^[a-z0-9.-]+$/.test(domain) || !domain.includes(".")) throw new HostedConfigurationError(["NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY"])
-  return `https://${domain}`
 }
 
-export function getCliOAuthConfiguration(source: Readonly<Record<string, string | undefined>> = environmentSource()): { clientId: string; issuerUrl: string } {
-  const clientId = source.PLAN_MANAGER_OAUTH_CLIENT_ID?.trim()
-  if (!clientId) throw new HostedConfigurationError(["PLAN_MANAGER_OAUTH_CLIENT_ID"])
-  return { clientId, issuerUrl: getClerkIssuerUrl(source) }
+export function getCliOAuthConfiguration(source: Readonly<Record<string, string | undefined>> = environmentSource()): WorkOSCliConfiguration {
+  const clientId = source.PLAN_MANAGER_WORKOS_CLI_CLIENT_ID?.trim()
+  const audience = source.PLAN_MANAGER_WORKOS_CLI_AUDIENCE?.trim()
+  if (!clientId || !audience) {
+    throw new HostedConfigurationError([
+      ...(!clientId ? ["PLAN_MANAGER_WORKOS_CLI_CLIENT_ID"] : []),
+      ...(!audience ? ["PLAN_MANAGER_WORKOS_CLI_AUDIENCE"] : []),
+    ])
+  }
+  const issuerUrl = httpsUrl(source.PLAN_MANAGER_WORKOS_AUTHKIT_DOMAIN, "PLAN_MANAGER_WORKOS_AUTHKIT_DOMAIN", true)
+  return {
+    version: 2,
+    clientId,
+    issuerUrl,
+    audience,
+    scope: WORKOS_CLI_SCOPE,
+    deviceAuthorizationEndpoint: `${issuerUrl}/oauth2/device_authorization`,
+    tokenEndpoint: `${issuerUrl}/oauth2/token`,
+    jwksUrl: `${issuerUrl}/oauth2/jwks`,
+  }
 }
 
-// Same variable the Next.js Clerk SDK read. When unset, signed-out visitors go to the
-// Clerk Account Portal sign-in page, exactly as `redirectToSignIn()` did before.
-export function getClerkSignInUrl(source: Readonly<Record<string, string | undefined>> = environmentSource()): string | undefined {
-  return source.NEXT_PUBLIC_CLERK_SIGN_IN_URL?.trim() || undefined
+export function workosCliClaimsCanAccess(
+  userId: unknown,
+  clientId: unknown,
+  scope: unknown,
+  source: Readonly<Record<string, string | undefined>> = environmentSource(),
+): boolean {
+  const config = getCliOAuthConfiguration(source)
+  const scopes = typeof scope === "string" ? scope.split(/\s+/).filter(Boolean) : []
+  return typeof userId === "string" && isAllowedOwner(userId, source) && clientId === config.clientId && scopes.includes(config.scope)
 }

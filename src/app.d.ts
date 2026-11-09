@@ -1,10 +1,9 @@
-import type { AuthReader } from "#lib/server/auth.ts"
+/// <reference types="@sveltejs/kit" />
 
 declare global {
   namespace App {
     interface Locals {
-      // Clerk auth for this request; see src/lib/server/clerk.ts.
-      auth: AuthReader
+      auth: import('@workos/authkit-sveltekit').AuthKitAuth
     }
   }
 }
