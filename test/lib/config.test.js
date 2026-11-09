@@ -2,7 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
-import { getPlanHome } from '../../dist/lib/config.js'
+import { getPlanHome } from '../../src/lib/config.ts'
 
 test('getPlanHome defaults to the Obsidian-synced plans directory and honors PLAN_HOME', () => {
   const original = process.env.PLAN_HOME

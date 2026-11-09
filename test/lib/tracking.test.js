@@ -3,8 +3,8 @@ import assert from 'node:assert/strict'
 import { mkdtemp, rm, readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { readPlan, writePlan } from '../../dist/lib/metadata.js'
-import { appendEvent, parsePrUrl, projectTracking, validateEvent, validateTracking, TRACKING_LIMITS } from '../../dist/lib/tracking.js'
+import { readPlan, writePlan } from '../../src/lib/metadata.ts'
+import { appendEvent, parsePrUrl, projectTracking, validateEvent, validateTracking, TRACKING_LIMITS } from '../../src/lib/tracking.ts'
 
 const META = { id: 'plan-1', title: 'Plan', status: 'active', created: '2026-01-01T00:00:00.000Z', updated: '2026-01-01T00:00:00.000Z', tags: [] }
 const machine = installationId => ({ installationId, displayName: 'MacBookPro', hostname: 'MacBookPro', os: 'darwin', arch: 'arm64' })

@@ -1,5 +1,5 @@
 #!/bin/sh
-# Runs the TypeScript CLI's node:test contract suites against the Go binary.
+# Runs the historical black-box contract suites against the Go binary only.
 # The suites spawn `node bin/plan ...` and import dist/server/server.js, so this
 # stages them next to a bin/plan shim and a startServer() shim that launch Go.
 set -eu
@@ -12,9 +12,9 @@ trap 'rm -rf "$work"' EXIT
 (cd "$cli_dir" && go build -o "$work/plan-go" ./cmd/plan)
 
 mkdir -p "$work/bin" "$work/test/cli" "$work/dist/server"
-echo '{"type":"module"}' > "$work/package.json"
-cp "$repo_dir"/test/cli/create.test.js "$repo_dir"/test/cli/capture.test.js \
-   "$repo_dir"/test/cli/contracts.test.js "$repo_dir"/test/cli/dashboard.test.js "$work/test/cli/"
+cp "$repo_dir/package.json" "$work/package.json"
+cp "$cli_dir"/test/contracts/create.test.js "$cli_dir"/test/contracts/capture.test.js \
+   "$cli_dir"/test/contracts/contracts.test.js "$cli_dir"/test/contracts/dashboard.test.js "$work/test/cli/"
 # doctor reports the Go runtime under "runtime" rather than "node".
 sed -i.bak 's/assert.ok(report.node)/assert.ok(report.runtime)/' "$work/test/cli/create.test.js"
 # Completion suggests slugs rather than IDs, and supports fish.

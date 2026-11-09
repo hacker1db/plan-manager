@@ -2,7 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
   appendEvent, assertCompletion, assertPlanReview, assertReopen, assertStageTransition, bodyRevision, projectEvents, PLAN_STAGES,
-} from '../../dist/lib/tracking.js'
+} from '../../src/lib/tracking.ts'
 
 const META = { id: 'plan-1', title: 'Plan', status: 'active', created: '2026-01-01T00:00:00.000Z', updated: '2026-01-01T00:00:00.000Z', tags: [] }
 const PR_ID = '00000000-0000-4000-8000-0000000000aa'

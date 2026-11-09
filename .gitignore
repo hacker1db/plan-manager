@@ -19,3 +19,5 @@ src/lib/hosted/generated-dashboard.ts
 .claude/*
 !.claude/skills/
 .omc/
+
+/cli/bin/

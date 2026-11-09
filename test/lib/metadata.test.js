@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { parseFrontmatter, normalizeMeta, writePlan, readPlan } from '../../dist/lib/metadata.js'
+import { parseFrontmatter, normalizeMeta, writePlan, readPlan } from '../../src/lib/metadata.ts'
 
 test('parseFrontmatter extracts meta and body', () => {
   const content = `---\nid: abc\ntitle: Test\nstatus: active\n---\n\nBody here\n`

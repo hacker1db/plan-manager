@@ -10,25 +10,22 @@
   "imports": {
     "#lib/*": "./src/lib/*"
   },
-  "bin": {
-    "plan": "./bin/plan"
-  },
   "scripts": {
-    "prepare": "pnpm build:cli",
-    "build": "pnpm build:cli && pnpm build:web",
-    "build:cli": "tsc --project tsconfig.cli.json && node scripts/copy-dashboard-assets.mjs",
+    "build": "pnpm build:web",
+    "build:cli": "cd cli && go build -o bin/plan ./cmd/plan",
     "build:web": "node scripts/sync-dashboard-style.mjs && vite build && node scripts/check-client-bundle.mjs",
-    "dev": "tsx watch scripts/dev.mts serve --foreground",
+    "dev": "cd cli && go run ./cmd/plan serve --foreground",
     "dev:web": "node scripts/sync-dashboard-style.mjs && vite dev",
     "start:web": "vite preview",
-    "typecheck": "pnpm typecheck:cli && pnpm typecheck:web",
-    "typecheck:cli": "tsc --project tsconfig.cli.json --noEmit",
+    "typecheck": "pnpm typecheck:web",
+    "typecheck:cli": "cd cli && go vet ./...",
     "typecheck:web": "node scripts/sync-dashboard-style.mjs && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --fail-on-warnings",
-    "test": "pnpm build:cli && node --test 'test/lib/*.js' 'test/cli/*.js' && node --import tsx --test 'test/cli/**/*.test.ts' && pnpm test:web",
+    "test": "pnpm test:cli && pnpm test:lib && pnpm test:web",
     "test:web": "node scripts/sync-dashboard-style.mjs && svelte-kit sync && node --import tsx --test 'test/hosted/**/*.test.ts' 'test/hosted/**/*.test.tsx'",
-    "test:lib": "pnpm build:cli && node --test 'test/lib/*.js'",
-    "test:cli": "pnpm build:cli && node --test 'test/cli/*.js'",
-    "db:migrate": "node --env-file=.env.local --import tsx scripts/migrate-hosted.ts"
+    "test:lib": "TSX_TSCONFIG_PATH=tsconfig.tests.json node --import tsx --test 'test/lib/*.js'",
+    "test:cli": "cd cli && go test ./...",
+    "db:migrate": "node --env-file=.env.local --import tsx scripts/migrate-hosted.ts",
+    "test:contracts": "sh cli/scripts/contracts.sh"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.2",
