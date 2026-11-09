@@ -23,7 +23,11 @@ targets:
   PlanManager:
     type: application
     platform: iOS
-    sources: [Sources]
+    sources:
+      - Sources
+      # The reader loads the web dashboard stylesheet verbatim so iOS and web cannot drift.
+      - path: ../../src/dashboard/style.css
+        buildPhase: resources
     dependencies:
       - package: WorkOS
         product: WorkOS
