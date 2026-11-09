@@ -34,3 +34,24 @@ test("Connect discovery retains explicit client, audience, issuer and scope", as
   assert.equal(config.scope,"plans:write")
   assert.equal(config.issuerUrl,"https://auth.example")
 })
+
+
+test("mobile routes reject anonymous and non-owner WorkOS sessions before storage", async () => {
+  for (const [path, method] of [["render", "GET"], ["status", "POST"]]) {
+    const handler = (await load(`/src/routes/api/v1/plans/[id]/${path}/+server.ts`))[method]
+    for (const [user, status] of [[null, 401], [{id: "other"}, 403]] as const) {
+      const response = await handler({request: new Request("https://plans.example/x", {method}), params: {id: "plan_1234"}, locals: {auth: {user}}})
+      assert.equal(response.status, status)
+    }
+  }
+})
+
+test("native status keeps cookie CSRF and rejects unverified bearer credentials", async () => {
+  const {POST} = await load("/src/routes/api/v1/plans/[id]/status/+server.ts")
+  const call = (headers: Record<string, string>) => POST({request: new Request("https://plans.example/api/v1/plans/plan_1234/status", {method: "POST", headers, body: "not json"}), params: {id: "plan_1234"}, locals: {auth: {user: {id: "user_owner"}}}})
+  assert.equal((await call({"Content-Type": "application/json"})).status, 403)
+  assert.equal((await call({"Content-Type": "application/json", Origin: "https://evil.example"})).status, 403)
+  assert.equal((await call({"Content-Type": "application/json", Authorization: "Bearer forged", Cookie: "session=valid"})).status, 403)
+  assert.equal((await call({"Content-Type": "application/json", Authorization: "Bearer forged"})).status, 403)
+  assert.equal((await call({"Content-Type": "application/json", Origin: "https://plans.example"})).status, 400)
+})

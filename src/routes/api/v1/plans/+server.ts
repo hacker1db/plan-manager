@@ -2,6 +2,7 @@ import { apiError, jsonResponse, PRIVATE_NO_STORE, publicPlan } from "#lib/serve
 import { requireOwnerResponse } from "#lib/server/auth.ts"
 import { searchPlans } from "#lib/server/plan-search.ts"
 import { listPlans, readMarkdown } from "#lib/server/store.ts"
+import { pagePlans } from "#lib/server/mobile.ts"
 import type { RequestHandler } from "./$types"
 
 export const GET: RequestHandler = async ({ url, locals }) => {
@@ -9,6 +10,10 @@ export const GET: RequestHandler = async ({ url, locals }) => {
   if (denied) return denied
   try {
     const matches = await searchPlans(await listPlans(), url, readMarkdown)
-    return jsonResponse({ version: 1, plans: matches.map(publicPlan) }, { headers: PRIVATE_NO_STORE })
-  } catch (error) { return apiError(error) }
+    const page = pagePlans(matches, url)
+    return jsonResponse({ version: 1, ...page, plans: page.plans.map(publicPlan) }, { headers: PRIVATE_NO_STORE })
+  } catch (error) {
+    if (error instanceof RangeError) return jsonResponse({error: error.message}, {status: 400, headers: PRIVATE_NO_STORE})
+    return apiError(error)
+  }
 }

@@ -1,0 +1,441 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0A0D0B98682CB59C1F41720B /* NativeSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2D10FC1C39D56C8DB78ED70 /* NativeSession.swift */; };
+		205C8BDABF79829560A4D526 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = F99211F8EF1F7E1E6EAA5CC0 /* Models.swift */; };
+		3FFC3F31D34CA89C49C1603A /* Reader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C17056AA4D002BDC09DF629 /* Reader.swift */; };
+		997DAC9BE8C9BFDDB2E61818 /* WorkOS in Frameworks */ = {isa = PBXBuildFile; productRef = 7B64EED19E953BF17A9A4A7E /* WorkOS */; };
+		A293780475552D0986CA6B16 /* PlanManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87DDD125CEE6EE582CED400A /* PlanManagerTests.swift */; };
+		F555AAEC5638E6B945155BB9 /* PlanManagerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FDC17D2ACE416C94EC98BDD /* PlanManagerApp.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		907DA3C5367FA6ADE2372E71 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 20D407B61491D613A6464F8F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 2F4CB2944ECE7E7A3AFAE858;
+			remoteInfo = PlanManager;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		0732BB644F008D41EAFD3FEE /* PlanManagerTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = PlanManagerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		0C17056AA4D002BDC09DF629 /* Reader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Reader.swift; sourceTree = "<group>"; };
+		5D83C33337A209F918C7C289 /* PlanManager.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = PlanManager.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		87DDD125CEE6EE582CED400A /* PlanManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanManagerTests.swift; sourceTree = "<group>"; };
+		8FDC17D2ACE416C94EC98BDD /* PlanManagerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanManagerApp.swift; sourceTree = "<group>"; };
+		E2D10FC1C39D56C8DB78ED70 /* NativeSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeSession.swift; sourceTree = "<group>"; };
+		F99211F8EF1F7E1E6EAA5CC0 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		6A52680F9AED4328CE5FAF3D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				997DAC9BE8C9BFDDB2E61818 /* WorkOS in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		11C19A3589D7793302B28A25 = {
+			isa = PBXGroup;
+			children = (
+				69C7F73CB06BD11B7A7158B3 /* Sources */,
+				351A39B7FF92B4BFE2B399DF /* Tests */,
+				62EBC11EC73DE7FD38235923 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		351A39B7FF92B4BFE2B399DF /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				87DDD125CEE6EE582CED400A /* PlanManagerTests.swift */,
+			);
+			path = Tests;
+			sourceTree = "<group>";
+		};
+		62EBC11EC73DE7FD38235923 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				5D83C33337A209F918C7C289 /* PlanManager.app */,
+				0732BB644F008D41EAFD3FEE /* PlanManagerTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		69C7F73CB06BD11B7A7158B3 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				F99211F8EF1F7E1E6EAA5CC0 /* Models.swift */,
+				E2D10FC1C39D56C8DB78ED70 /* NativeSession.swift */,
+				8FDC17D2ACE416C94EC98BDD /* PlanManagerApp.swift */,
+				0C17056AA4D002BDC09DF629 /* Reader.swift */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		2F4CB2944ECE7E7A3AFAE858 /* PlanManager */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 703DA1E30AC1F90558236E80 /* Build configuration list for PBXNativeTarget "PlanManager" */;
+			buildPhases = (
+				2CBD76CB8EB329AC90F7BEE7 /* Sources */,
+				6A52680F9AED4328CE5FAF3D /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = PlanManager;
+			packageProductDependencies = (
+				7B64EED19E953BF17A9A4A7E /* WorkOS */,
+			);
+			productName = PlanManager;
+			productReference = 5D83C33337A209F918C7C289 /* PlanManager.app */;
+			productType = "com.apple.product-type.application";
+		};
+		955EC8826CD63A7BD9901955 /* PlanManagerTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = CDE20EA62E11F2F1D61F0AE7 /* Build configuration list for PBXNativeTarget "PlanManagerTests" */;
+			buildPhases = (
+				66131AACFDB4B2EB78454477 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				FD7ED42380B0B07637E039E2 /* PBXTargetDependency */,
+			);
+			name = PlanManagerTests;
+			packageProductDependencies = (
+			);
+			productName = PlanManagerTests;
+			productReference = 0732BB644F008D41EAFD3FEE /* PlanManagerTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		20D407B61491D613A6464F8F /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+				};
+			};
+			buildConfigurationList = BDEA0097E4AA94B957B07B5F /* Build configuration list for PBXProject "PlanManager" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 11C19A3589D7793302B28A25;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				F00BDF1499F5953C1C43889D /* XCRemoteSwiftPackageReference "workos-ios" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 62EBC11EC73DE7FD38235923 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				2F4CB2944ECE7E7A3AFAE858 /* PlanManager */,
+				955EC8826CD63A7BD9901955 /* PlanManagerTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		2CBD76CB8EB329AC90F7BEE7 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				205C8BDABF79829560A4D526 /* Models.swift in Sources */,
+				0A0D0B98682CB59C1F41720B /* NativeSession.swift in Sources */,
+				F555AAEC5638E6B945155BB9 /* PlanManagerApp.swift in Sources */,
+				3FFC3F31D34CA89C49C1603A /* Reader.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		66131AACFDB4B2EB78454477 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A293780475552D0986CA6B16 /* PlanManagerTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		FD7ED42380B0B07637E039E2 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 2F4CB2944ECE7E7A3AFAE858 /* PlanManager */;
+			targetProxy = 907DA3C5367FA6ADE2372E71 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		2EBC985CCF1B4BC291F997C3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		53A0D190E4F335E9D3BD027C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_PlanServiceURL = "$(PLAN_SERVICE_URL)";
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_WorkOSClientID = "$(WORKOS_CLIENT_ID)";
+				INFOPLIST_KEY_WorkOSRedirectURI = "$(WORKOS_REDIRECT_URI)";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PLAN_SERVICE_URL = "";
+				PRODUCT_BUNDLE_IDENTIFIER = dev.example.PlanManager;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				WORKOS_CLIENT_ID = "";
+				WORKOS_REDIRECT_URI = "";
+			};
+			name = Debug;
+		};
+		5C333B740B03B2525DBA2872 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_PlanServiceURL = "$(PLAN_SERVICE_URL)";
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_WorkOSClientID = "$(WORKOS_CLIENT_ID)";
+				INFOPLIST_KEY_WorkOSRedirectURI = "$(WORKOS_REDIRECT_URI)";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PLAN_SERVICE_URL = "";
+				PRODUCT_BUNDLE_IDENTIFIER = dev.example.PlanManager;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				WORKOS_CLIENT_ID = "";
+				WORKOS_REDIRECT_URI = "";
+			};
+			name = Release;
+		};
+		656BBBD0156E2ACA165A6E21 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/PlanManager.app/PlanManager";
+			};
+			name = Release;
+		};
+		9B69D66FFF8F40F93024198E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/PlanManager.app/PlanManager";
+			};
+			name = Debug;
+		};
+		B5280C61C98F845CE2A1B9BD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		703DA1E30AC1F90558236E80 /* Build configuration list for PBXNativeTarget "PlanManager" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2EBC985CCF1B4BC291F997C3 /* Debug */,
+				B5280C61C98F845CE2A1B9BD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		BDEA0097E4AA94B957B07B5F /* Build configuration list for PBXProject "PlanManager" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				53A0D190E4F335E9D3BD027C /* Debug */,
+				5C333B740B03B2525DBA2872 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		CDE20EA62E11F2F1D61F0AE7 /* Build configuration list for PBXNativeTarget "PlanManagerTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9B69D66FFF8F40F93024198E /* Debug */,
+				656BBBD0156E2ACA165A6E21 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		F00BDF1499F5953C1C43889D /* XCRemoteSwiftPackageReference "workos-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/workos/workos-ios";
+			requirement = {
+				kind = exactVersion;
+				version = 0.9.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		7B64EED19E953BF17A9A4A7E /* WorkOS */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F00BDF1499F5953C1C43889D /* XCRemoteSwiftPackageReference "workos-ios" */;
+			productName = WorkOS;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 20D407B61491D613A6464F8F /* Project object */;
+}
