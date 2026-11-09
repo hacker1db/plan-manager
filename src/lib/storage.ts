@@ -4,6 +4,7 @@ import { join, resolve, normalize, dirname, basename } from 'node:path'
 import { randomBytes } from 'node:crypto'
 import { lstatSync, realpathSync } from 'node:fs'
 import { getPlanHome } from './config.js'
+import { extensionFor, isPlanFilename, stripPlanExtension } from './mdx/format.js'
 
 export function planHome() {
   return getPlanHome()
@@ -103,7 +104,7 @@ async function safeMarkdownFiles(dir) {
   }
   const files = []
   for (const entry of entries) {
-    if (!entry.isFile() || !entry.name.endsWith('.md')) continue
+    if (!entry.isFile() || !isPlanFilename(entry.name)) continue
     const filePath = join(dir, entry.name)
     if (await containedPathReal(filePath)) files.push(filePath)
   }
@@ -123,12 +124,17 @@ export async function allPlanFiles() {
   return [...active, ...archived]
 }
 
-export function planPath(slug) {
-  return join(planHome(), `${slug}.md`)
+export function planPath(slug, format = 'md') {
+  return join(planHome(), `${slug}${extensionFor(format)}`)
 }
 
-export function archivePath(slug) {
-  return join(archiveDir(), `${slug}.md`)
+export function archivePath(slug, format = 'md') {
+  return join(archiveDir(), `${slug}${extensionFor(format)}`)
+}
+
+async function slugTaken(pathFor, slug) {
+  // A slug is one identifier regardless of format, so plan.md and plan.mdx never coexist.
+  return (await pathEntryExists(pathFor(slug, 'md'))) || (await pathEntryExists(pathFor(slug, 'mdx')))
 }
 
 export function containedPath(filePath) {
@@ -181,7 +187,7 @@ export async function resolveByIdOrSlug(idOrSlug) {
     if (parsed.meta.id === idOrSlug) {
       return { filePath: f, meta: parsed.meta }
     }
-    const slug = f.replace(/\.md$/, '').split('/').pop()
+    const slug = stripPlanExtension(f.split('/').pop())
     if (slug === idOrSlug) {
       matches.push({ filePath: f, meta: parsed.meta })
     }
@@ -199,22 +205,21 @@ export async function resolveByIdOrSlug(idOrSlug) {
 }
 
 export async function uniqueSlug(baseSlug) {
-  if (!(await pathEntryExists(planPath(baseSlug)))) return baseSlug
+  if (!(await slugTaken(planPath, baseSlug))) return baseSlug
   for (let i = 2; i <= 99; i++) {
     const candidate = `${baseSlug}-${i}`
-    if (!(await pathEntryExists(planPath(candidate)))) return candidate
+    if (!(await slugTaken(planPath, candidate))) return candidate
   }
   const err = new Error(`No available filename slot for slug "${baseSlug}"`)
   err.code = 'ESLOTFULL'
   throw err
 }
 
-export async function uniqueArchivePath(baseSlug) {
-  const first = archivePath(baseSlug)
-  if (!(await pathEntryExists(first))) return first
+export async function uniqueArchivePath(baseSlug, format = 'md') {
+  if (!(await slugTaken(archivePath, baseSlug))) return archivePath(baseSlug, format)
   for (let i = 2; i <= 999; i++) {
-    const candidate = archivePath(`${baseSlug}-${i}`)
-    if (!(await pathEntryExists(candidate))) return candidate
+    const candidate = `${baseSlug}-${i}`
+    if (!(await slugTaken(archivePath, candidate))) return archivePath(candidate, format)
   }
   const err = new Error(`No available archive filename slot for slug "${baseSlug}"`)
   err.code = 'ESLOTFULL'

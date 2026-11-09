@@ -446,6 +446,34 @@ test('Pandoc rendering removes active HTML and unsafe URL schemes', async () => 
   assert.doesNotMatch(detail.html, /<script|javascript:|onerror=|<input|<form|<button/i)
 })
 
+test('MDX plans render blocks without Pandoc and keep task toggles', async () => {
+  const root = await fixture()
+  const filePath = join(root, 'visual.mdx')
+  await writeFile(filePath, markdown({
+    id: 'mdx_plan',
+    body: '# Visual\n\n<Callout tone="risk" title="Heads up">\n- [ ] Inside callout\n</Callout>\n\n<FileTree files={[{ path: "src/a.ts", change: "added" }]} />\n\n- [x] Outside\n\n<Evil />',
+  }))
+  const { base } = await running({ planHome: root })
+  const session = await fetch(`${base}/_session`).then(response => response.json())
+  const detail = await fetch(`${base}/api/plans/mdx_plan`).then(response => response.json())
+  assert.equal(detail.format, 'mdx')
+  assert.equal(detail.renderState, 'rendered')
+  assert.match(detail.html, /pm-callout pm-tone-risk/)
+  assert.match(detail.html, /pm-change-added/)
+  assert.match(detail.html, /Unknown block &lt;Evil&gt;/)
+  assert.equal(detail.html.match(/data-plan-task="true"/g).length, 2)
+
+  const updated = await fetch(`${base}/api/plans/mdx_plan/tasks/0`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': session.csrfToken },
+    body: JSON.stringify({ checked: true, revision: detail.revision }),
+  })
+  assert.equal(updated.status, 200)
+  const raw = await readFile(filePath, 'utf8')
+  assert.match(raw, /- \[x\] Inside callout/)
+  assert.match(raw, /^format: mdx$/m)
+})
+
 test('raw_attribute blocks span injection that the regex sanitizer cannot catch', async () => {
   // The test above only proves pandoc's -raw_html works: those payloads are
   // neutralized before sanitizeRenderedHtml ever runs. These use pandoc's

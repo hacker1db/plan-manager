@@ -9,8 +9,22 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
-    "verbatimModuleSyntax": true
+    "verbatimModuleSyntax": true,
+    "jsx": "react-jsx",
+    "rewriteRelativeImportExtensions": true,
+    "types": ["node"]
   },
-  "include": ["src/**/*.ts"],
-  "exclude": ["src/app/**", "src/components/**", "src/hosted/**", "src/proxy.ts"]
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx"
+  ],
+  "exclude": [
+    "src/routes/**",
+    "src/lib/server/**",
+    "src/lib/hosted/**",
+    "src/lib/components/**",
+    "src/hooks.server.ts",
+    "src/env.ts",
+    "src/app.d.ts"
+  ]
 }

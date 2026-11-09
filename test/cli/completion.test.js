@@ -14,6 +14,7 @@ function flagsFromHelp(help) {
   const flags = {}
   let current = null
   for (const line of help.split('\n')) {
+    if (/^    Tracking commands accept/.test(line)) { current = '__tracking'; flags[current] = new Set() }
     if (/^Exit codes:/.test(line)) break
     const usage = line.match(/^  plan (\S+)/)
     if (usage) {
@@ -27,6 +28,10 @@ function flagsFromHelp(help) {
     if (!current) continue
     for (const flag of line.match(/--[a-z][a-z-]*/g) ?? []) flags[current].add(flag)
   }
+  for (const sub of ['stage', 'session', 'pr', 'review', 'complete', 'reopen']) {
+    for (const flag of flags.__tracking ?? []) flags[sub]?.add(flag)
+  }
+  delete flags.__tracking
   return flags
 }
 
@@ -74,7 +79,7 @@ test('every flag in --help is completed for its subcommand, and nothing more', (
 test('bash completion offers each subcommand flags at any position after the subcommand', () => {
   const script = planCmd(['completion', 'bash']).stdout
   assert.deepEqual(completeBash(script, ['plan', 'update', 'some-id', '--']), ['--file', '--if-revision', '--json', '--stdin'])
-  assert.deepEqual(completeBash(script, ['plan', 'create', '--']), ['--file', '--json', '--stdin', '--title'])
+  assert.deepEqual(completeBash(script, ['plan', 'create', '--']), ['--file', '--format', '--json', '--stdin', '--title'])
   assert.deepEqual(completeBash(script, ['plan', 'push', 'some-id', '--a']), ['--all'])
   assert.deepEqual(completeBash(script, ['plan', 'serve', '--']), ['--foreground', '--json'])
   assert.deepEqual(completeBash(script, ['plan', 'doctor', '--j']), ['--json'])

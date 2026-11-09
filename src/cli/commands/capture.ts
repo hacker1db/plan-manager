@@ -170,8 +170,10 @@ export async function cmdCapture(args, opts) {
       } else {
         const title = opts.title || inferredTitle || artifactTitle(sourcePath) || 'Untitled'
         const now = new Date().toISOString()
+        // Tracking history from an outside artifact is unverified provenance, so a new capture starts untracked.
+        const { tracking: _tracking, schemaVersion: _schemaVersion, ...foreignMeta } = sourceMeta
         const meta = normalizeMeta({
-          ...sourceMeta,
+          ...foreignMeta,
           id: generateId(),
           title,
           created: sourceMeta.created ?? now,

@@ -5,6 +5,7 @@ import { initStorage, resolveByIdOrSlug, containedPath, archiveDir, uniqueArchiv
 import { readPlan, writePlan } from '../../lib/metadata.js'
 import { buildEnvelope } from '../../lib/envelope.js'
 import { withPlanWriteLock } from '../../lib/write-lock.js'
+import { formatFromPath, stripPlanExtension } from '../../lib/mdx/format.js'
 import { EXIT } from '../exit.js'
 
 export async function cmdArchive(args, opts) {
@@ -24,7 +25,7 @@ export async function cmdArchive(args, opts) {
         throw pathError
       }
       const parsed = await readPlan(resolved.filePath)
-      const slug = basename(resolved.filePath, '.md')
+      const slug = stripPlanExtension(basename(resolved.filePath))
       if (normalize(resolve(dirname(resolved.filePath))) === normalize(resolve(archiveDir()))) {
         if (parsed.meta.status !== 'archived') {
           await writePlan(resolved.filePath, { ...parsed.meta, status: 'archived' }, parsed.body)
@@ -35,7 +36,7 @@ export async function cmdArchive(args, opts) {
           envelope: await buildEnvelope(await readPlan(resolved.filePath)),
         }
       }
-      const dest = await uniqueArchivePath(slug)
+      const dest = await uniqueArchivePath(slug, formatFromPath(resolved.filePath))
       await writePlan(resolved.filePath, { ...parsed.meta, status: 'archived' }, parsed.body)
       await rename(resolved.filePath, dest)
       return {

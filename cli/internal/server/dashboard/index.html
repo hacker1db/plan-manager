@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en" data-dashboard-environment="local">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Plan Library</title>
+  <link rel="icon" href="/icon.png" type="image/png">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="topline"></div>
+  <div class="shell">
+    <aside id="sidebar" class="rail" aria-label="Plan filters">
+      <div class="rail-mark">
+        <a href="/">Local library<strong>Plan Library</strong></a>
+      </div>
+
+      <label class="rail-search">
+        <span class="visually-hidden">Search plans</span>
+        <input id="search" type="search" placeholder="Search plans" autocomplete="off">
+      </label>
+
+      <button id="filter-toggle" class="btn filter-toggle" type="button" aria-expanded="false" aria-controls="sidebar">
+        Filters
+      </button>
+
+      <section class="rail-collapsible">
+        <h2 class="rail-label">Status</h2>
+        <nav aria-label="Filter by status">
+          <button class="filter-btn active" type="button" data-status="all">
+            All <span class="filter-count" data-count="all">0</span>
+          </button>
+          <button class="filter-btn" type="button" data-status="active">
+            Active <span class="filter-count" data-count="active">0</span>
+          </button>
+          <button class="filter-btn" type="button" data-status="completed">
+            Completed <span class="filter-count" data-count="completed">0</span>
+          </button>
+          <button class="filter-btn" type="button" data-status="archived">
+            Archived <span class="filter-count" data-count="archived">0</span>
+          </button>
+        </nav>
+      </section>
+
+      <section class="rail-collapsible">
+        <h2 class="rail-label">Tags</h2>
+        <div id="tag-list" class="tag-list"></div>
+      </section>
+
+      <div class="rail-foot">
+        <div class="live" aria-live="polite">
+          <span id="live-dot" class="live-dot disconnected"></span>
+          <span id="live-label" class="live-label">Connecting</span>
+        </div>
+      </div>
+    </aside>
+
+    <main>
+      <header class="hero">
+        <p class="eyebrow">Markdown plan library</p>
+        <h1 id="library-heading">Every plan, <em>one shelf</em></h1>
+        <p id="result-summary" class="hero-summary" aria-live="polite"></p>
+      </header>
+
+      <div class="metadata">
+        <div class="meta">
+          <span class="meta-label">Total</span>
+          <span class="meta-value" data-count="all">0</span>
+        </div>
+        <div class="meta is-active">
+          <span class="meta-label">Active</span>
+          <span class="meta-value" data-count="active">0</span>
+        </div>
+        <div class="meta is-completed">
+          <span class="meta-label">Completed</span>
+          <span class="meta-value" data-count="completed">0</span>
+        </div>
+        <div class="meta is-archived">
+          <span class="meta-label">Archived</span>
+          <span class="meta-value" data-count="archived">0</span>
+        </div>
+      </div>
+
+      <div id="malformed-warning" class="warning" hidden></div>
+
+      <section aria-labelledby="library-heading">
+        <div class="section-head">
+          <span class="section-no">01 —</span>
+          <h2>Plans</h2>
+        </div>
+        <div id="plan-list" class="cards">
+          <p class="loading">Loading plans…</p>
+        </div>
+      </section>
+
+      <footer>
+        <span>Plan Manager</span>
+        <span>Local only · 127.0.0.1</span>
+      </footer>
+    </main>
+  </div>
+  <div id="toasts" class="toast-container" aria-live="polite"></div>
+  <script src="/app.js" defer></script>
+</body>
+</html>

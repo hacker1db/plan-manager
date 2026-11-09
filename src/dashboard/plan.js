@@ -56,7 +56,13 @@ async function mutate(suffix, options = {}) {
 
 async function copyMarkdown() {
   try {
-    await navigator.clipboard.writeText(state.plan.body)
+    const markdown = hosted
+      ? await fetch(`/api/v1/plans/${encodeURIComponent(state.id)}/content`).then(async response => {
+        if (!response.ok) throw new Error(`Request failed with ${response.status}`)
+        return response.text()
+      })
+      : state.plan.body
+    await navigator.clipboard.writeText(markdown)
     toast('Markdown copied')
   } catch {
     toast('Could not copy Markdown', 'error')
@@ -285,6 +291,7 @@ async function start() {
   try {
     if (hosted) {
       state.plan = { revision: detailElement.dataset.revision }
+      detailElement.querySelector('[data-copy-source]')?.addEventListener('click', copyMarkdown)
       document.title = `${detailElement.querySelector('h1')?.textContent ?? 'Plan'} · Plan Library`
       for (const footer of document.querySelectorAll('footer span:last-child')) {
         footer.textContent = 'Private · Owner access'

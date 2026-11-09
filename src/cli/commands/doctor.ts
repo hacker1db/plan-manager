@@ -4,9 +4,19 @@ import { constants } from 'node:fs'
 import { spawnSync } from 'node:child_process'
 import { homedir } from 'node:os'
 import { join, normalize, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { archiveDir, containedPathReal, planHome } from '../../lib/storage.js'
 import { getPort } from '../../lib/config.js'
 import { probeService } from '../../lib/service.js'
+import { checkBuildFreshness } from '../../lib/build.js'
+
+const DIST_DIR = fileURLToPath(new URL('../..', import.meta.url))
+
+function checkBuild() {
+  const freshness = checkBuildFreshness(DIST_DIR)
+  if (!freshness) return { path: DIST_DIR, status: 'skipped' }
+  return { path: DIST_DIR, status: freshness.stale ? 'stale' : 'ok', ...(freshness.reason ? { reason: freshness.reason } : {}) }
+}
 
 async function checkDir(path) {
   try {
@@ -107,6 +117,7 @@ export async function cmdDoctor(args, opts) {
     checkCodex(root, home),
   ])
   const pandoc = checkPandoc()
+  const build = checkBuild()
   const report = {
     version: 1,
     dashboardUrl: service.dashboardUrl,
@@ -116,6 +127,7 @@ export async function cmdDoctor(args, opts) {
     archiveDir: { path: archive, status: archiveStatus },
     node: { ok: true, version: process.version },
     pandoc,
+    build,
     launchAgent,
     codex,
   }
@@ -128,6 +140,7 @@ export async function cmdDoctor(args, opts) {
   process.stdout.write(`Archive dir:  ${archive} [${archiveStatus}]\n`)
   process.stdout.write(`Node.js:      ${report.node.version} [ok]\n`)
   process.stdout.write(`Pandoc:       ${pandoc.ok ? pandoc.version : 'not found'} [${pandoc.ok ? 'ok' : 'missing'}]\n`)
+  process.stdout.write(`CLI build:    ${build.path} [${build.status === 'stale' ? 'stale — run pnpm build:cli' : build.status}]\n`)
   process.stdout.write(`Dashboard:    ${report.dashboardUrl} [${report.serviceState}]\n`)
   process.stdout.write(`LaunchAgent:  ${launchAgent.label} [${launchAgent.state}]\n`)
   process.stdout.write(`Codex root:   ${codex.configuredWritableRoot ? 'configured' : 'missing'}\n`)

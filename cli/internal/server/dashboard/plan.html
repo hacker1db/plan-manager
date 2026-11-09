@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en" data-dashboard-environment="local">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Plan</title>
+  <link rel="icon" href="/icon.png" type="image/png">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="topline"></div>
+  <div class="shell">
+    <aside class="rail" aria-label="Plan navigation">
+      <div class="rail-mark">
+        <a href="/">Local library<strong>Plan Library</strong></a>
+      </div>
+
+      <nav aria-label="Breadcrumb">
+        <a class="action" href="/">← All plans</a>
+      </nav>
+
+      <div class="rail-foot">
+        <div class="live" aria-live="polite">
+          <span id="live-dot" class="live-dot disconnected"></span>
+          <span id="live-label" class="live-label">Connecting</span>
+        </div>
+      </div>
+    </aside>
+
+    <main>
+      <div id="detail">
+        <p class="loading">Loading plan…</p>
+      </div>
+
+      <footer>
+        <span>Plan Manager</span>
+        <span>Local only · 127.0.0.1</span>
+      </footer>
+    </main>
+  </div>
+  <div id="toasts" class="toast-container" aria-live="polite"></div>
+  <script src="/plan.js" defer></script>
+</body>
+</html>

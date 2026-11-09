@@ -1,7 +1,14 @@
 #!/usr/bin/env node
 import { run } from '../dist/cli/index.js'
 
+// Writes refused to protect tracked metadata are input errors, not crashes.
+const INVALID_INPUT_CODES = new Set(['ETRACKING', 'ESTAGECONFLICT', 'EUNSUPPORTEDSCHEMA', 'EMETADATALIMIT'])
+
 run(process.argv.slice(2)).catch(err => {
+  if (INVALID_INPUT_CODES.has(err.code)) {
+    process.stderr.write(`Error: ${err.message}\n`)
+    process.exit(2)
+  }
   process.stderr.write(`Unexpected error: ${err.message}\n`)
   if (process.env.DEBUG) process.stderr.write(err.stack + '\n')
   process.exit(1)
