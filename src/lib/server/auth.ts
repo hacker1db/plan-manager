@@ -1,66 +1,55 @@
-import { getHostedEnvironment, HostedConfigurationError, oauthTokenCanAccess } from "./env.ts"
-import { forbidden, unauthorized, unavailable } from "./api.ts"
-import { parseBearer, tokenAuthorizes } from "./token.ts"
-import type { PlanScope, TokenRecord } from "../hosted/types.ts"
+import type { AuthKitAuth } from "@workos/authkit-sveltekit"
+import { getHostedEnvironment, HostedConfigurationError } from "./env"
+import { forbidden, unauthorized } from "./api"
+import { findToken } from "./store"
+import { parseBearer, tokenAuthorizes } from "./token"
+import type { PlanScope } from "../hosted/types.ts"
+import { verifyWorkosCliToken } from "./workos-cli"
 
-export type AcceptedToken = "session_token" | "oauth_token"
+export { verifyWorkosCliToken } from "./workos-cli"
 
-// The subset of Clerk's auth object that authorization decisions read. Session auth has
-// no clientId/scopes; OAuth access tokens carry the issuing OAuth application and scopes.
-export type RequestAuth = {
-  isAuthenticated: boolean
-  userId: string | null
-  clientId?: string | null
-  scopes?: readonly string[] | null
+function bearerValue(value: string | null): string | null {
+  const match = value?.match(/^Bearer ([^\s]+)$/)
+  return match?.[1] ?? null
 }
 
-// Installed on event.locals by the Clerk hook; equivalent to Next's `auth({ acceptsToken })`.
-export type AuthReader = (acceptsToken?: AcceptedToken) => RequestAuth
-
-export type TokenLookup = (id: string) => Promise<TokenRecord | null>
-
-async function lookupStoredToken(id: string): Promise<TokenRecord | null> {
-  const { findToken } = await import("./store.ts")
-  return findToken(id)
+export function ownerId(auth: AuthKitAuth): string | null {
+  return auth.user?.id ?? null
 }
 
-// Browser/session owner check used by every owner API and page load.
-export async function requireOwnerResponse(auth: AuthReader): Promise<Response | null> {
+export function requireOwnerResponse(auth: AuthKitAuth): Response | null {
   try {
-    const { ownerClerkUserIds } = getHostedEnvironment()
-    const { userId } = auth("session_token")
+    const userId = ownerId(auth)
     if (!userId) return unauthorized()
-    return ownerClerkUserIds.includes(userId) ? null : forbidden()
+    return getHostedEnvironment().ownerWorkosUserIds.includes(userId) ? null : forbidden()
   } catch (error) {
-    if (error instanceof HostedConfigurationError) return unavailable()
+    if (error instanceof HostedConfigurationError) return Response.json({ error: "Hosted service is unavailable" }, { status: 503 })
     throw error
   }
 }
 
-// CLI write authorization: `Bearer pm_<id>_<secret>` Plan Manager tokens, or a Clerk OAuth
-// access token issued to PLAN_MANAGER_OAUTH_CLIENT_ID for an allowlisted owner.
-export async function requireWriteToken(request: Request, scope: PlanScope, auth: AuthReader, lookup: TokenLookup = lookupStoredToken): Promise<Response | null> {
+export async function requireWriteToken(request: Request, scope: PlanScope): Promise<Response | null> {
   const authorization = request.headers.get("authorization")
-  if (!authorization?.startsWith("Bearer ")) return unauthorized()
-  if (!authorization.startsWith("Bearer pm_")) {
+  const bearer = bearerValue(authorization)
+  if (!bearer) return unauthorized()
+
+  if (!bearer.startsWith("pm_")) {
+    if (scope !== "plans:write") return forbidden()
     try {
-      const authState = auth("oauth_token")
-      if (!authState.isAuthenticated || !authState.userId) return unauthorized()
-      if (!oauthTokenCanAccess(authState.userId, authState.clientId ?? null, authState.scopes ?? [])) return forbidden()
-      return null
+      return await verifyWorkosCliToken(bearer) ? null : forbidden()
     } catch (error) {
-      if (error instanceof HostedConfigurationError) return unavailable()
-      throw error
+      if (error instanceof HostedConfigurationError) return Response.json({ error: "Hosted service is unavailable" }, { status: 503 })
+      return unauthorized()
     }
   }
+
   const parsed = parseBearer(authorization)
   if (!parsed) return unauthorized()
   try {
-    const { tokenPepper } = getHostedEnvironment()
-    const record = await lookup(parsed.id)
-    return await tokenAuthorizes(record, parsed.secret, tokenPepper, scope) ? null : forbidden()
+    const record = await findToken(parsed.id)
+    return await tokenAuthorizes(record, parsed.secret, getHostedEnvironment().tokenPepper, scope) ? null : forbidden()
   } catch (error) {
-    if (error instanceof HostedConfigurationError) return unavailable()
+    if (error instanceof HostedConfigurationError) return Response.json({ error: "Hosted service is unavailable" }, { status: 503 })
     throw error
   }
 }

@@ -1,10 +1,10 @@
-import { apiError, forbidden, jsonResponse } from "$lib/server/api.ts"
-import { requireOwnerResponse } from "$lib/server/auth.ts"
-import { getHostedEnvironment } from "$lib/server/env.ts"
-import { isJsonRequest, isSameOriginRequest } from "$lib/server/security.ts"
-import { createToken } from "$lib/server/store.ts"
-import { generateToken, hashSecret, isPlanScope } from "$lib/server/token.ts"
-import type { PlanScope } from "$lib/hosted/types.ts"
+import { apiError, forbidden, jsonResponse } from "#lib/server/api.ts"
+import { requireOwnerResponse } from "#lib/server/auth.ts"
+import { getHostedEnvironment } from "#lib/server/env.ts"
+import { isJsonRequest, isSameOriginRequest } from "#lib/server/security.ts"
+import { createToken } from "#lib/server/store.ts"
+import { generateToken, hashSecret, isPlanScope } from "#lib/server/token.ts"
+import type { PlanScope } from "#lib/hosted/types.ts"
 import type { RequestHandler } from "./$types"
 
 export const POST: RequestHandler = async ({ request, locals }) => {

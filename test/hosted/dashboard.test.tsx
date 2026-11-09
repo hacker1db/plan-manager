@@ -148,7 +148,8 @@ test("hosted library and plan pages embed the canonical shell with the hosted ma
   const detail = await renderSvelte(component, { view: { kind: "plan", plan, markdown: "# Plan", html: "" } })
   assert.match(detail, /<div id="detail" data-revision="&quot;&gt;&lt;script&gt;x&lt;\/script&gt;">/)
   assert.doesNotMatch(detail, /<script>x/)
-  assert.equal(hostedShell(planBody, "rev").replace(' data-revision="rev"', ""), planBody.replaceAll('data-dashboard-environment="local"', 'data-dashboard-environment="hosted"'))
+  assert.match(library, /<form method="post" action="\/sign-out">/)
+  assert.equal(hostedShell(planBody, "rev").replace(' data-revision="rev"', "").replace(/<form method="post" action="\/sign-out">[\s\S]*?<\/form>/, ""), planBody.replaceAll('data-dashboard-environment="local"', 'data-dashboard-environment="hosted"'))
 })
 
 test("plan markup is rendered on the server and the client bundle never imports the React renderer", async () => {
@@ -156,5 +157,5 @@ test("plan markup is rendered on the server and the client bundle never imports 
   const content = await readFile(resolve(fileURLToPath(new URL("../..", import.meta.url)), "src/lib/components/HostedPlanContent.svelte"), "utf8")
   const imports = content.match(/^\s*import .*$/gm) ?? []
   assert.ok(imports.length > 0)
-  for (const line of imports) assert.doesNotMatch(line, /react|plan-markdown|\$lib\/server/)
+  for (const line of imports) assert.doesNotMatch(line, /react|plan-markdown|[$#]lib\/server/)
 })

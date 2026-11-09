@@ -1,8 +1,8 @@
 import { createHash } from "node:crypto"
-import { apiError, jsonResponse, PRIVATE_NO_STORE, publicPlan } from "$lib/server/api.ts"
-import { requireOwnerResponse } from "$lib/server/auth.ts"
-import { searchPlans } from "$lib/server/plan-search.ts"
-import { listPlans, readMarkdown } from "$lib/server/store.ts"
+import { apiError, jsonResponse, PRIVATE_NO_STORE, publicPlan } from "#lib/server/api.ts"
+import { requireOwnerResponse } from "#lib/server/auth.ts"
+import { searchPlans } from "#lib/server/plan-search.ts"
+import { listPlans, readMarkdown } from "#lib/server/store.ts"
 import type { RequestHandler } from "./$types"
 
 export const GET: RequestHandler = async ({ url, locals }) => {

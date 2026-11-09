@@ -1,7 +1,7 @@
-import { apiError, notFound } from "$lib/server/api.ts"
-import { requireOwnerResponse } from "$lib/server/auth.ts"
-import { findPlan, readMarkdown } from "$lib/server/store.ts"
-import { extensionFor, sourceFormat } from "$lib/mdx/format.ts"
+import { apiError, notFound } from "#lib/server/api.ts"
+import { requireOwnerResponse } from "#lib/server/auth.ts"
+import { findPlan, readMarkdown } from "#lib/server/store.ts"
+import { extensionFor, sourceFormat } from "#lib/mdx/format.ts"
 import type { RequestHandler } from "./$types"
 
 export const GET: RequestHandler = async ({ params, locals }) => {

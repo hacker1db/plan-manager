@@ -1,8 +1,8 @@
 <script lang="ts">
   import { mount, onMount, unmount } from "svelte"
-  import { libraryBody, planBody } from "$lib/hosted/generated-dashboard.ts"
-  import { hostedShell } from "$lib/hosted/shell.ts"
-  import type { DashboardPlan } from "$lib/hosted/types.ts"
+  import { libraryBody, planBody } from "#lib/hosted/generated-dashboard.ts"
+  import { hostedShell } from "#lib/hosted/shell.ts"
+  import type { DashboardPlan } from "#lib/hosted/types.ts"
   import HostedPlanContent from "./HostedPlanContent.svelte"
 
   type View =
