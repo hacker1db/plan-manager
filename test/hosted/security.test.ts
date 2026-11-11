@@ -1,11 +1,11 @@
 import assert from "node:assert/strict"
-import { test } from "node:test"
+import { after, test } from "node:test"
 import { createLocalJWKSet, exportJWK, generateKeyPair, SignJWT } from "jose"
 import { verifyWorkosCliToken } from "../../src/lib/server/workos-cli"
 import { HostedConfigurationError, getCliOAuthConfiguration, getHostedEnvironment, getOwnerWorkosUserIds, isAllowedOwner, ownerConfigured, workosCliClaimsCanAccess } from "../../src/lib/server/env"
-import { publicPlan } from "../../src/lib/server/api"
-import { requirePlanId, requireRevision, sanitizeMarkdown } from "../../src/lib/server/sanitize"
-import { generateToken, hashSecret, parseBearer, tokenAuthorizes, verifySecret } from "../../src/lib/server/token"
+import { apiError, publicPlan } from "../../src/lib/server/api"
+import { requireJsonObject, requirePlanId, requireRevision, safeTags, safeText, sanitizeMarkdown, ValidationError } from "../../src/lib/server/sanitize"
+import { generateToken, hashSecret, parseBearer, parseTokenRequest, tokenAuthorizes, verifySecret } from "../../src/lib/server/token"
 import { isJsonRequest, isSameOriginRequest } from "../../src/lib/server/security"
 import { isPlanStatus } from "../../src/lib/types"
 import { readFile } from "node:fs/promises"
@@ -14,7 +14,9 @@ import { pathToFileURL } from "node:url"
 import { CSP_DIRECTIVES, FALLBACK_CSP } from "../../src/lib/server/csp"
 import { securityHeaders, withSecurityHeaders } from "../../src/lib/server/headers"
 import { renderPlanHtml } from "../../src/lib/server/plan-markdown"
-import { root } from "./vite-ssr"
+import { closeViteServer, load, root } from "./vite-ssr"
+
+after(closeViteServer)
 
 test("hosted configuration fails closed when a required key is absent", () => {
   assert.throws(() => getHostedEnvironment({}), HostedConfigurationError)
@@ -264,4 +266,54 @@ test("rendered plans use classes instead of inline style attributes the CSP woul
   assert.match(mdx, /pm-align-center/)
   const shell = await readFile(resolve(root, "src/app.html"), "utf8")
   assert.doesNotMatch(shell, /style=/)
+})
+
+test("validation failures map to 400 and other errors stay a generic 500", async () => {
+  const invalid = apiError(new ValidationError("Invalid plan id"))
+  assert.equal(invalid.status, 400)
+  assert.deepEqual(await invalid.json(), { error: "Invalid plan id" })
+  const failure = apiError(new Error("database exploded: secret detail"))
+  assert.equal(failure.status, 500)
+  assert.deepEqual(await failure.json(), { error: "Request failed" })
+  assert.equal(apiError(new SyntaxError("Unexpected token")).status, 400)
+})
+
+test("every input validator throws ValidationError without echoing the input", () => {
+  const hostile = "<script>alert(1)</script>"
+  const cases: (() => unknown)[] = [
+    () => requirePlanId(hostile),
+    () => requireRevision(hostile),
+    () => sanitizeMarkdown(42),
+    () => sanitizeMarkdown(`${hostile}\u0000`),
+    () => safeText(`${hostile}\u0001`, "title", 256),
+    () => safeTags(hostile),
+    () => requireJsonObject(hostile),
+  ]
+  for (const run of cases) {
+    assert.throws(run, (error: unknown) => error instanceof ValidationError && !error.message.includes(hostile))
+  }
+})
+
+test("API bodies must be plain JSON objects", () => {
+  for (const body of [null, [], [1, 2], 42, "text", true]) assert.throws(() => requireJsonObject(body), ValidationError)
+  assert.deepEqual(requireJsonObject({ id: "plan_1234" }), { id: "plan_1234" })
+  for (const body of [null, [], 42, "text"]) assert.throws(() => parseTokenRequest(body), ValidationError)
+  assert.throws(() => parseTokenRequest({ scopes: "plans:write", expiresAt: new Date(Date.now() + 60_000).toISOString() }), ValidationError)
+  assert.throws(() => parseTokenRequest({ scopes: ["plans:write"], expiresAt: "soon" }), ValidationError)
+})
+
+test("the upload route rejects non-object bodies before reading fields", async () => {
+  const source = await readFile(resolve(root, "src/routes/api/v1/plans/[id]/versions/+server.ts"), "utf8")
+  assert.match(source, /requireJsonObject\(await request\.json\(\)\)/)
+})
+
+test("token creation answers 400 for null and array bodies", async () => {
+  ;(await load("/src/lib/server/env.ts")).setEnvironmentSource({ ...completeEnvironment, PLAN_MANAGER_OWNER_WORKOS_USER_IDS: "user_owner" })
+  const { POST } = await load("/src/routes/api/v1/tokens/+server.ts")
+  for (const body of ["null", "[]", "[{\"scopes\":[\"plans:write\"]}]", "7"]) {
+    const request = new Request("https://plans.example/api/v1/tokens", { method: "POST", headers: { Origin: "https://plans.example", "Content-Type": "application/json" }, body })
+    const response = await POST({ request, locals: { auth: { user: { id: "user_owner" } } } })
+    assert.equal(response.status, 400, `body ${body}`)
+    assert.deepEqual(await response.json(), { error: "Request body must be a JSON object" })
+  }
 })

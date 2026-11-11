@@ -2,7 +2,7 @@ import { del, get, put } from "@vercel/blob"
 import yaml from "js-yaml"
 import { getHostedEnvironment } from "./env.ts"
 import { getSql } from "./db.ts"
-import { requirePlanId, requireRevision, safeTags, safeText, sanitizeMarkdown } from "./sanitize.ts"
+import { requirePlanId, requireRevision, safeTags, safeText, sanitizeMarkdown, ValidationError } from "./sanitize.ts"
 import { computeRevision } from "../ids.ts"
 import { isPlanStatus, type PlanStatus } from "../types.ts"
 import { createStatusVersion } from "./status-version.ts"
@@ -42,10 +42,10 @@ function planFromRow(row: PlanRow): HostedPlan {
 
 function normalizeInput(value: HostedPlanInput): HostedPlanInput {
   const status = value.status
-  if (!["active", "completed", "archived"].includes(status)) throw new Error("Invalid plan status")
+  if (!isPlanStatus(status)) throw new ValidationError("Invalid plan status")
   const created = new Date(value.created)
   const updated = new Date(value.updated)
-  if (Number.isNaN(created.valueOf()) || Number.isNaN(updated.valueOf())) throw new Error("Invalid plan timestamp")
+  if (Number.isNaN(created.valueOf()) || Number.isNaN(updated.valueOf())) throw new ValidationError("Invalid plan timestamp")
   return {
     id: requirePlanId(value.id),
     title: safeText(value.title, "title", 256),
@@ -113,7 +113,7 @@ export async function writePlan(input: HostedPlanInput): Promise<{ plan: HostedP
 }
 
 export async function updatePlanStatus(id: string, status: PlanStatus): Promise<{ plan: HostedPlan | null; conflict: boolean }> {
-  if (!isPlanStatus(status)) throw new Error("Invalid plan status")
+  if (!isPlanStatus(status)) throw new ValidationError("Invalid plan status")
   const existing = await findPlan(id)
   if (!existing) return { plan: null, conflict: false }
   if (existing.status === status) return { plan: existing, conflict: false }

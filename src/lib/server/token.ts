@@ -1,6 +1,7 @@
 import { randomBytes, scrypt as rawScrypt, timingSafeEqual } from "node:crypto"
 import { promisify } from "node:util"
 import { PLAN_SCOPES, type CliToken, type PlanScope, type TokenRecord } from "../hosted/types.ts"
+import { requireJsonObject, ValidationError } from "./sanitize.ts"
 
 const scrypt = promisify(rawScrypt)
 
@@ -45,4 +46,14 @@ export function tokenCanAccess(token: CliToken, scope: PlanScope, now = new Date
 
 export async function tokenAuthorizes(record: TokenRecord | null, secret: string, pepper: string, scope: PlanScope, now = new Date()): Promise<boolean> {
   return record !== null && tokenCanAccess(record, scope, now) && verifySecret(secret, pepper, record.secretHash)
+}
+
+// Validates a POST /api/v1/tokens body. Throws ValidationError (400) for any malformed input.
+export function parseTokenRequest(value: unknown, now = new Date()): { scopes: PlanScope[]; expiresAt: Date } {
+  const body = requireJsonObject(value)
+  const scopes = body.scopes
+  if (!Array.isArray(scopes) || scopes.length === 0 || !scopes.every((scope): scope is PlanScope => typeof scope === "string" && isPlanScope(scope))) throw new ValidationError("Invalid token scopes")
+  const expiresAt = new Date(typeof body.expiresAt === "string" ? body.expiresAt : "")
+  if (Number.isNaN(expiresAt.valueOf()) || expiresAt <= now) throw new ValidationError("Invalid token expiration")
+  return { scopes: [...new Set(scopes)], expiresAt }
 }
