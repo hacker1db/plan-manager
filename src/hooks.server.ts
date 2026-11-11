@@ -20,6 +20,8 @@ try {
   workosHandle = authKitHandle()
 } catch (error) {
   if (!(error instanceof HostedConfigurationError)) throw error
+  // Logged once at module load. HostedConfigurationError carries variable names only, never values.
+  console.error(`Hosted Plan Manager is not configured; every dynamic route returns 503. Missing or invalid: ${error.missing.join(', ')}`)
 }
 
 // Anti-framing and hardening headers applied to every response. script-src is intentionally

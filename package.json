@@ -13,7 +13,7 @@
   "scripts": {
     "build": "pnpm build:web",
     "build:cli": "cd cli && go build -o bin/plan ./cmd/plan",
-    "build:web": "node scripts/sync-dashboard-style.mjs && vite build && node scripts/check-client-bundle.mjs",
+    "build:web": "node scripts/check-hosted-env.mjs && node scripts/sync-dashboard-style.mjs && vite build && node scripts/check-client-bundle.mjs",
     "dev": "cd cli && go run ./cmd/plan serve --foreground",
     "dev:web": "node scripts/sync-dashboard-style.mjs && vite dev",
     "start:web": "vite preview",

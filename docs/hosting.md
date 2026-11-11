@@ -58,6 +58,8 @@ Set these exact variables independently for Development, Preview, and Production
 | Preview | `https://<stable-preview-origin>/callback` | `https://<stable-preview-origin>/` | Isolated preview AuthKit domain/client/audience; avoid unbounded preview wildcards |
 | Production | `https://planmanager.hacker1db.dev/callback` | `https://planmanager.hacker1db.dev/` | Production AuthKit domain, public CLI client, production audience |
 
+When `VERCEL_ENV=production`, `pnpm build` first runs `scripts/check-hosted-env.mjs`, which fails the build and lists (by name only) any missing or invalid hosted variable, so an unconfigured production deployment cannot go live and answer only 503. Preview and local builds skip this check.
+
 Variable changes do not modify an existing deployment. Redeploy the affected environment, then verify browser login/logout, non-owner denial, TOTP MFA, CLI device login, token rotation, and an authorized write. Preview must pass before production.
 
 For each browser environment, also register the exact `/sign-in` URL as the WorkOS **Sign-in endpoint** (`initiate_login_uri`). The official SvelteKit SDK uses that endpoint for WorkOS-initiated flows and routes failed callbacks to the application's public `/auth/error` page. Keep callback, sign-in, and post-logout origins environment-specific.
