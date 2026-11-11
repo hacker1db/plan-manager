@@ -108,7 +108,7 @@ func TestResolveAmbiguousSlug(t *testing.T) {
 	if err := InitStorage(); err != nil {
 		t.Fatal(err)
 	}
-	for i, p := range []string{PlanPath("dup"), ArchivePath("dup")} {
+	for i, p := range []string{PlanPath("dup", "md"), ArchivePath("dup", "md")} {
 		m := Meta{ID: []string{"id-one", "id-two"}[i], Title: "Dup", Status: "active", Tags: []string{}}
 		if err := Write(p, m, "x"); err != nil {
 			t.Fatal(err)

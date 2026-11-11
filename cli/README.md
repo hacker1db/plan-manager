@@ -112,10 +112,16 @@ go generate ./...        # refreshes the embedded dashboard from ../src/dashboar
 | `internal/plans`    | Frontmatter, storage, path containment, IDs, and tasks       |
 | `internal/lock`     | Write lock, compatible with the npm `proper-lockfile` layout |
 | `internal/server`   | Local dashboard HTTP server, SSE, and HTML sanitizer         |
+| `internal/tracking` | Journey stages, reviews, sessions, and PR tracking events    |
+| `internal/mdx`      | MDX block catalog and `plan check` validation                |
+| `internal/mdxrender`| MDX parser and inert HTML renderer for the dashboard         |
+| `internal/ordered`  | Order-preserving JSON/YAML objects for frontmatter writes    |
 | `internal/service`  | Background dashboard probe and launcher                      |
 | `internal/remote`   | Keychain credentials, WorkOS device login, and push          |
 | `internal/tui`      | Bubble Tea TUI, command bar, and pickers                     |
 
 The Go write lock retains the `proper-lockfile` on-disk protocol for compatibility with existing plan libraries. The TypeScript CLI and local server have been removed.
 
-The contract harness retains six explicitly skipped MDX cases as migration gaps. The Go CLI does not yet implement the retired tracking/journey commands, MDX creation/rendering, or `blocks`/`check`; consult `plan --help` for the supported surface.
+The contract harness (`cli/scripts/contracts.sh`) runs every contract suite against the Go binary with no skipped cases, including tracking, reviews, and MDX.
+
+MDX lives in two packages. `internal/mdx` validates sources for `plan check` and prints the catalog for `plan blocks`; `internal/mdxrender` parses and renders `.mdx` plans to inert HTML for the dashboard (never evaluated, no Pandoc). Both keep a block registry; a test fails if they differ. The renderer's golden files are generated from the hosted app's `src/lib/mdx` with `TSX_TSCONFIG_PATH=tsconfig.tests.json node --import tsx cli/internal/mdxrender/testdata/generate.mjs`.

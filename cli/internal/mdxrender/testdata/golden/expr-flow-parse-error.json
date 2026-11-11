@@ -1,0 +1,6 @@
+{
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Could not parse expression with acorn</span></div><pre class=\"markdown-fallback\">{a b}\n</pre>",
+  "problems": [
+    "MDX could not be parsed: Could not parse expression with acorn"
+  ]
+}

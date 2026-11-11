@@ -1,0 +1,6 @@
+{
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Unexpected character `x` (U+0078) after self-closing slash, expected `&gt;` to end the tag</span></div><pre class=\"markdown-fallback\">&lt;Callout / x&gt;\n</pre>",
+  "problems": [
+    "MDX could not be parsed: Unexpected character `x` (U+0078) after self-closing slash, expected `>` to end the tag"
+  ]
+}

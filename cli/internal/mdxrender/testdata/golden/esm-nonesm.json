@@ -1,0 +1,6 @@
+{
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Unexpected `VariableDeclaration` in code: only import/exports are supported</span></div><pre class=\"markdown-fallback\">import x from &quot;y&quot;\nconst a = 1\n</pre>",
+  "problems": [
+    "MDX could not be parsed: Unexpected `VariableDeclaration` in code: only import/exports are supported"
+  ]
+}

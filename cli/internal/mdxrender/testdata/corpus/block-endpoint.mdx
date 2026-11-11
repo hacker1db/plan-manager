@@ -1,0 +1,8 @@
+<Endpoint method="GET" path="/api/plans/:id" change="modified" params={[{ name: "id", in: "path", type: "string", required: true, note: "Plan id" }, { name: "q", in: "query", type: "number", was: "string", change: "modified" }]} request={{ contentType: "application/json", example: "{\"a\":1,\"b\":[1,2,{\"c\":null}],\"2\":true,\"1\":\"x\"}" }} responses={[{ status: 200, description: "OK", example: "{\"format\":\"mdx\"}", change: "added" }, { status: 404 }, { status: "500", example: "not json" }, { status: 201, example: 5 }]}>
+Returns rendered HTML for Markdown and MDX plans.
+</Endpoint>
+
+<Endpoint method="DELETE" path="/old" deprecated />
+
+<Endpoint method="POST" path="/x" request={{ example: { nested: true } }}>
+</Endpoint>

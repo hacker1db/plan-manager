@@ -1,0 +1,4 @@
+{
+  "html": "<figure class=\"pm-block pm-code-block pm-annotated\"><figcaption class=\"pm-code-head\"><code>src/lib/mdx/format.ts</code><span class=\"pm-lang\">ts</span></figcaption><p class=\"pm-block-summary\">Format check</p><div class=\"pm-scroll\"><table class=\"pm-diff-table\"><tbody><tr><td class=\"pm-ln\">1</td><td class=\"pm-code\">export function isMdx(meta) {</td></tr><tr class=\"pm-noted\"><td class=\"pm-ln\">2</td><td class=\"pm-code\">  return meta.format === &#x27;mdx&#x27;</td></tr><tr class=\"pm-note-row\"><td colSpan=\"2\"><p>Frontmatter is the portable signal</p><p>Second note</p></td></tr><tr><td class=\"pm-ln\">3</td><td class=\"pm-code\">}</td></tr></tbody></table></div></figure>",
+  "problems": []
+}

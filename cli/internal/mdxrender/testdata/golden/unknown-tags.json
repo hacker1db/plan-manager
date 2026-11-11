@@ -1,0 +1,13 @@
+{
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>Unknown block &lt;Evil&gt;</span></div>\n<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>Unknown block &lt;ApiEndpoint&gt; — did you mean &lt;Endpoint&gt;?</span></div>\n<p>lowercase unknown</p>\n<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>Unknown block &lt;CALLOUT&gt; — did you mean &lt;Callout&gt;?</span></div>\n<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>Unknown block &lt;Mermaid&gt; — did you mean Flow or Layers?</span></div>\n<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>Unknown block &lt;RichText&gt; — did you mean plain Markdown?</span></div>\n<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>Unknown block &lt;Foo.Bar&gt;</span></div>\n<p>namespaced</p>\n<p>fragment</p>\n<p>Inline <span class=\"pm-block-error\" role=\"note\">Unknown block &lt;Foo&gt;</span> and <span class=\"pm-block-error\" role=\"note\">&lt;Callout&gt; is a block: put its opening and closing tags on their own lines</span> here.</p>",
+  "problems": [
+    "Unknown block <Evil>",
+    "Unknown block <ApiEndpoint> — did you mean <Endpoint>?",
+    "Unknown block <CALLOUT> — did you mean <Callout>?",
+    "Unknown block <Mermaid> — did you mean Flow or Layers?",
+    "Unknown block <RichText> — did you mean plain Markdown?",
+    "Unknown block <Foo.Bar>",
+    "Unknown block <Foo>",
+    "<Callout> is a block: put its opening and closing tags on their own lines"
+  ]
+}

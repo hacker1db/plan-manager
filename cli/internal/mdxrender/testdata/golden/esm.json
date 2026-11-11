@@ -1,0 +1,10 @@
+{
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>import and export statements are not supported in plans</span></div>\n<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>import and export statements are not supported in plans</span></div>\n<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>import and export statements are not supported in plans</span></div>\n<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>import and export statements are not supported in plans</span></div>\n<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>import and export statements are not supported in plans</span></div>\n<p>text after</p>\n<p>import not at column one</p>\n<p>paragraph\nimport not after paragraph</p>",
+  "problems": [
+    "import and export statements are not supported in plans",
+    "import and export statements are not supported in plans",
+    "import and export statements are not supported in plans",
+    "import and export statements are not supported in plans",
+    "import and export statements are not supported in plans"
+  ]
+}

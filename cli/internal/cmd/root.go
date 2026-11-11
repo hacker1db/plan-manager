@@ -61,6 +61,8 @@ func NewRoot() *cobra.Command {
 
 	root.AddGroup(
 		&cobra.Group{ID: "plans", Title: "Plans:"},
+		&cobra.Group{ID: "tracking", Title: "Journey tracking:"},
+		&cobra.Group{ID: "mdx", Title: "MDX plans:"},
 		&cobra.Group{ID: "service", Title: "Dashboard and setup:"},
 		&cobra.Group{ID: "remote", Title: "Hosted site:"},
 	)
@@ -71,6 +73,17 @@ func NewRoot() *cobra.Command {
 		newUpdateCmd(opts), newStatusCmd(opts), newArchiveCmd(opts),
 	} {
 		c.GroupID = "plans"
+		root.AddCommand(c)
+	}
+	for _, c := range []*cobra.Command{
+		newStageCmd(opts), newReviewCmd(opts), newCompleteCmd(opts), newReopenCmd(opts),
+		newSessionCmd(opts), newPrCmd(opts),
+	} {
+		c.GroupID = "tracking"
+		root.AddCommand(c)
+	}
+	for _, c := range []*cobra.Command{newBlocksCmd(opts), newCheckCmd(opts)} {
+		c.GroupID = "mdx"
 		root.AddCommand(c)
 	}
 	for _, c := range []*cobra.Command{newInitCmd(opts), newServeCmd(opts), newDoctorCmd(opts)} {
@@ -100,7 +113,9 @@ func Execute(args []string) int {
 	var e *exitcode.Error
 	msg := err.Error()
 	if errors.As(err, &e) && e.Raw {
-		os.Stderr.WriteString(msg + "\n")
+		if msg != "" {
+			os.Stderr.WriteString(msg + "\n")
+		}
 	} else {
 		if code == exitcode.General && strings.HasPrefix(msg, "unknown command") {
 			code = exitcode.InvalidInput

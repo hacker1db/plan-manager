@@ -1,0 +1,12 @@
+{
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Diff&gt;: missing required prop &quot;before&quot;; missing required prop &quot;after&quot;</span></div>\n<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;FileTree&gt;: prop &quot;files&quot; must be array, got string</span></div>\n<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Callout&gt;: prop &quot;tone&quot; must be one of note, info, decision, warning, risk, success</span></div>\n<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Callout&gt;: prop &quot;title&quot; must be string, got number; unknown prop &quot;extra&quot;</span></div>\n<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Endpoint&gt;: prop &quot;method&quot; must be one of GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS; prop &quot;path&quot; must be string, got number; prop &quot;deprecated&quot; must be boolean, got string</span></div>\n<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Flow&gt;: prop &quot;steps&quot; must be array, got object</span></div>\n<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Callout&gt;: prop &quot;title&quot; must be string, got null</span></div>\n<aside class=\"pm-block pm-callout pm-tone-note\"><p class=\"pm-callout-title\">note</p><p>undefined title</p></aside>",
+  "problems": [
+    "<Diff>: missing required prop \"before\"; missing required prop \"after\"",
+    "<FileTree>: prop \"files\" must be array, got string",
+    "<Callout>: prop \"tone\" must be one of note, info, decision, warning, risk, success",
+    "<Callout>: prop \"title\" must be string, got number; unknown prop \"extra\"",
+    "<Endpoint>: prop \"method\" must be one of GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS; prop \"path\" must be string, got number; prop \"deprecated\" must be boolean, got string",
+    "<Flow>: prop \"steps\" must be array, got object",
+    "<Callout>: prop \"title\" must be string, got null"
+  ]
+}

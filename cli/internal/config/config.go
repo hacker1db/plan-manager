@@ -56,3 +56,13 @@ func homeDir() string {
 
 // HomeDir returns $HOME, falling back to the OS user home directory.
 func HomeDir() string { return homeDir() }
+
+// ConfigDir is the CLI's configuration directory: $XDG_CONFIG_HOME/plan-manager,
+// defaulting to ~/.config/plan-manager.
+func ConfigDir() string {
+	base := os.Getenv("XDG_CONFIG_HOME")
+	if base == "" {
+		base = filepath.Join(homeDir(), ".config")
+	}
+	return filepath.Join(base, "plan-manager")
+}

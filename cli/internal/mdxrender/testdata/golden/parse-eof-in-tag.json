@@ -1,0 +1,6 @@
+{
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Unexpected end of file before attribute name, expected a character that can start an attribute name, such as a letter, `$`, or `_`; whitespace before attributes; or the end of the tag</span></div><pre class=\"markdown-fallback\">&lt;Callout title=&quot;x&quot;</pre>",
+  "problems": [
+    "MDX could not be parsed: Unexpected end of file before attribute name, expected a character that can start an attribute name, such as a letter, `$`, or `_`; whitespace before attributes; or the end of the tag"
+  ]
+}

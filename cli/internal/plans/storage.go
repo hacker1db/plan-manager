@@ -12,6 +12,8 @@ import (
 
 	"github.com/hacker1db/plan-manager/cli/internal/config"
 	"github.com/hacker1db/plan-manager/cli/internal/exitcode"
+	"github.com/hacker1db/plan-manager/cli/internal/ordered"
+	"github.com/hacker1db/plan-manager/cli/internal/tracking"
 )
 
 var (
@@ -24,8 +26,34 @@ var (
 func Home() string       { return config.PlanHome() }
 func ArchiveDir() string { return filepath.Join(Home(), "archive") }
 
-func PlanPath(slug string) string    { return filepath.Join(Home(), slug+".md") }
-func ArchivePath(slug string) string { return filepath.Join(ArchiveDir(), slug+".md") }
+// Formats are the plan file formats: Markdown and MDX.
+var Formats = []string{"md", "mdx"}
+
+// ExtensionFor returns the file extension of a plan format.
+func ExtensionFor(format string) string {
+	if format == "mdx" {
+		return ".mdx"
+	}
+	return ".md"
+}
+
+// FormatFromPath is the on-disk format convention: .mdx files are MDX.
+func FormatFromPath(path string) string {
+	if strings.HasSuffix(strings.ToLower(path), ".mdx") {
+		return "mdx"
+	}
+	return "md"
+}
+
+// IsPlanFilename reports whether name is a Markdown or MDX plan file.
+func IsPlanFilename(name string) bool {
+	return strings.HasSuffix(name, ".md") || strings.HasSuffix(name, ".mdx")
+}
+
+func PlanPath(slug, format string) string { return filepath.Join(Home(), slug+ExtensionFor(format)) }
+func ArchivePath(slug, format string) string {
+	return filepath.Join(ArchiveDir(), slug+ExtensionFor(format))
+}
 
 func abs(p string) string {
 	a, err := filepath.Abs(p)
@@ -119,7 +147,7 @@ func markdownFiles(dir string) []string {
 	}
 	var files []string
 	for _, e := range entries {
-		if !e.Type().IsRegular() || !strings.HasSuffix(e.Name(), ".md") {
+		if !e.Type().IsRegular() || !IsPlanFilename(e.Name()) {
 			continue
 		}
 		p := filepath.Join(dir, e.Name())
@@ -147,12 +175,47 @@ func Read(path string) (*Plan, error) {
 	}
 	raw := string(data)
 	fm, body := ParseFrontmatter(raw)
-	return &Plan{Meta: NormalizeMeta(fm), Body: body, Raw: raw, FilePath: path}, nil
+	meta := NormalizeMeta(fm)
+	if FormatFromPath(path) == "mdx" {
+		meta.Format = "mdx"
+	}
+	return &Plan{Meta: meta, Body: body, Raw: raw, FilePath: path}, nil
+}
+
+const (
+	maxUnknownFields = 100
+	maxUnknownBytes  = 65536
+)
+
+// assertWritable refuses writes that would drop or rewrite metadata the CLI
+// does not understand: newer tracking schemas and oversized unknown
+// frontmatter. It also refuses a status that contradicts the tracked stage.
+func assertWritable(meta Meta) error {
+	if meta.SchemaVersion != nil && *meta.SchemaVersion > tracking.SchemaVersion {
+		return exitcode.New(exitcode.InvalidInput, "Plan %s uses tracking schema %d; upgrade plan before writing it", meta.ID, *meta.SchemaVersion)
+	}
+	extra := ordered.New()
+	for _, f := range meta.Extra {
+		extra.Set(f.Key, ordered.FromYAML(f.Value))
+	}
+	if extra.Len() > maxUnknownFields || len(ordered.JSON(extra)) > maxUnknownBytes {
+		return exitcode.New(exitcode.InvalidInput, "Plan %s has too much unrecognized frontmatter to rewrite safely", meta.ID)
+	}
+	if err := tracking.AssertStageMatchesStatus(meta.TrackingSource()); err != nil {
+		return exitcode.New(exitcode.InvalidInput, "%s", err.Error())
+	}
+	return nil
 }
 
 // Write stamps meta.Updated and atomically rewrites path.
 func Write(path string, meta Meta, body string) error {
 	meta.Updated = Now()
+	if FormatFromPath(path) == "mdx" {
+		meta.Format = "mdx"
+	}
+	if err := assertWritable(meta); err != nil {
+		return err
+	}
 	content, err := Render(meta, body)
 	if err != nil {
 		return err
@@ -204,7 +267,7 @@ func Resolve(idOrSlug string) (*Plan, error) {
 		if p.Meta.ID == idOrSlug {
 			return p, nil
 		}
-		if strings.TrimSuffix(filepath.Base(f), ".md") == idOrSlug {
+		if Slug(f) == idOrSlug {
 			matches = append(matches, p)
 		}
 	}
@@ -232,37 +295,53 @@ func exists(path string) (bool, error) {
 	return false, err
 }
 
+// slugTaken reports whether slug is used in either format: a slug is one
+// identifier, so plan.md and plan.mdx never coexist.
+func slugTaken(pathFor func(slug, format string) string, slug string) (bool, error) {
+	for _, format := range Formats {
+		if ok, err := exists(pathFor(slug, format)); err != nil || ok {
+			return ok, err
+		}
+	}
+	return false, nil
+}
+
 // UniqueSlug returns base, or base-N for the first free N in 2..99.
 func UniqueSlug(base string) (string, error) {
-	if ok, err := exists(PlanPath(base)); err != nil || !ok {
+	if taken, err := slugTaken(PlanPath, base); err != nil || !taken {
 		return base, err
 	}
 	for i := 2; i <= 99; i++ {
 		c := fmt.Sprintf("%s-%d", base, i)
-		if ok, err := exists(PlanPath(c)); err != nil || !ok {
+		if taken, err := slugTaken(PlanPath, c); err != nil || !taken {
 			return c, err
 		}
 	}
 	return "", fmt.Errorf("No available filename slot for slug %q", base)
 }
 
-// UniqueArchivePath returns a free archive path for slug.
-func UniqueArchivePath(slug string) (string, error) {
-	first := ArchivePath(slug)
-	if ok, err := exists(first); err != nil || !ok {
-		return first, err
+// UniqueArchivePath returns a free archive path for slug in format.
+func UniqueArchivePath(slug, format string) (string, error) {
+	if taken, err := slugTaken(ArchivePath, slug); err != nil || !taken {
+		return ArchivePath(slug, format), err
 	}
 	for i := 2; i <= 999; i++ {
-		c := ArchivePath(fmt.Sprintf("%s-%d", slug, i))
-		if ok, err := exists(c); err != nil || !ok {
-			return c, err
+		c := fmt.Sprintf("%s-%d", slug, i)
+		if taken, err := slugTaken(ArchivePath, c); err != nil || !taken {
+			return ArchivePath(c, format), err
 		}
 	}
 	return "", fmt.Errorf("No available archive filename slot for slug %q", slug)
 }
 
 // Slug returns the filename slug of a plan path.
-func Slug(path string) string { return strings.TrimSuffix(filepath.Base(path), ".md") }
+func Slug(path string) string {
+	base := filepath.Base(path)
+	if s, ok := strings.CutSuffix(base, ".mdx"); ok {
+		return s
+	}
+	return strings.TrimSuffix(base, ".md")
+}
 
 // Envelope is the versioned JSON shape commands print with --json.
 type Envelope struct {
@@ -276,6 +355,8 @@ type Envelope struct {
 	Created  string   `json:"created"`
 	Updated  string   `json:"updated"`
 	Tags     []string `json:"tags"`
+	// Stage is the tracked journey stage, or null when tracking is unreadable.
+	Stage *string `json:"stage"`
 }
 
 func (p *Plan) Envelope() Envelope {
@@ -287,5 +368,6 @@ func (p *Plan) Envelope() Envelope {
 		Version: 1, ID: p.Meta.ID, Title: p.Meta.Title, Status: p.Meta.Status,
 		Path: p.FilePath, URL: config.PlanURL(p.Meta.ID), Revision: p.Revision(),
 		Created: p.Meta.Created, Updated: p.Meta.Updated, Tags: tags,
+		Stage: tracking.SafeStage(p.Meta.TrackingSource()),
 	}
 }
