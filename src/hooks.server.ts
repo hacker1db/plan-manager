@@ -2,6 +2,7 @@ import { authKitHandle, configureAuthKit } from '@workos/authkit-sveltekit'
 import type { Handle } from '@sveltejs/kit/hooks'
 import * as env from '$app/env/private'
 import { setEnvironmentSource, getHostedEnvironment, HostedConfigurationError, isAllowedOwner } from '#lib/server/env.ts'
+import { apiAccessDenial, isApiPath } from '#lib/server/api-access.ts'
 
 setEnvironmentSource(env)
 
@@ -49,14 +50,19 @@ export const handle: Handle = async input => withSecurityHeaders(await route(inp
 
 const route: Handle = async ({ event, resolve }) => {
   const path = event.url.pathname
-  if (path === '/api/v1' || publicAssets.has(path)) return resolve(event)
+  // Public CLI discovery answers even when WorkOS is unconfigured (it reports its own 503).
+  if ((event.request.method === 'GET' && path === '/api/v1') || publicAssets.has(path)) return resolve(event)
   if (!workosHandle) return new Response('Hosted service is unavailable', { status: 503 })
 
   return workosHandle({
     event,
     resolve: async authenticatedEvent => {
-      const apiRoute = path === '/api' || path.startsWith('/api/')
-      if (authRoutes.has(path) || apiRoute) return resolve(authenticatedEvent)
+      if (authRoutes.has(path)) return resolve(authenticatedEvent)
+      if (isApiPath(path)) {
+        // Deny by default: only the exact allow-list in api-access.ts skips the owner session check.
+        // Handlers still run their own requireOwnerResponse/requireWriteToken guards.
+        return apiAccessDenial(event.request.method, path, authenticatedEvent.locals.auth.user) ?? resolve(authenticatedEvent)
+      }
       if (!authenticatedEvent.locals.auth.user) return new Response(null, { status: 303, headers: { location: '/sign-in' } })
       if (!isAllowedOwner(authenticatedEvent.locals.auth.user.id)) return new Response('Forbidden', { status: 403 })
       return resolve(authenticatedEvent)
