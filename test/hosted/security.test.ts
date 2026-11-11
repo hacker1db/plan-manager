@@ -8,6 +8,13 @@ import { requirePlanId, requireRevision, sanitizeMarkdown } from "../../src/lib/
 import { generateToken, hashSecret, parseBearer, tokenAuthorizes, verifySecret } from "../../src/lib/server/token"
 import { isJsonRequest, isSameOriginRequest } from "../../src/lib/server/security"
 import { isPlanStatus } from "../../src/lib/types"
+import { readFile } from "node:fs/promises"
+import { resolve } from "node:path"
+import { pathToFileURL } from "node:url"
+import { CSP_DIRECTIVES, FALLBACK_CSP } from "../../src/lib/server/csp"
+import { securityHeaders, withSecurityHeaders } from "../../src/lib/server/headers"
+import { renderPlanHtml } from "../../src/lib/server/plan-markdown"
+import { root } from "./vite-ssr"
 
 test("hosted configuration fails closed when a required key is absent", () => {
   assert.throws(() => getHostedEnvironment({}), HostedConfigurationError)
@@ -183,4 +190,78 @@ test("all supported plan statuses are accepted and unknown statuses are rejected
   for (const status of ["active", "completed", "archived"] as const) assert.equal(isPlanStatus(status), true)
   assert.equal(isPlanStatus("in-progress"), false)
   assert.equal(isPlanStatus(null), false)
+})
+
+// Builds the header exactly as SvelteKit does at runtime, from the directives vite.config.ts passes.
+async function generatedPageCsp(): Promise<string> {
+  ;(globalThis as Record<string, unknown>).__SVELTEKIT_DEV__ = false
+  const { Csp } = await import(pathToFileURL(resolve(root, "node_modules/@sveltejs/kit/src/runtime/server/page/csp.js")).href)
+  const csp = new Csp({ mode: "auto", directives: structuredClone(CSP_DIRECTIVES), reportOnly: {} }, { prerender: false })
+  await csp.add_script("/* SvelteKit hydration */")
+  return csp.csp_provider.get_header()
+}
+
+function directive(header: string, name: string): string | undefined {
+  return header.split(";").map(part => part.trim()).find(part => part === name || part.startsWith(`${name} `))
+}
+
+test("page CSP restricts scripts to self plus a nonce and keeps the anti-framing directives", async () => {
+  const config = await readFile(resolve(root, "vite.config.ts"), "utf8")
+  assert.match(config, /csp:\s*\{\s*mode:\s*"auto",\s*directives:[^}]*CSP_DIRECTIVES/, "vite.config.ts must pass CSP_DIRECTIVES to SvelteKit")
+
+  const header = await generatedPageCsp()
+  assert.equal(directive(header, "default-src"), "default-src 'self'")
+  const scriptSrc = directive(header, "script-src")
+  assert.ok(scriptSrc, "script-src is present")
+  assert.match(scriptSrc, /^script-src 'self' 'nonce-[A-Za-z0-9+/=]+'$/)
+  assert.doesNotMatch(scriptSrc, /unsafe-inline|unsafe-eval|strict-dynamic/)
+  assert.equal(directive(header, "script-src-elem"), undefined, "no script-src-elem may loosen script-src")
+  assert.equal(directive(header, "script-src-attr"), undefined)
+  assert.doesNotMatch(header, /unsafe-eval/)
+  // Inline CSS is allowed only where Mermaid needs it (see csp.ts); style-src itself stays 'self'.
+  assert.equal(directive(header, "style-src"), "style-src 'self'")
+  assert.equal(directive(header, "style-src-elem"), "style-src-elem 'self' 'unsafe-inline'")
+  assert.equal(directive(header, "style-src-attr"), "style-src-attr 'unsafe-inline'")
+  assert.equal(directive(header, "img-src"), "img-src 'self' data:")
+  assert.equal(directive(header, "connect-src"), "connect-src 'self'")
+  assert.equal(directive(header, "font-src"), "font-src 'self'")
+  assert.equal(directive(header, "frame-ancestors"), "frame-ancestors 'none'")
+  assert.equal(directive(header, "object-src"), "object-src 'none'")
+  assert.equal(directive(header, "base-uri"), "base-uri 'none'")
+  assert.equal(directive(header, "form-action"), "form-action 'self' https://api.workos.com")
+})
+
+test("every response gets the hardening headers and non-page responses get a deny-all CSP", () => {
+  const api = withSecurityHeaders(new Response("{}", { headers: { "Content-Type": "application/json" } }))
+  assert.equal(api.headers.get("Content-Security-Policy"), FALLBACK_CSP)
+  assert.equal(FALLBACK_CSP, "default-src 'none'; frame-ancestors 'none'")
+  assert.equal(api.headers.get("Permissions-Policy"), "camera=(), microphone=(), geolocation=(), payment=()")
+  assert.equal(api.headers.get("Cross-Origin-Opener-Policy"), "same-origin")
+  assert.equal(api.headers.get("Strict-Transport-Security"), "max-age=63072000; includeSubDomains")
+  assert.equal(api.headers.get("X-Frame-Options"), "DENY")
+  assert.equal(api.headers.get("X-Content-Type-Options"), "nosniff")
+  assert.equal(api.headers.get("Referrer-Policy"), "strict-origin-when-cross-origin")
+  assert.equal("Content-Security-Policy" in securityHeaders, false, "the page CSP must not be sent twice")
+
+  // A SvelteKit-rendered page keeps its own nonce-based policy.
+  const page = withSecurityHeaders(new Response("<!doctype html>", { headers: { "Content-Security-Policy": "default-src 'self'" } }))
+  assert.equal(page.headers.get("Content-Security-Policy"), "default-src 'self'")
+
+  // Immutable redirect responses are copied, not dropped.
+  const redirect = withSecurityHeaders(Response.redirect("https://plans.example/sign-in", 303))
+  assert.equal(redirect.status, 303)
+  assert.equal(redirect.headers.get("Content-Security-Policy"), FALLBACK_CSP)
+})
+
+test("rendered plans use classes instead of inline style attributes the CSP would block", async () => {
+  const markdown = "| Left | Center | Right |\n| :--- | :---: | ---: |\n| a | b | c |\n"
+  const html = renderPlanHtml(markdown)
+  assert.doesNotMatch(html, /style=/)
+  assert.match(html, /class="pm-align-center"/)
+  assert.match(html, /class="pm-align-right"/)
+  const mdx = renderPlanHtml(`---\nformat: mdx\n---\n\n${markdown}`)
+  assert.doesNotMatch(mdx, /style=/)
+  assert.match(mdx, /pm-align-center/)
+  const shell = await readFile(resolve(root, "src/app.html"), "utf8")
+  assert.doesNotMatch(shell, /style=/)
 })

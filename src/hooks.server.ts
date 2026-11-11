@@ -3,6 +3,7 @@ import type { Handle } from '@sveltejs/kit/hooks'
 import * as env from '$app/env/private'
 import { setEnvironmentSource, getHostedEnvironment, HostedConfigurationError, isAllowedOwner } from '#lib/server/env.ts'
 import { apiAccessDenial, isApiPath } from '#lib/server/api-access.ts'
+import { withSecurityHeaders } from '#lib/server/headers.ts'
 
 setEnvironmentSource(env)
 
@@ -25,27 +26,8 @@ try {
   console.error(`Hosted Plan Manager is not configured; every dynamic route returns 503. Missing or invalid: ${error.missing.join(', ')}`)
 }
 
-// Anti-framing and hardening headers applied to every response. script-src is intentionally
-// left unrestricted so /app.js, /plan.js and SvelteKit's inline hydration keep working.
-export const securityHeaders: Readonly<Record<string, string>> = {
-  'Content-Security-Policy': "frame-ancestors 'none'; object-src 'none'; base-uri 'none'; form-action 'self' https://api.workos.com",
-  'X-Frame-Options': 'DENY',
-  'X-Content-Type-Options': 'nosniff',
-  'Referrer-Policy': 'strict-origin-when-cross-origin',
-}
-
-function withSecurityHeaders(response: Response): Response {
-  try {
-    for (const [name, value] of Object.entries(securityHeaders)) response.headers.set(name, value)
-    return response
-  } catch {
-    // Immutable headers (e.g. Response.redirect or fetch results): copy into a mutable response.
-    const copy = new Response(response.body, response)
-    for (const [name, value] of Object.entries(securityHeaders)) copy.headers.set(name, value)
-    return copy
-  }
-}
-
+// Hardening headers (and a fallback CSP for non-page responses) on every response; pages get
+// their nonce-based CSP from SvelteKit's `csp` option in vite.config.ts.
 export const handle: Handle = async input => withSecurityHeaders(await route(input))
 
 const route: Handle = async ({ event, resolve }) => {
