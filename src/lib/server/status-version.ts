@@ -1,5 +1,6 @@
 import yaml from "js-yaml"
 import { computeRevision } from "../ids.ts"
+import { ValidationError } from "./sanitize.ts"
 import { isPlanStatus, type PlanStatus, type UnknownRecord } from "../types.ts"
 
 type StatusMetadata = {
@@ -15,7 +16,7 @@ export async function createStatusVersion(
   status: PlanStatus,
   updated: string,
 ): Promise<{ markdown: string; revision: string }> {
-  if (!isPlanStatus(status)) throw new Error("Invalid plan status")
+  if (!isPlanStatus(status)) throw new ValidationError("Invalid plan status")
   const end = markdown.startsWith("---") ? markdown.indexOf("\n---", 3) : -1
   let metadata: UnknownRecord = {}
   let body = markdown

@@ -29,7 +29,7 @@ pnpm dev:web
 
 All required keys in `.env.example` must be configured at runtime. Keep template values empty and never copy live values into documentation. The official SvelteKit AuthKit SDK requires the server-only `WORKOS_API_KEY`; it must never use a public prefix or enter a client bundle. The owner allowlist and token pepper must also be configured with Neon and private Blob variables. Environment pulls can overwrite an existing local file; preserve local-only values before pulling.
 
-After linking and verifying environment configuration, apply the initial database schema with `pnpm db:migrate`. It loads root `.env.local` and runs an idempotent transaction. Run migrations intentionally rather than as part of every deployment.
+After linking and verifying environment configuration, apply the database schema with `pnpm db:migrate`. It loads root `.env.local` and applies every `src/lib/server/migrations/*.sql` file in order, each in an idempotent transaction. Migration `002_token_last_used.sql` adds the `last_used_at` and `created_at` token columns; apply it before relying on the token listing (token use keeps working without it). Run migrations intentionally rather than as part of every deployment.
 
 ## Access and uploads
 
@@ -46,7 +46,7 @@ Create a public WorkOS Connect application named `Plan Manager CLI` with CLI Aut
 
 The CLI targets `https://planmanager.hacker1db.dev` by default; set `PLAN_MANAGER_URL` to use another deployment. `plan auth login` prints a user code and WorkOS verification URL, then stores the returned access and rotating refresh pair in macOS Keychain. `plan auth logout` removes the local credential; revoke the WorkOS grant separately when provider-side invalidation is required. Version-1 Clerk records require a new login.
 
-Existing `pm_...` Plan Manager tokens remain an explicit compatibility bridge. They are scoped, expiring, revocable, and hashed at rest, but they are bearer credentials with no WorkOS session or TOTP binding. `plan auth login --stdin` is only for those tokens. Do not mint one to bypass failed WorkOS login. Deployment Protection credentials are separate from Plan Manager credentials. See [`auth.md`](../auth.md) for the full threat boundary.
+Existing `pm_...` Plan Manager tokens remain an explicit compatibility bridge. They are scoped (`plans:write` only), expiring, revocable, and hashed at rest, but they are bearer credentials with no WorkOS session or TOTP binding: a `pm_` token bypasses WorkOS MFA entirely, so treat it like a password. `POST /api/v1/tokens` rejects an expiry more than 90 days from now. `GET /api/v1/tokens` (owner session only) lists each token's id, scopes, expiry, revocation time, creation time and last use, and never returns the secret hash; revoke unused or unexpected tokens with `DELETE /api/v1/tokens/<id>`. `plan auth login --stdin` is only for those tokens. Do not mint one to bypass failed WorkOS login. Deployment Protection credentials are separate from Plan Manager credentials. See [`auth.md`](../auth.md) for the full threat boundary.
 
 ## Vercel environment configuration
 
@@ -57,6 +57,8 @@ Set these exact variables independently for Development, Preview, and Production
 | Development | `http://localhost:5173/callback` | `http://localhost:5173/` | Development AuthKit domain, public CLI client, development audience |
 | Preview | `https://<stable-preview-origin>/callback` | `https://<stable-preview-origin>/` | Isolated preview AuthKit domain/client/audience; avoid unbounded preview wildcards |
 | Production | `https://planmanager.hacker1db.dev/callback` | `https://planmanager.hacker1db.dev/` | Production AuthKit domain, public CLI client, production audience |
+
+When `VERCEL_ENV=production`, `pnpm build` first runs `scripts/check-hosted-env.mjs`, which fails the build and lists (by name only) any missing or invalid hosted variable, so an unconfigured production deployment cannot go live and answer only 503. Preview and local builds skip this check.
 
 Variable changes do not modify an existing deployment. Redeploy the affected environment, then verify browser login/logout, non-owner denial, TOTP MFA, CLI device login, token rotation, and an authorized write. Preview must pass before production.
 

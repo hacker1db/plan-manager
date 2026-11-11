@@ -2,7 +2,10 @@ package remote
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -283,5 +286,40 @@ func TestGetSiteAllowsHTTPOnlyForLoopback(t *testing.T) {
 		if _, err := GetSite(); err == nil {
 			t.Errorf("%s should be rejected", value)
 		}
+	}
+}
+
+func TestPushSendsRevisionOfThePushedMarkdown(t *testing.T) {
+	var sent PushPayload
+	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		data, _ := io.ReadAll(r.Body)
+		if err := json.Unmarshal(data, &sent); err != nil {
+			t.Errorf("payload is not JSON: %v", err)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_, _ = w.Write([]byte(`{"version":1,"plan":{"revision":"` + sent.Revision + `"},"url":"/plans/plan-1"}`))
+	}))
+	defer srv.Close()
+	previousClient := httpClient
+	httpClient = srv.Client()
+	t.Cleanup(func() { httpClient = previousClient })
+
+	raw := "---\r\nid: plan-1\r\ntitle: CRLF plan\r\n---\r\n\r\n# Body\r\nline\r\n"
+	stale := strings.Repeat("0", 64)
+	result, err := Push(Site{URL: srv.URL}, "pm_example_secret", PushPayload{ID: "plan-1", Markdown: raw, Revision: stale})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(sent.Markdown, "\r\n") {
+		t.Fatalf("pushed Markdown still has CRLF: %q", sent.Markdown)
+	}
+	sum := sha256.Sum256([]byte(sent.Markdown))
+	if want := hex.EncodeToString(sum[:]); sent.Revision != want || result.Revision != want {
+		t.Fatalf("revision %q (result %q) is not sha256 of the pushed Markdown %q", sent.Revision, result.Revision, want)
+	}
+	lf := strings.ReplaceAll(raw, "\r\n", "\n")
+	if sent.Markdown != lf {
+		t.Fatalf("pushed Markdown = %q, want %q", sent.Markdown, lf)
 	}
 }

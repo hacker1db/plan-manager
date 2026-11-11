@@ -1,6 +1,7 @@
 import type { PlanStatus } from "../types.ts"
 
-export const PLAN_SCOPES = ["plans:read", "plans:write"] as const
+// plans:read was never minted or required by anything (owner reads use the WorkOS session).
+export const PLAN_SCOPES = ["plans:write"] as const
 
 export type PlanScope = (typeof PLAN_SCOPES)[number]
 
@@ -30,3 +31,6 @@ export type CliToken = {
 }
 
 export type TokenRecord = CliToken & { secretHash: string }
+
+// What GET /api/v1/tokens returns: never the secret hash.
+export type TokenSummary = CliToken & { lastUsedAt: Date | null; createdAt: Date | null }

@@ -4,6 +4,7 @@ import remarkGfm from 'remark-gfm'
 import remarkMdx from 'remark-mdx'
 import { BLOCKS_BY_NAME, CHANGE_VALUES, validateBlockProps, type ChangeKind } from './blocks.ts'
 import { staticProps } from './static-props.ts'
+import { rehypeAlignClasses } from './align.ts'
 
 // MDX plans are parsed with remark-mdx but never compiled or evaluated. JSX
 // elements become placeholder hast nodes that map onto the whitelisted block
@@ -485,6 +486,7 @@ export function PlanMdx({ source, problems, components: extra }: { source: strin
     return Markdown({
       children: source,
       remarkPlugins: [remarkMdx, remarkGfm],
+      rehypePlugins: [rehypeAlignClasses],
       remarkRehypeOptions: { handlers: createHandlers(records) as never },
       components,
     })
