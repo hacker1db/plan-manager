@@ -3,6 +3,8 @@ package remote
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -554,8 +556,19 @@ type PushResult struct {
 // ErrConflict marks a push rejected because the hosted copy changed.
 var ErrConflict = errors.New("revision conflict")
 
+// Normalized returns the payload the server will accept: Markdown with CRLF line endings
+// converted to LF (the server stores exactly that) and Revision set to the SHA-256 of those
+// bytes. The server recomputes the revision and rejects a mismatch.
+func (p PushPayload) Normalized() PushPayload {
+	p.Markdown = strings.ReplaceAll(p.Markdown, "\r\n", "\n")
+	sum := sha256.Sum256([]byte(p.Markdown))
+	p.Revision = hex.EncodeToString(sum[:])
+	return p
+}
+
 // Push uploads one plan version.
 func Push(site Site, token string, p PushPayload) (PushResult, error) {
+	p = p.Normalized()
 	body, _ := json.Marshal(p)
 	req, _ := http.NewRequest(http.MethodPut, site.URL+"/api/v1/plans/"+url.PathEscape(p.ID)+"/versions", bytes.NewReader(body))
 	req.Header.Set("Authorization", "Bearer "+token)

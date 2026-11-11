@@ -2,7 +2,8 @@ import { del, get, put } from "@vercel/blob"
 import yaml from "js-yaml"
 import { getHostedEnvironment } from "./env.ts"
 import { getSql } from "./db.ts"
-import { requirePlanId, requireRevision, safeTags, safeText, sanitizeMarkdown, ValidationError } from "./sanitize.ts"
+import { requirePlanId, sanitizeMarkdown, ValidationError } from "./sanitize.ts"
+import { validatePlanUpload } from "./plan-input.ts"
 import { computeRevision } from "../ids.ts"
 import { isPlanStatus, type PlanStatus } from "../types.ts"
 import { createStatusVersion } from "./status-version.ts"
@@ -40,25 +41,6 @@ function planFromRow(row: PlanRow): HostedPlan {
   }
 }
 
-function normalizeInput(value: HostedPlanInput): HostedPlanInput {
-  const status = value.status
-  if (!isPlanStatus(status)) throw new ValidationError("Invalid plan status")
-  const created = new Date(value.created)
-  const updated = new Date(value.updated)
-  if (Number.isNaN(created.valueOf()) || Number.isNaN(updated.valueOf())) throw new ValidationError("Invalid plan timestamp")
-  return {
-    id: requirePlanId(value.id),
-    title: safeText(value.title, "title", 256),
-    status,
-    tags: safeTags(value.tags),
-    created: created.toISOString(),
-    updated: updated.toISOString(),
-    markdown: sanitizeMarkdown(value.markdown),
-    revision: requireRevision(value.revision),
-    expectedRevision: value.expectedRevision === null ? null : requireRevision(value.expectedRevision),
-  }
-}
-
 export async function listPlans(): Promise<HostedPlan[]> {
   const rows = await getSql()`SELECT id, title, status, tags, created_at, updated_at, revision, object_key FROM plans ORDER BY updated_at DESC` as unknown as PlanRow[]
   return rows.map(planFromRow)
@@ -77,7 +59,7 @@ export async function readMarkdown(plan: HostedPlan): Promise<string> {
 }
 
 export async function writePlan(input: HostedPlanInput): Promise<{ plan: HostedPlan; conflict: boolean }> {
-  const normalized = normalizeInput(input)
+  const normalized = await validatePlanUpload(input)
   const existing = await findPlan(normalized.id)
   if (existing?.revision === normalized.revision) return { plan: existing, conflict: false }
   if ((existing?.revision ?? null) !== normalized.expectedRevision) return { plan: existing ?? null as never, conflict: true }
