@@ -7,7 +7,8 @@ import { validatePlanUpload } from "./plan-input.ts"
 import { computeRevision } from "../ids.ts"
 import { isPlanStatus, type PlanStatus } from "../types.ts"
 import { createStatusVersion } from "./status-version.ts"
-import type { CliToken, HostedPlan, HostedPlanInput, PlanScope, TokenRecord } from "../hosted/types.ts"
+import type { CliToken, HostedPlan, HostedPlanInput, PlanScope, TokenRecord, TokenSummary } from "../hosted/types.ts"
+import { tokenSummaryFromRow, type TokenListRow } from "./token.ts"
 
 type PlanRow = {
   id: string
@@ -120,11 +121,21 @@ export async function findToken(id: string): Promise<TokenRecord | null> {
 }
 
 export async function createToken(record: TokenRecord): Promise<CliToken> {
-  await getSql()`INSERT INTO cli_tokens (id, secret_hash, scopes, expires_at) VALUES (${record.id}, ${record.secretHash}, ${JSON.stringify(record.scopes)}::jsonb, ${record.expiresAt.toISOString()})`
+  await getSql()`INSERT INTO cli_tokens (id, secret_hash, scopes, expires_at, created_at) VALUES (${record.id}, ${record.secretHash}, ${JSON.stringify(record.scopes)}::jsonb, ${record.expiresAt.toISOString()}, NOW())`
   return { id: record.id, scopes: record.scopes, expiresAt: record.expiresAt, revokedAt: null }
 }
 
 export async function revokeToken(id: string): Promise<boolean> {
   const rows = await getSql()`UPDATE cli_tokens SET revoked_at = NOW() WHERE id = ${id} AND revoked_at IS NULL RETURNING id` as unknown as { id: string }[]
   return Boolean(rows[0])
+}
+
+// Owner token listing. Selects only the public columns; secret_hash is never read here.
+export async function listTokens(): Promise<TokenSummary[]> {
+  const rows = await getSql()`SELECT id, scopes, expires_at, revoked_at, last_used_at, created_at FROM cli_tokens ORDER BY created_at DESC NULLS LAST, id` as unknown as TokenListRow[]
+  return rows.map(tokenSummaryFromRow)
+}
+
+export async function touchToken(id: string): Promise<void> {
+  await getSql()`UPDATE cli_tokens SET last_used_at = NOW() WHERE id = ${id}`
 }

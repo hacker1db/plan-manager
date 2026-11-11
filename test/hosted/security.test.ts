@@ -5,7 +5,8 @@ import { verifyWorkosCliToken } from "../../src/lib/server/workos-cli"
 import { HostedConfigurationError, getCliOAuthConfiguration, getHostedEnvironment, getOwnerWorkosUserIds, isAllowedOwner, ownerConfigured, workosCliClaimsCanAccess } from "../../src/lib/server/env"
 import { apiError, publicPlan } from "../../src/lib/server/api"
 import { requireJsonObject, requirePlanId, requireRevision, safeTags, safeText, sanitizeMarkdown, ValidationError } from "../../src/lib/server/sanitize"
-import { generateToken, hashSecret, parseBearer, parseTokenRequest, tokenAuthorizes, verifySecret } from "../../src/lib/server/token"
+import { generateToken, hashSecret, isPlanScope, MAX_TOKEN_LIFETIME_MS, parseBearer, parseTokenRequest, tokenAuthorizes, tokenSummaryFromRow, verifySecret } from "../../src/lib/server/token"
+import { migrationFiles, migrationStatements } from "../../scripts/migrate-hosted"
 import { isJsonRequest, isSameOriginRequest } from "../../src/lib/server/security"
 import { isPlanStatus } from "../../src/lib/types"
 import { readFile } from "node:fs/promises"
@@ -93,10 +94,12 @@ test("token verifier accepts the generated bearer only for the correct secret", 
 
 test("expired, revoked, and insufficient-scope credentials cannot write", async () => {
   const secretHash = await hashSecret("A".repeat(43), "pepper")
-  const base = { id: "abcdefgh", secretHash, scopes: ["plans:read"] as ("plans:read")[] }
-  assert.equal(await tokenAuthorizes({ ...base, expiresAt: new Date(Date.now() - 1), revokedAt: null }, "A".repeat(43), "pepper", "plans:write"), false)
-  assert.equal(await tokenAuthorizes({ ...base, expiresAt: new Date(Date.now() + 60_000), revokedAt: new Date() }, "A".repeat(43), "pepper", "plans:read"), false)
-  assert.equal(await tokenAuthorizes({ ...base, expiresAt: new Date(Date.now() + 60_000), revokedAt: null }, "A".repeat(43), "pepper", "plans:write"), false)
+  const write = { id: "abcdefgh", secretHash, scopes: ["plans:write"] as const }
+  // A legacy database row may still carry the retired plans:read scope; it never grants writes.
+  const legacyReadOnly = { id: "abcdefgh", secretHash, scopes: ["plans:read"] as unknown as ["plans:write"] }
+  assert.equal(await tokenAuthorizes({ ...write, expiresAt: new Date(Date.now() - 1), revokedAt: null }, "A".repeat(43), "pepper", "plans:write"), false)
+  assert.equal(await tokenAuthorizes({ ...write, expiresAt: new Date(Date.now() + 60_000), revokedAt: new Date() }, "A".repeat(43), "pepper", "plans:write"), false)
+  assert.equal(await tokenAuthorizes({ ...legacyReadOnly, expiresAt: new Date(Date.now() + 60_000), revokedAt: null }, "A".repeat(43), "pepper", "plans:write"), false)
 })
 
 test("CLI claims require the allowlisted owner, exact client, and write scope", () => {
@@ -316,4 +319,51 @@ test("token creation answers 400 for null and array bodies", async () => {
     assert.equal(response.status, 400, `body ${body}`)
     assert.deepEqual(await response.json(), { error: "Request body must be a JSON object" })
   }
+})
+
+const DAY_MS = 24 * 60 * 60 * 1000
+
+test("token lifetime is capped at 90 days", () => {
+  const now = new Date("2026-11-11T12:00:00.000Z")
+  const at = (offset: number) => new Date(now.valueOf() + offset).toISOString()
+  assert.equal(MAX_TOKEN_LIFETIME_MS, 90 * DAY_MS)
+  assert.equal(parseTokenRequest({ scopes: ["plans:write"], expiresAt: at(89 * DAY_MS) }, now).expiresAt.toISOString(), at(89 * DAY_MS))
+  assert.equal(parseTokenRequest({ scopes: ["plans:write"], expiresAt: at(90 * DAY_MS) }, now).expiresAt.toISOString(), at(90 * DAY_MS))
+  for (const expiresAt of [at(91 * DAY_MS), at(90 * DAY_MS + 1), "9999-12-31T23:59:59.000Z"]) {
+    assert.throws(() => parseTokenRequest({ scopes: ["plans:write"], expiresAt }, now), (error: unknown) => error instanceof ValidationError && /90 days/.test(error.message))
+  }
+})
+
+test("the unused plans:read scope can no longer be minted", () => {
+  assert.equal(isPlanScope("plans:write"), true)
+  assert.equal(isPlanScope("plans:read"), false)
+  assert.throws(() => parseTokenRequest({ scopes: ["plans:read"], expiresAt: new Date(Date.now() + DAY_MS).toISOString() }), ValidationError)
+})
+
+test("the token listing never exposes the secret hash", () => {
+  const row = { id: "abcdefgh", secret_hash: "salt.hash-placeholder", secretHash: "salt.hash-placeholder", scopes: ["plans:write" as const], expires_at: "2026-12-01T00:00:00.000Z", revoked_at: null, last_used_at: "2026-11-10T00:00:00.000Z", created_at: null }
+  const summary = tokenSummaryFromRow(row)
+  assert.deepEqual(Object.keys(summary).sort(), ["createdAt", "expiresAt", "id", "lastUsedAt", "revokedAt", "scopes"])
+  assert.equal("secret_hash" in summary, false)
+  assert.equal("secretHash" in summary, false)
+  assert.equal(JSON.stringify(summary).includes("hash-placeholder"), false)
+  assert.equal(summary.lastUsedAt?.toISOString(), "2026-11-10T00:00:00.000Z")
+  assert.equal(summary.createdAt, null)
+})
+
+test("token routes stay owner-only: listing and creation reject anonymous and non-owner sessions", async () => {
+  ;(await load("/src/lib/server/env.ts")).setEnvironmentSource({ ...completeEnvironment, PLAN_MANAGER_OWNER_WORKOS_USER_IDS: "user_owner" })
+  const { GET } = await load("/src/routes/api/v1/tokens/+server.ts")
+  assert.equal((await GET({ locals: { auth: { user: null } } })).status, 401)
+  assert.equal((await GET({ locals: { auth: { user: { id: "user_other" } } } })).status, 403)
+})
+
+test("hosted migrations run in order and 002 is additive and idempotent", async () => {
+  const files = (await migrationFiles(resolve(root, "src/lib/server/migrations"))).map(file => file.split("/").pop())
+  assert.deepEqual(files, ["001_initial.sql", "002_token_last_used.sql"])
+  const statements = migrationStatements(await readFile(resolve(root, "src/lib/server/migrations/002_token_last_used.sql"), "utf8"))
+  assert.deepEqual(statements, [
+    "ALTER TABLE cli_tokens ADD COLUMN IF NOT EXISTS last_used_at TIMESTAMPTZ",
+    "ALTER TABLE cli_tokens ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ",
+  ])
 })
