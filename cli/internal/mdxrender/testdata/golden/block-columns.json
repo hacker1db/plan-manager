@@ -1,0 +1,4 @@
+{
+  "html": "<section class=\"pm-block pm-columns-block\"><header class=\"pm-block-head\"><h4 class=\"pm-block-title\">Compare</h4></header><div class=\"pm-columns\"><div class=\"pm-column\"><p class=\"pm-column-label\">Before</p><p>Pandoc renders Markdown only.</p></div><div class=\"pm-column\"><p class=\"pm-column-label\">After</p><ul>\n<li>MDX plans render typed blocks.</li>\n<li>Second item</li>\n</ul></div><div class=\"pm-column\"><p>No label</p></div></div></section>",
+  "problems": []
+}

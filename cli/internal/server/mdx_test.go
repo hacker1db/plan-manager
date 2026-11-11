@@ -10,7 +10,7 @@ import (
 	"testing"
 )
 
-func TestMDXPlansAreListedAndShownAsSource(t *testing.T) {
+func TestMDXPlansRenderInProcess(t *testing.T) {
 	home := t.TempDir()
 	body := "<Callout tone=\"risk\">\n- [ ] Inside\n</Callout>\n"
 	plan := "---\nid: mdx_plan\ntitle: Visual\nstatus: active\ncreated: '2026-01-01T00:00:00.000Z'\nupdated: '2026-01-01T00:00:00.000Z'\ntags: []\n---\n" + body
@@ -38,7 +38,11 @@ func TestMDXPlansAreListedAndShownAsSource(t *testing.T) {
 	if err := json.NewDecoder(res.Body).Decode(&detail); err != nil {
 		t.Fatal(err)
 	}
-	if res.StatusCode != 200 || detail.Format != "mdx" || detail.HTML != nil || detail.RenderState != "unavailable" || !strings.Contains(detail.Body, "<Callout") {
-		t.Errorf("status %d, detail %+v", res.StatusCode, detail)
+	if res.StatusCode != 200 || detail.Format != "mdx" || detail.RenderState != "rendered" || detail.HTML == nil || !strings.Contains(detail.Body, "<Callout") {
+		t.Fatalf("status %d, detail %+v", res.StatusCode, detail)
+	}
+	// Blocks become static HTML; the JSX source never reaches the page.
+	if html := *detail.HTML; strings.Contains(html, "<Callout") || !strings.Contains(html, "Inside") || !strings.Contains(html, `type="checkbox"`) {
+		t.Errorf("rendered html = %q", html)
 	}
 }

@@ -32,6 +32,7 @@ import (
 
 	"github.com/hacker1db/plan-manager/cli/internal/exitcode"
 	"github.com/hacker1db/plan-manager/cli/internal/lock"
+	"github.com/hacker1db/plan-manager/cli/internal/mdxrender"
 	"github.com/hacker1db/plan-manager/cli/internal/plans"
 )
 
@@ -809,9 +810,9 @@ func (s *Server) serveDetail(w http.ResponseWriter, id string, seq int) {
 	renderState := "unavailable"
 	format := "md"
 	if p.Format == "mdx" {
-		// MDX blocks are rendered by the hosted app only; the dashboard shows
-		// the source rather than letting pandoc mangle the JSX.
+		// MDX renders in-process: parsed, never evaluated, and no Pandoc.
 		format = "mdx"
+		html, renderState = mdxrender.RenderHTML(p.body), "rendered"
 	} else if s.pandocAvailable() {
 		if out, err := RenderMarkdown(p.body); err == nil {
 			html, renderState = out, "rendered"

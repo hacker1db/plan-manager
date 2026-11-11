@@ -1,0 +1,6 @@
+{
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Unexpected character `x` (U+0078) before attribute value, expected a character that can start an attribute value, such as `&quot;`, `&#x27;`, or `{`</span></div><pre class=\"markdown-fallback\">Text {broken here\n\n&lt;Callout title=x /&gt;\n</pre>",
+  "problems": [
+    "MDX could not be parsed: Unexpected character `x` (U+0078) before attribute value, expected a character that can start an attribute value, such as `\"`, `'`, or `{`"
+  ]
+}

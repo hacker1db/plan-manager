@@ -1,0 +1,7 @@
+{
+  "html": "<aside class=\"pm-block pm-callout pm-tone-note\"><p class=\"pm-callout-title\">b</p><p>last wins</p></aside>\n<aside class=\"pm-block pm-callout pm-tone-note\"><p class=\"pm-callout-title\">single quotes</p><p>x</p></aside>\n<aside class=\"pm-block pm-callout pm-tone-note\"><p class=\"pm-callout-title\">&amp; &lt;tag&gt; A B © &amp;bogus; &amp;amp</p><p>entities</p></aside>\n<aside class=\"pm-block pm-callout pm-tone-success\"><p class=\"pm-callout-title\">multi</p><p>multi-line tag</p></aside>\n<aside class=\"pm-block pm-callout pm-tone-note\"><p class=\"pm-callout-title\">line one\nline two</p><p>multi-line value</p></aside>\n<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Callout&gt;: spread attributes are not supported</span></div>\n<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Callout&gt;: prop &quot;title&quot; must be string, got boolean</span></div>\n<figure class=\"pm-block pm-code-block pm-diff\"><figcaption class=\"pm-code-head\"><code>a</code><span class=\"pm-stats\"><span class=\"pm-plus\">+1</span> <span class=\"pm-minus\">−1</span></span></figcaption><div class=\"pm-scroll\"><table class=\"pm-diff-table pm-split\"><tbody><tr><td class=\"pm-ln\">1</td><td class=\"pm-code pm-del\">x</td><td class=\"pm-ln\">1</td><td class=\"pm-code pm-add\">y</td></tr></tbody></table></div></figure>",
+  "problems": [
+    "<Callout>: spread attributes are not supported",
+    "<Callout>: prop \"title\" must be string, got boolean"
+  ]
+}

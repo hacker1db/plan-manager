@@ -1,0 +1,4 @@
+{
+  "html": "<aside class=\"pm-block pm-callout pm-tone-decision\"><p class=\"pm-callout-title\">Store MDX next to Markdown</p><p>Plans keep YAML frontmatter; only the body syntax changes.</p></aside>\n<aside class=\"pm-block pm-callout pm-tone-note\"><p class=\"pm-callout-title\">note</p><p>Default tone with <strong>bold</strong> and <code>code</code>.</p></aside>\n<aside class=\"pm-block pm-callout pm-tone-risk\"><p class=\"pm-callout-title\">risk</p></aside>",
+  "problems": []
+}

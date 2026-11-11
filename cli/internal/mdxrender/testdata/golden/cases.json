@@ -1,0 +1,2309 @@
+[
+ {
+  "html": "<p>a <b>bold</b> and <em>x</em></p>",
+  "problems": []
+ },
+ {
+  "html": "<aside class=\"pm-block pm-callout pm-tone-note\"><p class=\"pm-callout-title\">note</p><p>text with <span class=\"pm-block-error\" role=\"note\">Unknown block &lt;Foo&gt;</span> inline</p></aside>",
+  "problems": [
+   "Unknown block <Foo>"
+  ]
+ },
+ {
+  "html": "<blockquote>\n<p>quote <b>x</b></p>\n</blockquote>",
+  "problems": []
+ },
+ {
+  "html": "<table><thead><tr><th>a</th></tr></thead><tbody><tr><td><b>x</b></td></tr></tbody></table>",
+  "problems": []
+ },
+ {
+  "html": "<h1>Head <span class=\"pm-block-error\" role=\"note\">{expressions} are not supported in plans</span></h1>",
+  "problems": [
+   "{expressions} are not supported in plans"
+  ]
+ },
+ {
+  "html": "<ul>\n<li>item <span class=\"pm-block-error\" role=\"note\">{expressions} are not supported in plans</span></li>\n<li>two</li>\n</ul>",
+  "problems": [
+   "{expressions} are not supported in plans"
+  ]
+ },
+ {
+  "html": "<p><a href=\"https://x\">link <b>x</b></a></p>",
+  "problems": []
+ },
+ {
+  "html": "<p><strong>bold <i>x</i></strong></p>",
+  "problems": []
+ },
+ {
+  "html": "<p>text</p>\n<aside class=\"pm-block pm-callout pm-tone-note\"><p class=\"pm-callout-title\">note</p><p>x</p></aside>\n<p>text right after</p>",
+  "problems": []
+ },
+ {
+  "html": "<aside class=\"pm-block pm-callout pm-tone-note\"><p class=\"pm-callout-title\">note</p></aside>",
+  "problems": []
+ },
+ {
+  "html": "<figure class=\"pm-block pm-code-block pm-diff\"><figcaption class=\"pm-code-head\"><code>a</code><span class=\"pm-stats\"><span class=\"pm-plus\">+1</span> <span class=\"pm-minus\">−1</span></span></figcaption><div class=\"pm-scroll\"><table class=\"pm-diff-table pm-split\"><tbody><tr><td class=\"pm-ln\">1</td><td class=\"pm-code\">multi</td><td class=\"pm-ln\">1</td><td class=\"pm-code\">multi</td></tr><tr><td class=\"pm-ln\">2</td><td class=\"pm-code pm-del\">line</td><td class=\"pm-ln\">2</td><td class=\"pm-code pm-add\">line changed</td></tr></tbody></table></div></figure>",
+  "problems": []
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Callout&gt;: BinaryExpression is not a static value</span></div>",
+  "problems": [
+   "<Callout>: BinaryExpression is not a static value"
+  ]
+ },
+ {
+  "html": "<aside class=\"pm-block pm-callout pm-tone-note\"><p class=\"pm-callout-title\">😀</p><p>x</p></aside>",
+  "problems": []
+ },
+ {
+  "html": "<aside class=\"pm-block pm-callout pm-tone-note\"><p class=\"pm-callout-title\">😀</p><p>x</p></aside>",
+  "problems": []
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Callout&gt;: prop &quot;title&quot; must be string, got object</span></div>",
+  "problems": [
+   "<Callout>: prop \"title\" must be string, got object"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Callout&gt;: prop &quot;title&quot; must be string, got array</span></div>",
+  "problems": [
+   "<Callout>: prop \"title\" must be string, got array"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Callout&gt;: prop &quot;title&quot; must be string, got array</span></div>",
+  "problems": [
+   "<Callout>: prop \"title\" must be string, got array"
+  ]
+ },
+ {
+  "html": "<section class=\"pm-block pm-layers\"><div class=\"pm-layer\"><div class=\"pm-layer-label\"><strong>L</strong></div><ul class=\"pm-layer-items\"><li></li><li></li><li></li><li></li></ul></div></section>",
+  "problems": []
+ },
+ {
+  "html": "<section class=\"pm-block pm-flow-block\"><ol class=\"pm-flow pm-flow-horizontal\"><li class=\"pm-flow-step\"><span class=\"pm-flow-label\"><strong>0</strong></span></li><li class=\"pm-flow-step\"><span class=\"pm-flow-label\"><strong>false</strong></span></li><li class=\"pm-flow-step\"><span class=\"pm-flow-label\"><strong></strong></span></li><li class=\"pm-flow-step\"><span class=\"pm-flow-label\"><strong></strong></span></li><li class=\"pm-flow-step\"><span class=\"pm-flow-label\"><strong></strong></span></li></ol></section>",
+  "problems": []
+ },
+ {
+  "html": "<section class=\"pm-block pm-questions\"><header class=\"pm-block-head\"><h4 class=\"pm-block-title\">Open questions</h4></header><ol><li><p class=\"pm-question\">q</p></li><li><p class=\"pm-question\"></p></li><li><p class=\"pm-question\"></p></li></ol></section>",
+  "problems": []
+ },
+ {
+  "html": "<section class=\"pm-block pm-tree\"><header class=\"pm-block-head\"><h4 class=\"pm-block-title\">Changed files</h4><p class=\"pm-block-summary\">4 files · <span class=\"pm-plus\">+0</span> <span class=\"pm-minus\">−0</span></p></header><ul><li class=\"pm-tree-dir\"><span class=\"pm-tree-name\">a/</span><ul><li class=\"pm-tree-file\"><span class=\"pm-tree-name\">b</span></li></ul></li><li class=\"pm-tree-dir\"><span class=\"pm-tree-name\">abs/</span><ul><li class=\"pm-tree-file\"><span class=\"pm-tree-name\">x</span></li></ul></li><li class=\"pm-tree-file\"><span class=\"pm-tree-name\"></span></li><li class=\"pm-tree-file\"><span class=\"pm-tree-name\">5</span></li></ul></section>",
+  "problems": []
+ },
+ {
+  "html": "<section class=\"pm-block pm-endpoint\"><header class=\"pm-endpoint-head\"><span class=\"pm-method pm-method-patch\">PATCH</span><code class=\"pm-path\">/p</code></header><div class=\"pm-example\"><span class=\"pm-example-label\"><span class=\"pm-status pm-status-2xx\">200</span>  </span><pre><code>[\n  1,\n  2.5,\n  100,\n  0,\n  &quot;é&quot;\n]</code></pre></div><div class=\"pm-example\"><span class=\"pm-example-label\"><span class=\"pm-status pm-status-2xx\">200</span>  </span><pre><code>{\n  &quot;a&quot;: {}\n}</code></pre></div><div class=\"pm-example\"><span class=\"pm-example-label\"><span class=\"pm-status pm-status-2xx\">200</span>  </span><pre><code>{\n  &quot;a&quot;: []\n}</code></pre></div></section>",
+  "problems": []
+ },
+ {
+  "html": "<section class=\"pm-block pm-endpoint\"><header class=\"pm-endpoint-head\"><span class=\"pm-method pm-method-get\">GET</span><code class=\"pm-path\">/</code></header><div class=\"pm-example\"><span class=\"pm-example-label\"><span class=\"pm-status pm-status-axx\">abc</span>  </span></div><div class=\"pm-example\"><span class=\"pm-example-label\"><span class=\"pm-status pm-status-txx\">true</span>  </span></div></section>",
+  "problems": []
+ },
+ {
+  "html": "<section class=\"pm-block pm-model\"><div class=\"pm-model-grid\"><article class=\"pm-entity\"><header><strong>E</strong></header><table><tbody><tr class=\"pm-field-removed\"><td class=\"pm-field-name\"><span class=\"pm-key\">pk</span>f</td><td class=\"pm-field-type\"><del>w</del> → <code>t</code></td><td><span class=\"pm-change pm-change-removed\">removed</span><span class=\"pm-field-note\">n</span></td></tr></tbody></table></article></div><ul class=\"pm-relations\"><li><code>a</code> → <code>b</code></li></ul></section>",
+  "problems": []
+ },
+ {
+  "html": "<aside class=\"pm-block pm-callout pm-tone-note\"><p class=\"pm-callout-title\"></p><p>empty title</p></aside>",
+  "problems": []
+ },
+ {
+  "html": "<section class=\"pm-block pm-columns-block\"><div class=\"pm-columns\"></div></section>",
+  "problems": []
+ },
+ {
+  "html": "<section class=\"pm-block pm-tabs\"><div class=\"pm-tab-list\"></div><div class=\"pm-tab-panels\"></div></section>",
+  "problems": []
+ },
+ {
+  "html": "<section class=\"pm-block pm-tabs\"><input class=\"pm-tab-input\" type=\"radio\" id=\"pm-tabs-0-0\" name=\"pm-tabs-0\" checked=\"\"/><input class=\"pm-tab-input\" type=\"radio\" id=\"pm-tabs-0-1\" name=\"pm-tabs-0\"/><div class=\"pm-tab-list\"><label for=\"pm-tabs-0-0\">a</label><label for=\"pm-tabs-0-1\">b</label></div><div class=\"pm-tab-panels\"><div class=\"pm-tab-panel\"></div><div class=\"pm-tab-panel\"></div></div></section>",
+  "problems": []
+ },
+ {
+  "html": "<section class=\"pm-block pm-tabs\"><input class=\"pm-tab-input\" type=\"radio\" id=\"pm-tabs-0-0\" name=\"pm-tabs-0\" checked=\"\"/><input class=\"pm-tab-input\" type=\"radio\" id=\"pm-tabs-0-1\" name=\"pm-tabs-0\"/><div class=\"pm-tab-list\"><label for=\"pm-tabs-0-0\">a</label><label for=\"pm-tabs-0-1\">b</label></div><div class=\"pm-tab-panels\"><div class=\"pm-tab-panel\"><section class=\"pm-block pm-tabs\"><input class=\"pm-tab-input\" type=\"radio\" id=\"pm-tabs-2-0\" name=\"pm-tabs-2\" checked=\"\"/><div class=\"pm-tab-list\"><label for=\"pm-tabs-2-0\">inner</label></div><div class=\"pm-tab-panels\"><div class=\"pm-tab-panel\"><p>x</p></div></div></section></div><div class=\"pm-tab-panel\"><p>y</p></div></div></section>",
+  "problems": []
+ },
+ {
+  "html": "<section class=\"pm-block pm-endpoint\"><header class=\"pm-endpoint-head\"><span class=\"pm-method pm-method-get\">GET</span><code class=\"pm-path\">/</code></header></section>",
+  "problems": []
+ },
+ {
+  "html": "<section class=\"pm-block pm-endpoint\"><header class=\"pm-endpoint-head\"><span class=\"pm-method pm-method-get\">GET</span><code class=\"pm-path\">/</code></header><div class=\"pm-endpoint-body\"><p>text</p></div></section>",
+  "problems": []
+ },
+ {
+  "html": "<p>Hello &amp; <b>&lt;</b></p>",
+  "problems": []
+ },
+ {
+  "html": "<p>a<br/>\nb</p>",
+  "problems": []
+ },
+ {
+  "html": "<p>line<br/>\nbreak <b>x</b></p>",
+  "problems": []
+ },
+ {
+  "html": "<aside class=\"pm-block pm-callout pm-tone-note\"><p class=\"pm-callout-title\">note</p><pre><code>&lt;/Callout&gt;\n</code></pre></aside>",
+  "problems": []
+ },
+ {
+  "html": "<pre><code>&lt;Callout&gt;\n</code></pre>",
+  "problems": []
+ },
+ {
+  "html": "<p><code>&lt;Callout&gt;</code></p>",
+  "problems": []
+ },
+ {
+  "html": "<p><b>x</b></p>\n<p><i>y</i></p>",
+  "problems": []
+ },
+ {
+  "html": "<div><p>x</p></div>",
+  "problems": []
+ },
+ {
+  "html": "<span><p>flow span</p></span>",
+  "problems": []
+ },
+ {
+  "html": "<aside class=\"pm-block pm-callout pm-tone-note\"><p class=\"pm-callout-title\">note</p><h1>Heading inside</h1><blockquote>\n<p>quote inside</p>\n</blockquote><ol>\n<li>num</li>\n</ol></aside>",
+  "problems": []
+ },
+ {
+  "html": "<p>x <span class=\"pm-block-error\" role=\"note\">&lt;Callout&gt; is a block: put its opening and closing tags on their own lines</span> z</p>",
+  "problems": [
+   "<Callout> is a block: put its opening and closing tags on their own lines"
+  ]
+ },
+ {
+  "html": "<p><span class=\"pm-block-error\" role=\"note\">&lt;Callout&gt; is a block: put its opening and closing tags on their own lines</span>text</p>",
+  "problems": [
+   "<Callout> is a block: put its opening and closing tags on their own lines"
+  ]
+ },
+ {
+  "html": "<aside class=\"pm-block pm-callout pm-tone-note\"><p class=\"pm-callout-title\">note</p></aside>\n<aside class=\"pm-block pm-callout pm-tone-note\"><p class=\"pm-callout-title\">note</p></aside>",
+  "problems": []
+ },
+ {
+  "html": "<p><span class=\"pm-block-error\" role=\"note\">{expressions} are not supported in plans</span><span class=\"pm-block-error\" role=\"note\">{expressions} are not supported in plans</span></p>",
+  "problems": [
+   "{expressions} are not supported in plans",
+   "{expressions} are not supported in plans"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Expected a closing tag for `&lt;Callout&gt;` (1:1-1:10) before the end of `paragraph`</span></div><pre class=\"markdown-fallback\">&lt;Callout&gt;{1}{2}\nx\n&lt;/Callout&gt;</pre>",
+  "problems": [
+   "MDX could not be parsed: Expected a closing tag for `<Callout>` (1:1-1:10) before the end of `paragraph`"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>\n<aside class=\"pm-block pm-callout pm-tone-note\"><p class=\"pm-callout-title\">note</p><p>after</p></aside>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>import and export statements are not supported in plans</span></div>",
+  "problems": [
+   "import and export statements are not supported in plans"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Could not parse import/exports with acorn</span></div><pre class=\"markdown-fallback\">import a from &#x27;b&#x27;\n\nimport a from &#x27;c&#x27;</pre>",
+  "problems": [
+   "MDX could not be parsed: Could not parse import/exports with acorn"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>import and export statements are not supported in plans</span></div>",
+  "problems": [
+   "import and export statements are not supported in plans"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>import and export statements are not supported in plans</span></div>",
+  "problems": [
+   "import and export statements are not supported in plans"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>import and export statements are not supported in plans</span></div>",
+  "problems": [
+   "import and export statements are not supported in plans"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>import and export statements are not supported in plans</span></div>",
+  "problems": [
+   "import and export statements are not supported in plans"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>import and export statements are not supported in plans</span></div>",
+  "problems": [
+   "import and export statements are not supported in plans"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>import and export statements are not supported in plans</span></div>",
+  "problems": [
+   "import and export statements are not supported in plans"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>import and export statements are not supported in plans</span></div>",
+  "problems": [
+   "import and export statements are not supported in plans"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>import and export statements are not supported in plans</span></div>",
+  "problems": [
+   "import and export statements are not supported in plans"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Could not parse import/exports with acorn</span></div><pre class=\"markdown-fallback\">export {a, b}</pre>",
+  "problems": [
+   "MDX could not be parsed: Could not parse import/exports with acorn"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>import and export statements are not supported in plans</span></div>",
+  "problems": [
+   "import and export statements are not supported in plans"
+  ]
+ },
+ {
+  "html": "<p>Use a -&gt; b and a =&gt; b</p>",
+  "problems": []
+ },
+ {
+  "html": "<p>x &gt; y and y &gt;= z</p>",
+  "problems": []
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Expected a closing tag for `&lt;string&gt;` (1:14-1:22) before the end of `paragraph`</span></div><pre class=\"markdown-fallback\">Generic Array&lt;string&gt; here</pre>",
+  "problems": [
+   "MDX could not be parsed: Expected a closing tag for `<string>` (1:14-1:22) before the end of `paragraph`"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Unexpected character `,` (U+002C) in name, expected a name character such as letters, digits, `$`, or `_`; whitespace before attributes; or the end of the tag</span></div><pre class=\"markdown-fallback\">Map&lt;K, V&gt;</pre>",
+  "problems": [
+   "MDX could not be parsed: Unexpected character `,` (U+002C) in name, expected a name character such as letters, digits, `$`, or `_`; whitespace before attributes; or the end of the tag"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Unexpected end of file in name, expected a name character such as letters, digits, `$`, or `_`; whitespace before attributes; or the end of the tag</span></div><pre class=\"markdown-fallback\">a&lt;b</pre>",
+  "problems": [
+   "MDX could not be parsed: Unexpected end of file in name, expected a name character such as letters, digits, `$`, or `_`; whitespace before attributes; or the end of the tag"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Unexpected character `2` (U+0032) before name, expected a character that can start a name, such as a letter, `$`, or `_`</span></div><pre class=\"markdown-fallback\">1 &lt;2</pre>",
+  "problems": [
+   "MDX could not be parsed: Unexpected character `2` (U+0032) before name, expected a character that can start a name, such as a letter, `$`, or `_`"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Unexpected character `3` (U+0033) before name, expected a character that can start a name, such as a letter, `$`, or `_`</span></div><pre class=\"markdown-fallback\">&lt;3 love</pre>",
+  "problems": [
+   "MDX could not be parsed: Unexpected character `3` (U+0033) before name, expected a character that can start a name, such as a letter, `$`, or `_`"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Unexpected character `@` (U+0040) in name, expected a name character such as letters, digits, `$`, or `_`; whitespace before attributes; or the end of the tag (note: to create a link in MDX, use `[text](url)`)</span></div><pre class=\"markdown-fallback\">email &lt;me@x.com&gt;</pre>",
+  "problems": [
+   "MDX could not be parsed: Unexpected character `@` (U+0040) in name, expected a name character such as letters, digits, `$`, or `_`; whitespace before attributes; or the end of the tag (note: to create a link in MDX, use `[text](url)`)"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Expected a closing tag for `&lt;br&gt;` (1:6-1:10) before the end of `paragraph`</span></div><pre class=\"markdown-fallback\">html &lt;br&gt; tag</pre>",
+  "problems": [
+   "MDX could not be parsed: Expected a closing tag for `<br>` (1:6-1:10) before the end of `paragraph`"
+  ]
+ },
+ {
+  "html": "<br/>",
+  "problems": []
+ },
+ {
+  "html": "<hr/>",
+  "problems": []
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Expected a closing tag for `&lt;b&gt;` (1:6-1:9) before the end of `paragraph`</span></div><pre class=\"markdown-fallback\">Text &lt;b&gt;unclosed</pre>",
+  "problems": [
+   "MDX could not be parsed: Expected a closing tag for `<b>` (1:6-1:9) before the end of `paragraph`"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Unexpected closing slash `/` in tag, expected an open tag first</span></div><pre class=\"markdown-fallback\">Text &lt;/b&gt;</pre>",
+  "problems": [
+   "MDX could not be parsed: Unexpected closing slash `/` in tag, expected an open tag first"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Could not parse expression with acorn</span></div><pre class=\"markdown-fallback\">Object {a: 1}</pre>",
+  "problems": [
+   "MDX could not be parsed: Could not parse expression with acorn"
+  ]
+ },
+ {
+  "html": "<p>set <span class=\"pm-block-error\" role=\"note\">{expressions} are not supported in plans</span></p>",
+  "problems": [
+   "{expressions} are not supported in plans"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Could not parse expression with acorn</span></div><pre class=\"markdown-fallback\">{ &quot;json&quot;: true }</pre>",
+  "problems": [
+   "MDX could not be parsed: Could not parse expression with acorn"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Could not parse expression with acorn</span></div><pre class=\"markdown-fallback\">function() { return 1 }</pre>",
+  "problems": [
+   "MDX could not be parsed: Could not parse expression with acorn"
+  ]
+ },
+ {
+  "html": "<p>Template <code>${x}</code></p>",
+  "problems": []
+ },
+ {
+  "html": "<p>arrow <code>() =&gt; {}</code></p>",
+  "problems": []
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Could not parse expression with acorn</span></div><pre class=\"markdown-fallback\">  {indented expr}</pre>",
+  "problems": [
+   "MDX could not be parsed: Could not parse expression with acorn"
+  ]
+ },
+ {
+  "html": "<ul>\n<li>\n<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>\n</li>\n</ul>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<blockquote>\n<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>\n</blockquote>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Unexpected end of file in expression, expected a corresponding closing brace for `{`</span></div><pre class=\"markdown-fallback\">Price is $5 {</pre>",
+  "problems": [
+   "MDX could not be parsed: Unexpected end of file in expression, expected a corresponding closing brace for `{`"
+  ]
+ },
+ {
+  "html": "<p>Ends with }</p>",
+  "problems": []
+ },
+ {
+  "html": "<p>}</p>",
+  "problems": []
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Unexpected end of file in expression, expected a corresponding closing brace for `{`</span></div><pre class=\"markdown-fallback\">{</pre>",
+  "problems": [
+   "MDX could not be parsed: Unexpected end of file in expression, expected a corresponding closing brace for `{`"
+  ]
+ },
+ {
+  "html": "<p>a <span class=\"pm-block-error\" role=\"note\">{expressions} are not supported in plans</span> <span class=\"pm-block-error\" role=\"note\">{expressions} are not supported in plans</span> d</p>",
+  "problems": [
+   "{expressions} are not supported in plans",
+   "{expressions} are not supported in plans"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>\n<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span",
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Could not parse expression with acorn</span></div><pre class=\"markdown-fallback\">{\n  a: 1\n}</pre>",
+  "problems": [
+   "MDX could not be parsed: Could not parse expression with acorn"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Callout&gt;: JSXElement is not a static value</span></div>",
+  "problems": [
+   "<Callout>: JSXElement is not a static value"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Could not parse expression with acorn</span></div><pre class=\"markdown-fallback\">{new.target}</pre>",
+  "problems": [
+   "MDX could not be parsed: Could not parse expression with acorn"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Could not parse expression with acorn</span></div><pre class=\"markdown-fallback\">{super.x}</pre>",
+  "problems": [
+   "MDX could not be parsed: Could not parse expression with acorn"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Could not parse expression with acorn</span></div><pre class=\"markdown-fallback\">{a ?? b || c}</pre>",
+  "problems": [
+   "MDX could not be parsed: Could not parse expression with acorn"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Could not parse expression with acorn</span></div><pre class=\"markdown-fallback\">{-x ** 2}</pre>",
+  "problems": [
+   "MDX could not be parsed: Could not parse expression with acorn"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Could not parse expression with acorn</span></div><pre class=\"markdown-fallback\">{1++}</pre>",
+  "problems": [
+   "MDX could not be parsed: Could not parse expression with acorn"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Could not parse expression with acorn</span></div><pre class=\"markdown-fallback\">{delete a}</pre>",
+  "problems": [
+   "MDX could not be parsed: Could not parse expression with acorn"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Could not parse expression with acorn</span></div><pre class=\"markdown-fallback\">{#x in y}</pre>",
+  "problems": [
+   "MDX could not be parsed: Could not parse expression with acorn"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Could not parse expression with acorn</span></div><pre class=\"markdown-fallback\">{1 = 2}</pre>",
+  "problems": [
+   "MDX could not be parsed: Could not parse expression with acorn"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Could not parse expression with acorn</span></div><pre class=\"markdown-fallback\">{(a,)}</pre>",
+  "problems": [
+   "MDX could not be parsed: Could not parse expression with acorn"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Could not parse expression with acorn</span></div><pre class=\"markdown-fallback\">{let}</pre>",
+  "problems": [
+   "MDX could not be parsed: Could not parse expression with acorn"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Could not parse expression with acorn</span></div><pre class=\"markdown-fallback\">{yield}</pre>",
+  "problems": [
+   "MDX could not be parsed: Could not parse expression with acorn"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Could not parse expression with acorn</span></div><pre class=\"markdown-fallback\">{await}</pre>",
+  "problems": [
+   "MDX could not be parsed: Could not parse expression with acorn"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Could not parse expression with acorn</span></div><pre class=\"markdown-fallback\">{`unterminated}</pre>",
+  "problems": [
+   "MDX could not be parsed: Could not parse expression with acorn"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Could not parse expression with acorn</span></div><pre class=\"markdown-fallback\">{&#x27;unterminated}</pre>",
+  "problems": [
+   "MDX could not be parsed: Could not parse expression with acorn"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Could not parse expression with acorn</span></div><pre class=\"markdown-fallback\">{&#x27;\\8&#x27;}</pre>",
+  "problems": [
+   "MDX could not be parsed: Could not parse expression with acorn"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Could not parse expression with acorn</span></div><pre class=\"markdown-fallback\">{&#x27;\\01&#x27;}</pre>",
+  "problems": [
+   "MDX could not be parsed: Could not parse expression with acorn"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Could not parse expression with acorn</span></div><pre class=\"markdown-fallback\">{08}</pre>",
+  "problems": [
+   "MDX could not be parsed: Could not parse expression with acorn"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Could not parse expression with acorn</span></div><pre class=\"markdown-fallback\">{1.5n}</pre>",
+  "problems": [
+   "MDX could not be parsed: Could not parse expression with acorn"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Could not parse expression with acorn</span></div><pre class=\"markdown-fallback\">{1__0}</pre>",
+  "problems": [
+   "MDX could not be parsed: Could not parse expression with acorn"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Could not parse expression with acorn</span></div><pre class=\"markdown-fallback\">{1_}</pre>",
+  "problems": [
+   "MDX could not be parsed: Could not parse expression with acorn"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Could not parse expression with acorn</span></div><pre class=\"markdown-fallback\">{0x}</pre>",
+  "problems": [
+   "MDX could not be parsed: Could not parse expression with acorn"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Could not parse expression with acorn</span></div><pre class=\"markdown-fallback\">{1e}</pre>",
+  "problems": [
+   "MDX could not be parsed: Could not parse expression with acorn"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Could not parse expression with acorn</span></div><pre class=\"markdown-fallback\">{3in x}</pre>",
+  "problems": [
+   "MDX could not be parsed: Could not parse expression with acorn"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Could not parse expression with acorn</span></div><pre class=\"markdown-fallback\">{&lt;a&gt;&lt;/b&gt;}</pre>",
+  "problems": [
+   "MDX could not be parsed: Could not parse expression with acorn"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Could not parse expression with acorn</span></div><pre class=\"markdown-fallback\">{&lt;a&gt;&gt;&lt;/a&gt;}</pre>",
+  "problems": [
+   "MDX could not be parsed: Could not parse expression with acorn"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Could not parse expression with acorn</span></div><pre class=\"markdown-fallback\">{&lt;a b={}/&gt;}</pre>",
+  "problems": [
+   "MDX could not be parsed: Could not parse expression with acorn"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Could not parse expression with acorn</span></div><pre class=\"markdown-fallback\">{{a = 1}}</pre>",
+  "problems": [
+   "MDX could not be parsed: Could not parse expression with acorn"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Could not parse expression with acorn</span></div><pre class=\"markdown-fallback\">{{if}}</pre>",
+  "problems": [
+   "MDX could not be parsed: Could not parse expression with acorn"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Could not parse expression with acorn</span></div><pre class=\"markdown-fallback\">{a; b}</pre>",
+  "problems": [
+   "MDX could not be parsed: Could not parse expression with acorn"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Could not parse expression with acorn</span></div><pre class=\"markdown-fallback\">{a\nb}</pre>",
+  "problems": [
+   "MDX could not be parsed: Could not parse expression with acorn"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Could not parse expression with acorn</span></div><pre class=\"markdown-fallback\">{if (x) y}</pre>",
+  "problems": [
+   "MDX could not be parsed: Could not parse expression with acorn"
+  ]
+ },
+ {
+  "html": "<p><span class=\"pm-block-error\" role=\"note\">{expressions} are not supported in plans</span>}</p>",
+  "problems": [
+   "{expressions} are not supported in plans"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Could not parse expression with acorn</span></div><pre class=\"markdown-fallback\">{{x}</pre>",
+  "problems": [
+   "MDX could not be parsed: Could not parse expression with acorn"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Could not parse expression with acorn</span></div><pre class=\"markdown-fallback\">&lt;Callout title={a b}&gt;\nx\n&lt;/Callout&gt;</pre>",
+  "problems": [
+   "MDX could not be parsed: Could not parse expression with acorn"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Could not parse expression with acorn</span></div><pre class=\"markdown-fallback\">&lt;FileTree files={a b} /&gt;</pre>",
+  "problems": [
+   "MDX could not be parsed: Could not parse expression with acorn"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Could not parse expression with acorn</span></div><pre class=\"markdown-fallback\">&lt;Layers layers={[{ label: &quot;L&quot;, items: [a b] }]} /&gt;</pre>",
+  "problems": [
+   "MDX could not be parsed: Could not parse expression with acorn"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Could not parse expression with acorn</span></div><pre class=\"markdown-fallback\">&lt;Callout title={1 2}&gt;\nx\n&lt;/Callout&gt;</pre>",
+  "problems": [
+   "MDX could not be parsed: Could not parse expression with acorn"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Could not parse expression with acorn</span></div><pre class=\"markdown-fallback\">&lt;FileTree files={1 2} /&gt;</pre>",
+  "problems": [
+   "MDX could not be parsed: Could not parse expression with acorn"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Could not parse expression with acorn</span></div><pre class=\"markdown-fallback\">&lt;Layers layers={[{ label: &quot;L&quot;, items: [1 2] }]} /&gt;</pre>",
+  "problems": [
+   "MDX could not be parsed: Could not parse expression with acorn"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Could not parse expression with acorn</span></div><pre class=\"markdown-fallback\">&lt;Callout title={&#x27;a&#x27; &#x27;b&#x27;}&gt;\nx\n&lt;/Callout&gt;</pre>",
+  "problems": [
+   "MDX could not be parsed: Could not parse expression with acorn"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Could not parse expression with acorn</span></div><pre class=\"markdown-fallback\">&lt;FileTree files={&#x27;a&#x27; &#x27;b&#x27;} /&gt;</pre>",
+  "problems": [
+   "MDX could not be parsed: Could not parse expression with acorn"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Could not parse expression with acorn</span></div><pre class=\"markdown-fallback\">&lt;Layers layers={[{ label: &quot;L&quot;, items: [&#x27;a&#x27; &#x27;b&#x27;] }]} /&gt;</pre>",
+  "problems": [
+   "MDX could not be parsed: Could not parse expression with acorn"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Could not parse expression with acorn</span></div><pre class=\"markdown-fallback\">&lt;Callout title={[1 2]}&gt;\nx\n&lt;/Callout&gt;</pre>",
+  "problems": [
+   "MDX could not be parsed: Could not parse expression with acorn"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Could not parse expression with acorn</span></div><pre class=\"markdown-fallback\">&lt;FileTree files={[1 2]} /&gt;</pre>",
+  "problems": [
+   "MDX could not be parsed: Could not parse expression with acorn"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Could not parse expression with acorn</span></div><pre class=\"markdown-fallback\">&lt;Layers layers={[{ label: &quot;L&quot;, items: [[1 2]] }]} /&gt;</pre>",
+  "problems": [
+   "MDX could not be parsed: Could not parse expression with acorn"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Could not parse expression with acorn</span></div><pre class=\"markdown-fallback\">&lt;Callout title={{a: 1 b: 2}}&gt;\nx\n&lt;/Callout&gt;</pre>",
+  "problems": [
+   "MDX could not be parsed: Could not parse expression with acorn"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Could not parse expression with acorn</span></div><pre class=\"markdown-fallback\">&lt;FileTree files={{a: 1 b: 2}} /&gt;</pre>",
+  "problems": [
+   "MDX could not be parsed: Could not parse expression with acorn"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Could not parse expression with acorn</span></div><pre class=\"markdown-fallback\">&lt;Layers layers={[{ label: &quot;L&quot;, items: [{a: 1 b: 2}] }]} /&gt;</pre>",
+  "problems": [
+   "MDX could not be parsed: Could not parse expression with acorn"
+  ]
+ },
+ {
+  "html": "<aside class=\"pm-block pm-callout pm-tone-note\"><p class=\"pm-callout-title\">a\nb</p><p>x</p></aside>",
+  "problems": []
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;FileTree&gt;: prop &quot;files&quot; must be array, got string</span></div>",
+  "problems": [
+   "<FileTree>: prop \"files\" must be array, got string"
+  ]
+ },
+ {
+  "html": "<section class=\"pm-block pm-layers\"><div class=\"pm-layer\"><div class=\"pm-layer-label\"><strong>L</strong></div><ul class=\"pm-layer-items\"><li>a\nb</li></ul></div></section>",
+  "problems": []
+ },
+ {
+  "html": "<aside class=\"pm-block pm-callout pm-tone-note\"><p class=\"pm-callout-title\">  a\n  b</p><p>x</p></aside>",
+  "problems": []
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;FileTree&gt;: prop &quot;files&quot; must be array, got string</span></div>",
+  "problems": [
+   "<FileTree>: prop \"files\" must be array, got string"
+  ]
+ },
+ {
+  "html": "<section class=\"pm-block pm-layers\"><div class=\"pm-layer\"><div class=\"pm-layer-label\"><strong>L</strong></div><ul class=\"pm-layer-items\"><li>  a\n  b</li></ul></div></section>",
+  "problems": []
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Could not parse expression with acorn</span></div><pre class=\"markdown-fallback\">&lt;Callout title={&#x27;\\u{110000}&#x27;}&gt;\nx\n&lt;/Callout&gt;</pre>",
+  "problems": [
+   "MDX could not be parsed: Could not parse expression with acorn"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Could not parse expression with acorn</span></div><pre class=\"markdown-fallback\">&lt;FileTree files={&#x27;\\u{110000}&#x27;} /&gt;</pre>",
+  "problems": [
+   "MDX could not be parsed: Could not parse expression with acorn"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Could not parse expression with acorn</span></div><pre class=\"markdown-fallback\">&lt;Layers layers={[{ label: &quot;L&quot;, items: [&#x27;\\u{110000}&#x27;] }]} /&gt;</pre>",
+  "problems": [
+   "MDX could not be parsed: Could not parse expression with acorn"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Could not parse expression with acorn</span></div><pre class=\"markdown-fallback\">&lt;Callout title={&quot;\\x4&quot;}&gt;\nx\n&lt;/Callout&gt;</pre>",
+  "problems": [
+   "MDX could not be parsed: Could not parse expression with acorn"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Could not parse expression with acorn</span></div><pre class=\"markdown-fallback\">&lt;FileTree files={&quot;\\x4&quot;} /&gt;</pre>",
+  "problems": [
+   "MDX could not be parsed: Could not parse expression with acorn"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Could not parse expression with acorn</span></div><pre class=\"markdown-fallback\">&lt;Layers layers={[{ label: &quot;L&quot;, items: [&quot;\\x4&quot;] }]} /&gt;</pre>",
+  "problems": [
+   "MDX could not be parsed: Could not parse expression with acorn"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Callout&gt;: BinaryExpression is not a static value</span></div>",
+  "problems": [
+   "<Callout>: BinaryExpression is not a static value"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;FileTree&gt;: BinaryExpression is not a static value</span></div>",
+  "problems": [
+   "<FileTree>: BinaryExpression is not a static value"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Layers&gt;: BinaryExpression is not a static value</span></div>",
+  "problems": [
+   "<Layers>: BinaryExpression is not a static value"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Callout&gt;: BinaryExpression is not a static value</span></div>",
+  "problems": [
+   "<Callout>: BinaryExpression is not a static value"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;FileTree&gt;: BinaryExpression is not a static value</span></div>",
+  "problems": [
+   "<FileTree>: BinaryExpression is not a static value"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Layers&gt;: BinaryExpression is not a static value</span></div>",
+  "problems": [
+   "<Layers>: BinaryExpression is not a static value"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Callout&gt;: prop &quot;title&quot; must be string, got object</span></div>",
+  "problems": [
+   "<Callout>: prop \"title\" must be string, got object"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;FileTree&gt;: prop &quot;files&quot; must be array, got object</span></div>",
+  "problems": [
+   "<FileTree>: prop \"files\" must be array, got object"
+  ]
+ },
+ {
+  "html": "<section class=\"pm-block pm-layers\"><div class=\"pm-layer\"><div class=\"pm-layer-label\"><strong>L</strong></div><ul class=\"pm-layer-items\"><li></li></ul></div></section>",
+  "problems": []
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Callout&gt;: object key &quot;__proto__&quot; is not allowed</span></div>",
+  "problems": [
+   "<Callout>: object key \"__proto__\" is not allowed"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;FileTree&gt;: object key &quot;__proto__&quot; is not allowed</span></div>",
+  "problems": [
+   "<FileTree>: object key \"__proto__\" is not allowed"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Layers&gt;: object key &quot;__proto__&quot; is not allowed</span></div>",
+  "problems": [
+   "<Layers>: object key \"__proto__\" is not allowed"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Callout&gt;: object key &quot;prototype&quot; is not allowed</span></div>",
+  "problems": [
+   "<Callout>: object key \"prototype\" is not allowed"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;FileTree&gt;: object key &quot;prototype&quot; is not allowed</span></div>",
+  "problems": [
+   "<FileTree>: object key \"prototype\" is not allowed"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Layers&gt;: object key &quot;prototype&quot; is not allowed</span></div>",
+  "problems": [
+   "<Layers>: object key \"prototype\" is not allowed"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Callout&gt;: object keys must be names or strings</span></div>",
+  "problems": [
+   "<Callout>: object keys must be names or strings"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;FileTree&gt;: object keys must be names or strings</span></div>",
+  "problems": [
+   "<FileTree>: object keys must be names or strings"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Layers&gt;: object keys must be names or strings</span></div>",
+  "problems": [
+   "<Layers>: object keys must be names or strings"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Callout&gt;: prop &quot;title&quot; must be string, got object</span></div>",
+  "problems": [
+   "<Callout>: prop \"title\" must be string, got object"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;FileTree&gt;: prop &quot;files&quot; must be array, got object</span></div>",
+  "problems": [
+   "<FileTree>: prop \"files\" must be array, got object"
+  ]
+ },
+ {
+  "html": "<section class=\"pm-block pm-layers\"><div class=\"pm-layer\"><div class=\"pm-layer-label\"><strong>L</strong></div><ul class=\"pm-layer-items\"><li></li></ul></div></section>",
+  "problems": []
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Callout&gt;: prop &quot;title&quot; must be string, got object</span></div>",
+  "problems": [
+   "<Callout>: prop \"title\" must be string, got object"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;FileTree&gt;: prop &quot;files&quot; must be array, got object</span></div>",
+  "problems": [
+   "<FileTree>: prop \"files\" must be array, got object"
+  ]
+ },
+ {
+  "html": "<section class=\"pm-block pm-layers\"><div class=\"pm-layer\"><div class=\"pm-layer-label\"><strong>L</strong></div><ul class=\"pm-layer-items\"><li></li></ul></div></section>",
+  "problems": []
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Callout&gt;: prop &quot;title&quot; must be string, got object</span></div>",
+  "problems": [
+   "<Callout>: prop \"title\" must be string, got object"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;FileTree&gt;: prop &quot;files&quot; must be array, got object</span></div>",
+  "problems": [
+   "<FileTree>: prop \"files\" must be array, got object"
+  ]
+ },
+ {
+  "html": "<section class=\"pm-block pm-layers\"><div class=\"pm-layer\"><div class=\"pm-layer-label\"><strong>L</strong></div><ul class=\"pm-layer-items\"><li></li></ul></div></section>",
+  "problems": []
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Callout&gt;: operator - is not supported</span></div>",
+  "problems": [
+   "<Callout>: operator - is not supported"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;FileTree&gt;: operator - is not supported</span></div>",
+  "problems": [
+   "<FileTree>: operator - is not supported"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Layers&gt;: operator - is not supported</span></div>",
+  "problems": [
+   "<Layers>: operator - is not supported"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Callout&gt;: prop &quot;title&quot; must be string, got number</span></div>",
+  "problems": [
+   "<Callout>: prop \"title\" must be string, got number"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;FileTree&gt;: prop &quot;files&quot; must be array, got number</span></div>",
+  "problems": [
+   "<FileTree>: prop \"files\" must be array, got number"
+  ]
+ },
+ {
+  "html": "<section class=\"pm-block pm-layers\"><div class=\"pm-layer\"><div class=\"pm-layer-label\"><strong>L</strong></div><ul class=\"pm-layer-items\"><li></li></ul></div></section>",
+  "problems": []
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Callout&gt;: operator - is not supported</span></div>",
+  "problems": [
+   "<Callout>: operator - is not supported"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;FileTree&gt;: operator - is not supported</span></div>",
+  "problems": [
+   "<FileTree>: operator - is not supported"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Layers&gt;: operator - is not supported</span></div>",
+  "problems": [
+   "<Layers>: operator - is not supported"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Callout&gt;: prop &quot;title&quot; must be string, got number</span></div>",
+  "problems": [
+   "<Callout>: prop \"title\" must be string, got number"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;FileTree&gt;: prop &quot;files&quot; must be array, got number</span></div>",
+  "problems": [
+   "<FileTree>: prop \"files\" must be array, got number"
+  ]
+ },
+ {
+  "html": "<section class=\"pm-block pm-layers\"><div class=\"pm-layer\"><div class=\"pm-layer-label\"><strong>L</strong></div><ul class=\"pm-layer-items\"><li></li></ul></div></section>",
+  "problems": []
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Callout&gt;: ParenthesizedExpression is not a static value</span></div>",
+  "problems": [
+   "<Callout>: ParenthesizedExpression is not a static value"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;FileTree&gt;: ParenthesizedExpression is not a static value</span></div>",
+  "problems": [
+   "<FileTree>: ParenthesizedExpression is not a static value"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Layers&gt;: ParenthesizedExpression is not a static value</span></div>",
+  "problems": [
+   "<Layers>: ParenthesizedExpression is not a static value"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Callout&gt;: ParenthesizedExpression is not a static value</span></div>",
+  "problems": [
+   "<Callout>: ParenthesizedExpression is not a static value"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;FileTree&gt;: ParenthesizedExpression is not a static value</span></div>",
+  "problems": [
+   "<FileTree>: ParenthesizedExpression is not a static value"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Layers&gt;: ParenthesizedExpression is not a static value</span></div>",
+  "problems": [
+   "<Layers>: ParenthesizedExpression is not a static value"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Callout&gt;: ParenthesizedExpression is not a static value</span></div>",
+  "problems": [
+   "<Callout>: ParenthesizedExpression is not a static value"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;FileTree&gt;: ParenthesizedExpression is not a static value</span></div>",
+  "problems": [
+   "<FileTree>: ParenthesizedExpression is not a static value"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Layers&gt;: ParenthesizedExpression is not a static value</span></div>",
+  "problems": [
+   "<Layers>: ParenthesizedExpression is not a static value"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Callout&gt;: ParenthesizedExpression is not a static value</span></div>",
+  "problems": [
+   "<Callout>: ParenthesizedExpression is not a static value"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;FileTree&gt;: ParenthesizedExpression is not a static value</span></div>",
+  "problems": [
+   "<FileTree>: ParenthesizedExpression is not a static value"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Layers&gt;: ParenthesizedExpression is not a static value</span></div>",
+  "problems": [
+   "<Layers>: ParenthesizedExpression is not a static value"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Callout&gt;: template literals cannot interpolate ${...}</span></div>",
+  "problems": [
+   "<Callout>: template literals cannot interpolate ${...}"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;FileTree&gt;: template literals cannot interpolate ${...}</span></div>",
+  "problems": [
+   "<FileTree>: template literals cannot interpolate ${...}"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Layers&gt;: template literals cannot interpolate ${...}</span></div>",
+  "problems": [
+   "<Layers>: template literals cannot interpolate ${...}"
+  ]
+ },
+ {
+  "html": "<aside class=\"pm-block pm-callout pm-tone-note\"><p class=\"pm-callout-title\">aA</p><p>x</p></aside>",
+  "problems": []
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;FileTree&gt;: prop &quot;files&quot; must be array, got string</span></div>",
+  "problems": [
+   "<FileTree>: prop \"files\" must be array, got string"
+  ]
+ },
+ {
+  "html": "<section class=\"pm-block pm-layers\"><div class=\"pm-layer\"><div class=\"pm-layer-label\"><strong>L</strong></div><ul class=\"pm-layer-items\"><li>aA</li></ul></div></section>",
+  "problems": []
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Callout&gt;: TaggedTemplateExpression is not a static value</span></div>",
+  "problems": [
+   "<Callout>: TaggedTemplateExpression is not a static value"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;FileTree&gt;: TaggedTemplateExpression is not a static value</span></div>",
+  "problems": [
+   "<FileTree>: TaggedTemplateExpression is not a static value"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Layers&gt;: TaggedTemplateExpression is not a static value</span></div>",
+  "problems": [
+   "<Layers>: TaggedTemplateExpression is not a static value"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Callout&gt;: prop &quot;title&quot; must be string, got null</span></div>",
+  "problems": [
+   "<Callout>: prop \"title\" must be string, got null"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;FileTree&gt;: prop &quot;files&quot; must be array, got null</span></div>",
+  "problems": [
+   "<FileTree>: prop \"files\" must be array, got null"
+  ]
+ },
+ {
+  "html": "<section class=\"pm-block pm-layers\"><div class=\"pm-layer\"><div class=\"pm-layer-label\"><strong>L</strong></div><ul class=\"pm-layer-items\"><li></li></ul></div></section>",
+  "problems": []
+ },
+ {
+  "html": "<aside class=\"pm-block pm-callout pm-tone-note\"><p class=\"pm-callout-title\">note</p><p>x</p></aside>",
+  "problems": []
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;FileTree&gt;: missing required prop &quot;files&quot;</span></div>",
+  "problems": [
+   "<FileTree>: missing required prop \"files\""
+  ]
+ },
+ {
+  "html": "<section class=\"pm-block pm-layers\"><div class=\"pm-layer\"><div class=\"pm-layer-label\"><strong>L</strong></div><ul class=\"pm-layer-items\"><li></li></ul></div></section>",
+  "problems": []
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Callout&gt;: variables are not supported (found &quot;NaN&quot;)</span></div>",
+  "problems": [
+   "<Callout>: variables are not supported (found \"NaN\")"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;FileTree&gt;: variables are not supported (found &quot;NaN&quot;)</span></div>",
+  "problems": [
+   "<FileTree>: variables are not supported (found \"NaN\")"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Layers&gt;: variables are not supported (found &quot;NaN&quot;)</span></div>",
+  "problems": [
+   "<Layers>: variables are not supported (found \"NaN\")"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Callout&gt;: variables are not supported (found &quot;Infinity&quot;)</span></div>",
+  "problems": [
+   "<Callout>: variables are not supported (found \"Infinity\")"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;FileTree&gt;: variables are not supported (found &quot;Infinity&quot;)</span></div>",
+  "problems": [
+   "<FileTree>: variables are not supported (found \"Infinity\")"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Layers&gt;: variables are not supported (found &quot;Infinity&quot;)</span></div>",
+  "problems": [
+   "<Layers>: variables are not supported (found \"Infinity\")"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Callout&gt;: prop &quot;title&quot; must be string, got boolean</span></div>",
+  "problems": [
+   "<Callout>: prop \"title\" must be string, got boolean"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;FileTree&gt;: prop &quot;files&quot; must be array, got boolean</span></div>",
+  "problems": [
+   "<FileTree>: prop \"files\" must be array, got boolean"
+  ]
+ },
+ {
+  "html": "<section class=\"pm-block pm-layers\"><div class=\"pm-layer\"><div class=\"pm-layer-label\"><strong>L</strong></div><ul class=\"pm-layer-items\"><li></li></ul></div></section>",
+  "problems": []
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Callout&gt;: prop &quot;title&quot; must be string, got array</span></div>",
+  "problems": [
+   "<Callout>: prop \"title\" must be string, got array"
+  ]
+ },
+ {
+  "html": "<section class=\"pm-block pm-tree\"><header class=\"pm-block-head\"><h4 class=\"pm-block-title\">Changed files</h4><p class=\"pm-block-summary\">1 file · <span class=\"pm-plus\">+0</span> <span class=\"pm-minus\">−0</span></p></header><ul><li class=\"pm-tree-file\"><span class=\"pm-tree-name\"></span></li></ul></section>",
+  "problems": []
+ },
+ {
+  "html": "<section class=\"pm-block pm-layers\"><div class=\"pm-layer\"><div class=\"pm-layer-label\"><strong>L</strong></div><ul class=\"pm-layer-items\"><li></li></ul></div></section>",
+  "problems": []
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Callout&gt;: arrays cannot contain holes or spreads</span></div>",
+  "problems": [
+   "<Callout>: arrays cannot contain holes or spreads"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;FileTree&gt;: arrays cannot contain holes or spreads</span></div>",
+  "problems": [
+   "<FileTree>: arrays cannot contain holes or spreads"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Layers&gt;: arrays cannot contain holes or spreads</span></div>",
+  "problems": [
+   "<Layers>: arrays cannot contain holes or spreads"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Callout&gt;: prop &quot;title&quot; must be string, got array</span></div>",
+  "problems": [
+   "<Callout>: prop \"title\" must be string, got array"
+  ]
+ },
+ {
+  "html": "<section class=\"pm-block pm-tree\"><header class=\"pm-block-head\"><h4 class=\"pm-block-title\">Changed files</h4><p class=\"pm-block-summary\">1 file · <span class=\"pm-plus\">+0</span> <span class=\"pm-minus\">−0</span></p></header><ul><li class=\"pm-tree-file\"><span class=\"pm-tree-name\"></span></li></ul></section>",
+  "problems": []
+ },
+ {
+  "html": "<section class=\"pm-block pm-layers\"><div class=\"pm-layer\"><div class=\"pm-layer-label\"><strong>L</strong></div><ul class=\"pm-layer-items\"><li></li></ul></div></section>",
+  "problems": []
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Callout&gt;: prop &quot;title&quot; must be string, got object</span></div>",
+  "problems": [
+   "<Callout>: prop \"title\" must be string, got object"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;FileTree&gt;: prop &quot;files&quot; must be array, got object</span></div>",
+  "problems": [
+   "<FileTree>: prop \"files\" must be array, got object"
+  ]
+ },
+ {
+  "html": "<section class=\"pm-block pm-layers\"><div class=\"pm-layer\"><div class=\"pm-layer-label\"><strong>L</strong></div><ul class=\"pm-layer-items\"><li></li></ul></div></section>",
+  "problems": []
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;FileTree&gt;: variables are not supported (found &quot;NaN&quot;)</span></div>",
+  "problems": [
+   "<FileTree>: variables are not supported (found \"NaN\")"
+  ]
+ },
+ {
+  "html": "<section class=\"pm-block pm-tree\"><header class=\"pm-block-head\"><h4 class=\"pm-block-title\">Changed files</h4><p class=\"pm-block-summary\">11 files · <span class=\"pm-plus\">+0</span> <span class=\"pm-minus\">−0</span></p></header><ul><li class=\"pm-tree-dir\"><span class=\"pm-tree-name\">10/</span><ul><li class=\"pm-tree-file\"><span class=\"pm-tree-name\">f</span></li></ul></li><li class=\"pm-tree-dir\"><span class=\"pm-tree-name\">9/</span><ul><li class=\"pm-tree-file\"><span class=\"pm-tree-name\">g</span></li></ul></li><li class=\"pm-tree-dir\"><span class=\"pm-tree-name\">a b/</span><ul><li class=\"pm-tree-file\"><span class=\"pm-tree-name\">k</span></li></ul></li><li class=\"pm-tree-dir\"><span class=\"pm-tree-name\">e/</span><ul><li class=\"pm-tree-file\"><span class=\"pm-tree-name\">i</span></li></ul></li><li class=\"pm-tree-dir\"><span class=\"pm-tree-name\">é/</span><ul><li class=\"pm-tree-file\"><span class=\"pm-tree-name\">h</span></li></ul></li><li class=\"pm-tree-dir\"><span class=\"pm-tree-name\">src/</span><ul><li class=\"pm-tree-file\"><span class=\"pm-tree-name\">b</span></li></ul></li><li class=\"pm-tree-dir\"><span class=\"pm-tree-name\">Src/</span><ul><li class=\"pm-tree-file\"><span class=\"pm-tree-name\">a</span></li></ul></li><li class=\"pm-tree-dir\"><span class=\"pm-tree-name\">src_y/</span><ul><li class=\"pm-tree-file\"><span class=\"pm-tree-name\">d</span></li></ul></li><li class=\"pm-tree-dir\"><span class=\"pm-tree-name\">src-x/</span><ul><li class=\"pm-tree-file\"><span class=\"pm-tree-name\">c</span></li></ul></li><li class=\"pm-tree-dir\"><span class=\"pm-tree-name\">src.z/</span><ul><li class=\"pm-tree-file\"><span class=\"pm-tree-name\">e</span></li></ul></li><li class=\"pm-tree-dir\"><span class=\"pm-tree-name\">Z/</span><ul><li class=\"pm-tree-file\"><span class=\"pm-tree-name\">j</span></li></ul></li></ul></section>",
+  "problems": []
+ },
+ {
+  "html": "<figure class=\"pm-block pm-code-block pm-diff\"><figcaption class=\"pm-code-head\"><code>f</code><span class=\"pm-stats\"><span class=\"pm-plus\">+4</span> <span class=\"pm-minus\">−3</span></span></figcaption><div class=\"pm-scroll\"><table class=\"pm-diff-table pm-split\"><tbody><tr><td class=\"pm-ln\">1</td><td class=\"pm-code pm-del\">a</td><td class=\"pm-ln\">1</td><td class=\"pm-code pm-add\">x</td></tr><tr class=\"pm-note-row\"><td colSpan=\"4\"><p>b1</p><p>n1</p></td></tr><tr><td class=\"pm-ln\">2</td><td class=\"pm-code\">b</td><td class=\"pm-ln\">2</td><td class=\"pm-code\">b</td></tr><tr><td class=\"pm-ln\">3</td><td class=\"pm-code pm-del\">c</td><td class=\"pm-ln\">3</td><td class=\"pm-code pm-add\">y</td></tr><tr><td class=\"pm-ln\">4</td><td class=\"pm-code\">d</td><td class=\"pm-ln\">4</td><td class=\"pm-code\">d</td></tr><tr><td class=\"pm-ln\">5</td><td class=\"pm-code pm-del\">e</td><td class=\"pm-ln\">5</td><td class=\"pm-code pm-add\">z</td></tr><tr><td class=\"pm-ln\"></td><td class=\"pm-code pm-empty\"></td><td class=\"pm-ln\">6</td><td class=\"pm-code pm-add\">w</td></tr><tr class=\"pm-note-row\"><td colSpan=\"4\"><p>n6</p></td></tr></tbody></table></div></figure>",
+  "problems": []
+ },
+ {
+  "html": "<figure class=\"pm-block pm-code-block pm-diff\"><figcaption class=\"pm-code-head\"><code>f</code><span class=\"pm-stats\"><span class=\"pm-plus\">+0</span> <span class=\"pm-minus\">−0</span></span></figcaption><div class=\"pm-scroll\"><table class=\"pm-diff-table pm-unified\"><tbody><tr><td class=\"pm-ln\">1</td><td class=\"pm-ln\">1</td><td class=\"pm-code pm-same\">  a</td></tr><tr><td class=\"pm-ln\">2</td><td class=\"pm-ln\">2</td><td class=\"pm-code pm-same\">  b</td></tr></tbody></table></div></figure>",
+  "problems": []
+ },
+ {
+  "html": "<figure class=\"pm-block pm-code-block pm-diff\"><figcaption class=\"pm-code-head\"><code>f</code><span class=\"pm-lang\">go</span><span class=\"pm-stats\"><span class=\"pm-plus\">+0</span> <span class=\"pm-minus\">−0</span></span></figcaption><p class=\"pm-block-summary\">s</p><div class=\"pm-scroll\"><table class=\"pm-diff-table pm-split\"><tbody><tr><td class=\"pm-ln\">1</td><td class=\"pm-code\">same</td><td class=\"pm-ln\">1</td><td class=\"pm-code\">same</td></tr></tbody></table></div></figure>",
+  "problems": []
+ },
+ {
+  "html": "<figure class=\"pm-block pm-code-block pm-diff\"><figcaption class=\"pm-code-head\"><code>f</code><span class=\"pm-stats\"><span class=\"pm-plus\">+0</span> <span class=\"pm-minus\">−1</span></span></figcaption><div class=\"pm-scroll\"><table class=\"pm-diff-table pm-split\"><tbody><tr><td class=\"pm-ln\">1</td><td class=\"pm-code\"></td><td class=\"pm-ln\">1</td><td class=\"pm-code\"></td></tr><tr><td class=\"pm-ln\">2</td><td class=\"pm-code pm-del\"></td><td class=\"pm-ln\"></td><td class=\"pm-code pm-empty\"></td></tr></tbody></table></div></figure>",
+  "problems": []
+ },
+ {
+  "html": "<figure class=\"pm-block pm-code-block pm-annotated\"><figcaption class=\"pm-code-head\"><code>f</code></figcaption><div class=\"pm-scroll\"><table class=\"pm-diff-table\"><tbody></tbody></table></div></figure>",
+  "problems": []
+ },
+ {
+  "html": "<figure class=\"pm-block pm-code-block pm-annotated\"><figcaption class=\"pm-code-head\"><code>f</code></figcaption><div class=\"pm-scroll\"><table class=\"pm-diff-table\"><tbody><tr><td class=\"pm-ln\">1</td><td class=\"pm-code\">a</td></tr><tr class=\"pm-noted\"><td class=\"pm-ln\">2</td><td class=\"pm-code\">b</td></tr><tr class=\"pm-note-row\"><td colSpan=\"2\"><p>z</p></td></tr></tbody></table></div></figure>",
+  "problems": []
+ },
+ {
+  "html": "<section class=\"pm-block pm-endpoint\"><header class=\"pm-endpoint-head\"><span class=\"pm-method pm-method-head\">HEAD</span><code class=\"pm-path\">/</code></header><table class=\"pm-params\"><thead><tr><th>Param</th><th>In</th><th>Type</th><th>Notes</th></tr></thead><tbody><tr><td><code>p</code><span class=\"pm-required\">required</span></td><td></td><td><code></code></td><td></td></tr><tr><td><code></code></td><td></td><td><code></code></td><td></td></tr></tbody></table></section>",
+  "problems": []
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Endpoint&gt;: prop &quot;request&quot; must be object, got string</span></div>",
+  "problems": [
+   "<Endpoint>: prop \"request\" must be object, got string"
+  ]
+ },
+ {
+  "html": "<section class=\"pm-block pm-questions\"><header class=\"pm-block-head\"><h4 class=\"pm-block-title\">Open questions</h4></header><ol><li><p class=\"pm-question\">q</p></li><li><p class=\"pm-question\">q2</p><ul class=\"pm-options\"><li>a</li><li></li><li>1</li></ul></li></ol></section>",
+  "problems": []
+ },
+ {
+  "html": "<section class=\"pm-block pm-columns-block\"><div class=\"pm-columns\"><div class=\"pm-column\"><p>empty label</p></div></div></section>",
+  "problems": []
+ },
+ {
+  "html": "<section class=\"pm-block pm-tabs\"><header class=\"pm-block-head\"><h4 class=\"pm-block-title\">T</h4></header><input class=\"pm-tab-input\" type=\"radio\" id=\"pm-tabs-0-0\" name=\"pm-tabs-0\" checked=\"\"/><input class=\"pm-tab-input\" type=\"radio\" id=\"pm-tabs-0-1\" name=\"pm-tabs-0\"/><div class=\"pm-tab-list\"><label for=\"pm-tabs-0-0\"></label><label for=\"pm-tabs-0-1\">x</label></div><div class=\"pm-tab-panels\"><div class=\"pm-tab-panel\"><p>empty</p></div><div class=\"pm-tab-panel\"><p>y</p></div></div></section>",
+  "problems": []
+ },
+ {
+  "html": "<aside class=\"pm-block pm-callout pm-tone-risk\"><p class=\"pm-callout-title\">t</p><p>x</p></aside>",
+  "problems": []
+ },
+ {
+  "html": "<aside class=\"pm-block pm-callout pm-tone-note\"><p class=\"pm-callout-title\">&lt;script&gt;alert(1)&lt;/script&gt;</p><p>x</p></aside>",
+  "problems": []
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Unexpected character `\\` (U+005C) in attribute name, expected an attribute name character such as letters, digits, `$`, or `_`; `=` to initialize a value; whitespace before attributes; or the end of the tag</span></div><pre class=\"markdown-fallback\">&lt;Callout title=&quot;&#x27;quote&#x27; &amp; \\&quot;dq\\&quot;&quot;&gt;\nx\n&lt;/Callout&gt;</pre>",
+  "problems": [
+   "MDX could not be parsed: Unexpected character `\\` (U+005C) in attribute name, expected an attribute name character such as letters, digits, `$`, or `_`; `=` to initialize a value; whitespace before attributes; or the end of the tag"
+  ]
+ },
+ {
+  "html": "<section class=\"pm-block pm-flow-block\"><ol class=\"pm-flow pm-flow-horizontal\"><li class=\"pm-flow-step\"><span class=\"pm-flow-label\"><strong>&lt;b&gt;</strong><span class=\"pm-change pm-change-added\">added</span></span><span>&amp;amp;</span></li></ol></section>",
+  "problems": []
+ },
+ {
+  "html": "<ul>\n<li>\n<p>a</p>\n</li>\n<li>\n<p>b</p>\n<p>para</p>\n</li>\n<li>\n<p>c</p>\n</li>\n</ul>",
+  "problems": []
+ },
+ {
+  "html": "<ol>\n<li>a</li>\n<li>b</li>\n<li>c</li>\n</ol>",
+  "problems": []
+ },
+ {
+  "html": "<ul>\n<li>\n<p>a</p>\n</li>\n<li>\n<p>b</p>\n</li>\n</ul>",
+  "problems": []
+ },
+ {
+  "html": "<ul>\n<li>a</li>\n</ul>\n<ul>\n<li>b</li>\n</ul>\n<ul>\n<li>c</li>\n</ul>",
+  "problems": []
+ },
+ {
+  "html": "<ul>\n<li>a</li>\n</ul>\n<ul>\n<li>b</li>\n</ul>\n<ul>\n<li>c</li>\n</ul>",
+  "problems": []
+ },
+ {
+  "html": "<ul class=\"contains-task-list\">\n<li class=\"task-list-item\"><input type=\"checkbox\" disabled=\"\" data-plan-task=\"true\"/> a\n<ul class=\"contains-task-list\">\n<li class=\"task-list-item\"><input type=\"checkbox\" disabled=\"\" data-plan-task=\"true\" checked=\"\"/> nested</li>\n</ul>\n</li>\n<li class=\"task-list-item\"><input type=\"checkbox\" disabled=\"\" data-plan-task=\"true\" checked=\"\"/> upper</li>\n</ul>",
+  "problems": []
+ },
+ {
+  "html": "<ul>\n<li>[ ]</li>\n<li>[x]</li>\n</ul>",
+  "problems": []
+ },
+ {
+  "html": "<ul class=\"contains-task-list\">\n<li class=\"task-list-item\"><input type=\"checkbox\" disabled=\"\" data-plan-task=\"true\"/> text</li>\n</ul>",
+  "problems": []
+ },
+ {
+  "html": "<ol class=\"contains-task-list\">\n<li class=\"task-list-item\"><input type=\"checkbox\" disabled=\"\" data-plan-task=\"true\"/> ordered task</li>\n</ol>",
+  "problems": []
+ },
+ {
+  "html": "<ul>\n<li>not [ ] task</li>\n</ul>",
+  "problems": []
+ },
+ {
+  "html": "<blockquote>\n<ul class=\"contains-task-list\">\n<li class=\"task-list-item\"><input type=\"checkbox\" disabled=\"\" data-plan-task=\"true\"/> quoted task</li>\n</ul>\n</blockquote>",
+  "problems": []
+ },
+ {
+  "html": "<table><thead><tr><th>a</th><th>b</th></tr></thead><tbody><tr><td>1</td><td></td></tr></tbody></table>",
+  "problems": []
+ },
+ {
+  "html": "<table><thead><tr><th style=\"text-align:center\">a</th></tr></thead><tbody><tr><td style=\"text-align:center\">`</td></tr><tr><td style=\"text-align:center\">| esc</td></tr></tbody></table>",
+  "problems": []
+ },
+ {
+  "html": "<table><thead><tr><th>a</th><th>b</th></tr></thead><tbody><tr><td>1</td><td>2</td></tr></tbody></table>",
+  "problems": []
+ },
+ {
+  "html": "<table><thead><tr><th>a</th></tr></thead></table>\n<p>after</p>",
+  "problems": []
+ },
+ {
+  "html": "<p>Visit <a href=\"https://example.com/path?q=1&amp;r=2\">https://example.com/path?q=1&amp;r=2</a>. Or <a href=\"http://www.x.org/a_(b)\">www.x.org/a_(b)</a> and <a href=\"http://localhost:3000\">http://localhost:3000</a>!</p>",
+  "problems": []
+ },
+ {
+  "html": "<p>ftp://x.com and <a href=\"https://x.com\">https://x.com</a>) and (<a href=\"https://y.com\">https://y.com</a>)</p>",
+  "problems": []
+ },
+ {
+  "html": "<p>contact <a href=\"mailto:me@example.com\">me@example.com</a> or mailto:<a href=\"mailto:me@x.com\">me@x.com</a></p>",
+  "problems": []
+ },
+ {
+  "html": "<p><a href=\"url%20with%20spaces\">a</a> <a href=\"url\" title=\"t\">b</a> <a href=\"/x\">c</a></p>",
+  "problems": []
+ },
+ {
+  "html": "<p><a href=\"https://x.com/%C3%BC?%C3%A9#%C3%9F\">a</a> <a href=\"https://x.com/%20ok\">b</a> [c](<a href=\"https://x.com/a\">https://x.com/a</a> b)</p>",
+  "problems": []
+ },
+ {
+  "html": "<p><a href=\"\">a</a> <a href=\"\">b</a> <a href=\"HTTPS://x\">c</a> <a href=\"#frag\">d</a> <a href=\"?q\">e</a> <a href=\"./rel:x\">f</a> <a href=\"irc://x\">g</a> <a href=\"xmpp:x\">h</a> <a href=\"\">i</a></p>",
+  "problems": []
+ },
+ {
+  "html": "<p><span>img</span> <span></span> <span>a b c</span></p>",
+  "problems": []
+ },
+ {
+  "html": "<p><a href=\"https://link\"><span>img</span></a></p>",
+  "problems": []
+ },
+ {
+  "html": "<p><a href=\"/u\">ref</a></p>",
+  "problems": []
+ },
+ {
+  "html": "<p><a href=\"/u\" title=\"single\">Ref</a></p>",
+  "problems": []
+ },
+ {
+  "html": "<p><em>a <strong>b</strong> c</em> <em>d</em> <strong>e</strong> <em><strong>f</strong></em></p>",
+  "problems": []
+ },
+ {
+  "html": "<p><strong>a*b</strong>c* x_y_z __a__b</p>",
+  "problems": []
+ },
+ {
+  "html": "<p><del>a</del> <del>b</del> ~~~c~~~</p>",
+  "problems": []
+ },
+ {
+  "html": "<p><code>a`b</code> <code>a</code> <code>  </code></p>",
+  "problems": []
+ },
+ {
+  "html": "<p># not heading - not list [x]</p>",
+  "problems": []
+ },
+ {
+  "html": "<h1>ATX</h1>\n<h2></h2>\n<h6>six</h6>\n<p>####### seven</p>",
+  "problems": []
+ },
+ {
+  "html": "<h2>Setext</h2>\n<h1>Also</h1>",
+  "problems": []
+ },
+ {
+  "html": "<hr/>\n<hr/>\n<hr/>\n<hr/>",
+  "problems": []
+ },
+ {
+  "html": "<pre><code>fence\n</code></pre>\n<pre><code>more ```\n</code></pre>",
+  "problems": []
+ },
+ {
+  "html": "<pre><code class=\"language-js\">x\n</code></pre>",
+  "problems": []
+ },
+ {
+  "html": "<pre><code class=\"language-js\">code\n</code></pre>",
+  "problems": []
+ },
+ {
+  "html": "<pre><code>unclosed fence\n</code></pre>",
+  "problems": []
+ },
+ {
+  "html": "<pre><code>indented fence\n  more\n</code></pre>",
+  "problems": []
+ },
+ {
+  "html": "<blockquote>\n<p>a\nlazy</p>\n<blockquote>\n<p>nested</p>\n</blockquote>\n</blockquote>\n<blockquote>\n</blockquote>",
+  "problems": []
+ },
+ {
+  "html": "<p>text</p>\n<hr/>\n<p>more</p>",
+  "problems": []
+ },
+ {
+  "html": "<p>line1<br/>\nline2\nline3<br/>\nline4</p>",
+  "problems": []
+ },
+ {
+  "html": "<p> &amp;##&amp;invalid; � �</p>",
+  "problems": []
+ },
+ {
+  "html": "<p>Footnote<sup><a href=\"#user-content-fn-a\" id=\"user-content-fnref-a\" data-footnote-ref=\"true\" aria-describedby=\"footnote-label\">1</a></sup> and<sup><a href=\"#user-content-fn-b\" id=\"user-content-fnref-b\" data-footnote-ref=\"true\" aria-describedby=\"footnote-label\">2</a></sup>.</p>\n<section data-footnotes=\"true\" class=\"footnotes\"><h2 class=\"sr-only\" id=\"footnote-label\">Footnotes</h2>\n<ol>\n<li id=\"user-content-fn-a\">\n<p>Note <em>a</em>\ncontinued <a href=\"#user-content-fnref-a\" data-footnote-backref=\"\" aria-label=\"Back to reference 1\" class=\"data-footnote-backref\">↩</a></p>\n</li>\n<li id=\"user-content-fn-b\">\n<p>Indented def <a href=\"#user-content-fnref-b\" data-footnote-backref=\"\" aria-label=\"Back to reference 2\" class=\"data-footnote-backref\">↩</a></p>\n</li>\n</ol>\n</section>",
+  "problems": []
+ },
+ {
+  "html": "<p>Ref<sup><a href=\"#user-content-fn-x\" id=\"user-content-fnref-x\" data-footnote-ref=\"true\" aria-describedby=\"footnote-label\">1</a></sup> twice<sup><a href=\"#user-content-fn-x\" id=\"user-content-fnref-x-2\" data-footnote-ref=\"true\" aria-describedby=\"footnote-label\">1</a></sup> thrice<sup><a href=\"#user-content-fn-x\" id=\"user-content-fnref-x-3\" data-footnote-ref=\"true\" aria-describedby=\"footnote-label\">1</a></sup></p>\n<section data-footnotes=\"true\" class=\"footnotes\"><h2 class=\"sr-only\" id=\"footnote-label\">Footnotes</h2>\n<ol>\n<li id=\"user-content-fn-x\">\n<p>X <a href=\"#user-content-fnref-x\" data-footnote-backref=\"\" aria-label=\"Back to reference 1\" class=\"data-footnote-backref\">↩</a> <a href=\"#user-content-fnref-x-2\" data-footnote-backref=\"\" aria-label=\"Back to reference 1-2\" class=\"data-footnote-backref\">↩<sup>2</sup></a> <a href=\"#user-content-fnref-x-3\" data-footnote-backref=\"\" aria-label=\"Back to reference 1-3\" class=\"data-footnote-backref\">↩<sup>3</sup></a></p>\n</li>\n</ol>\n</section>",
+  "problems": []
+ },
+ {
+  "html": "<p>[^missing] reference</p>",
+  "problems": []
+ },
+ {
+  "html": "<h1>Title</h1>\n<p>Para</p>\n<h2>Sub</h2>\n<ul>\n<li>a</li>\n<li>b</li>\n</ul>\n<pre><code>code\n</code></pre>\n<blockquote>\n<p>q</p>\n</blockquote>\n<table><thead><tr><th>t</th></tr></thead><tbody><tr><td>1</td></tr></tbody></table>\n<hr/>\n<p>End</p>",
+  "problems": []
+ },
+ {
+  "html": "<aside class=\"pm-block pm-callout pm-tone-note\"><p class=\"pm-callout-title\">note</p><table><thead><tr><th>a</th></tr></thead><tbody><tr><td>1</td></tr></tbody></table></aside>",
+  "problems": []
+ },
+ {
+  "html": "<aside class=\"pm-block pm-callout pm-tone-note\"><p class=\"pm-callout-title\">note</p><pre><code class=\"language-js\">const x = &lt;b&gt;1&lt;/b&gt;\n</code></pre></aside>",
+  "problems": []
+ },
+ {
+  "html": "<aside class=\"pm-block pm-callout pm-tone-note\"><p class=\"pm-callout-title\">note</p><blockquote>\n<p>quote</p>\n</blockquote></aside>",
+  "problems": []
+ },
+ {
+  "html": "<aside class=\"pm-block pm-callout pm-tone-note\"><p class=\"pm-callout-title\">note</p><ul>\n<li>a</li>\n<li>b</li>\n</ul></aside>\n<ul>\n<li>c</li>\n</ul>",
+  "problems": []
+ },
+ {
+  "html": "<ul>\n<li>a</li>\n</ul>\n<aside class=\"pm-block pm-callout pm-tone-note\"><p class=\"pm-callout-title\">note</p><p>x</p></aside>",
+  "problems": []
+ },
+ {
+  "html": "<ul>\n<li>\n<p>a</p>\n<aside class=\"pm-block pm-callout pm-tone-note\"><p class=\"pm-callout-title\">note</p><p>inside item</p></aside>\n</li>\n</ul>",
+  "problems": []
+ },
+ {
+  "html": "<ol>\n<li>step\n<aside class=\"pm-block pm-callout pm-tone-note\"><p class=\"pm-callout-title\">note</p><p>x</p></aside>\n</li>\n</ol>",
+  "problems": []
+ },
+ {
+  "html": "<blockquote>\n<aside class=\"pm-block pm-callout pm-tone-note\"><p class=\"pm-callout-title\">note</p><p>in quote</p></aside>\n</blockquote>",
+  "problems": []
+ },
+ {
+  "html": "<p>Para</p>\n<aside class=\"pm-block pm-callout pm-tone-note\"><p class=\"pm-callout-title\">note</p><p>interrupt</p></aside>",
+  "problems": []
+ },
+ {
+  "html": "<aside class=\"pm-block pm-callout pm-tone-note\"><p class=\"pm-callout-title\">note</p><p>Para</p></aside>\n<p>Para after</p>",
+  "problems": []
+ },
+ {
+  "html": "<aside class=\"pm-block pm-callout pm-tone-note\"><p class=\"pm-callout-title\">note</p><p>Para</p></aside>",
+  "problems": []
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Expected a closing tag for `&lt;Callout&gt;` (1:1-1:10) before the end of `paragraph`</span></div><pre class=\"markdown-fallback\">&lt;Callout&gt;x\n&lt;/Callout&gt;</pre>",
+  "problems": [
+   "MDX could not be parsed: Expected a closing tag for `<Callout>` (1:1-1:10) before the end of `paragraph`"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Expected the closing tag `&lt;/Callout&gt;` either after the end of `paragraph` (2:12) or another opening tag after the start of `paragraph` (2:1)</span></div><pre class=\"markdown-fallback\">&lt;Callout&gt;\nx&lt;/Callout&gt;</pre>",
+  "problems": [
+   "MDX could not be parsed: Expected the closing tag `</Callout>` either after the end of `paragraph` (2:12) or another opening tag after the start of `paragraph` (2:1)"
+  ]
+ },
+ {
+  "html": "<aside class=\"pm-block pm-callout pm-tone-note\"><p class=\"pm-callout-title\">note</p><p>indented two</p></aside>",
+  "problems": []
+ },
+ {
+  "html": "<aside class=\"pm-block pm-callout pm-tone-note\"><p class=\"pm-callout-title\">note</p><p>tab indented</p></aside>",
+  "problems": []
+ },
+ {
+  "html": "<section class=\"pm-block pm-columns-block\"><div class=\"pm-columns\"><div class=\"pm-column\"><p class=\"pm-column-label\">a</p><ul>\n<li>one</li>\n<li>two</li>\n</ul></div><div class=\"pm-column\"><p class=\"pm-column-label\">b</p><pre><code>code\n  deeper\n</code></pre></div></div></section>",
+  "problems": []
+ },
+ {
+  "html": "<aside class=\"pm-block pm-callout pm-tone-note\"><p class=\"pm-callout-title\">note</p><h1>heading 4 spaces</h1><p>para\n8 spaces</p></aside>",
+  "problems": []
+ },
+ {
+  "html": "<h1>top-level indented heading</h1>",
+  "problems": []
+ },
+ {
+  "html": "<blockquote>\n<p>top-level indented quote</p>\n</blockquote>",
+  "problems": []
+ },
+ {
+  "html": "<hr/>",
+  "problems": []
+ },
+ {
+  "html": "<p>para five spaces</p>",
+  "problems": []
+ },
+ {
+  "html": "<figure class=\"pm-block pm-code-block pm-diff\"><figcaption class=\"pm-code-head\"><code>a</code><span class=\"pm-stats\"><span class=\"pm-plus\">+1</span> <span class=\"pm-minus\">−1</span></span></figcaption><div class=\"pm-scroll\"><table class=\"pm-diff-table pm-split\"><tbody><tr><td class=\"pm-ln\">1</td><td class=\"pm-code pm-del\">x</td><td class=\"pm-ln\">1</td><td class=\"pm-code pm-add\">y</td></tr></tbody></table></div></figure>",
+  "problems": []
+ },
+ {
+  "html": "<figure class=\"pm-block pm-code-block pm-diff\"><figcaption class=\"pm-code-head\"><code>a</code><span class=\"pm-stats\"><span class=\"pm-plus\">+1</span> <span class=\"pm-minus\">−2</span></span></figcaption><div class=\"pm-scroll\"><table class=\"pm-diff-table pm-split\"><tbody><tr><td class=\"pm-ln\">1</td><td class=\"pm-code pm-del\">line1</td><td class=\"pm-ln\">1</td><td class=\"pm-code pm-add\">b</td></tr><tr><td class=\"pm-ln\">2</td><td class=\"pm-code pm-del\">    line2</td><td class=\"pm-ln\"></td><td class=\"pm-code pm-empty\"></td></tr></tbody></table></div></figure>",
+  "problems": []
+ },
+ {
+  "html": "<p>Para with <span class=\"pm-block-error\" role=\"note\">&lt;Callout&gt; is a block: put its opening and closing tags on their own lines</span> text</p>",
+  "problems": [
+   "<Callout> is a block: put its opening and closing tags on their own lines"
+  ]
+ },
+ {
+  "html": "<p><em>emph <b>x</b></em></p>",
+  "problems": []
+ },
+ {
+  "html": "<p><a href=\"u\">link <i>x</i></a></p>",
+  "problems": []
+ },
+ {
+  "html": "<h1><b>x</b> head</h1>",
+  "problems": []
+ },
+ {
+  "html": "<table><thead><tr><th><b>a</b></th></tr></thead><tbody><tr><td><span class=\"pm-block-error\" role=\"note\">&lt;Callout&gt; is a block: put its opening and closing tags on their own lines</span></td></tr></tbody></table>",
+  "problems": [
+   "<Callout> is a block: put its opening and closing tags on their own lines"
+  ]
+ },
+ {
+  "html": "<p>🎉 <b>é</b> <span class=\"pm-block-error\" role=\"note\">{expressions} are not supported in plans</span></p>",
+  "problems": [
+   "{expressions} are not supported in plans"
+  ]
+ },
+ {
+  "html": "<p>a <b>nbsp</b></p>",
+  "problems": []
+ },
+ {
+  "html": "<section class=\"pm-block pm-tabs\"><input class=\"pm-tab-input\" type=\"radio\" id=\"pm-tabs-0-0\" name=\"pm-tabs-0\" checked=\"\"/><div class=\"pm-tab-list\"><label for=\"pm-tabs-0-0\">a</label></div><div class=\"pm-tab-panels\"><div class=\"pm-tab-panel\"><ul>\n<li>x</li>\n</ul></div></div></section>",
+  "problems": []
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Unexpected closing tag `&lt;/Callout&gt;`, expected corresponding closing tag for `&lt;Tabs&gt;` (3:1-3:7)</span></div><pre class=\"markdown-fallback\">&lt;Callout&gt;\n\n&lt;Tabs&gt;\n&lt;Tab label=&quot;a&quot;&gt;\nx\n&lt;/Tab&gt;\n\n&lt;/Callout&gt;</pre>",
+  "problems": [
+   "MDX could not be parsed: Unexpected closing tag `</Callout>`, expected corresponding closing tag for `<Tabs>` (3:1-3:7)"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Expected the closing tag `&lt;/Callout&gt;` either after the end of `listItem` (3:13) or another opening tag after the start of `listItem` (2:1)</span></div><pre class=\"markdown-fallback\">&lt;Callout&gt;\n- item\n  &lt;/Callout&gt;</pre>",
+  "problems": [
+   "MDX could not be parsed: Expected the closing tag `</Callout>` either after the end of `listItem` (3:13) or another opening tag after the start of `listItem` (2:1)"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Expected a closing tag for `&lt;b&gt;` (1:5-1:8) before the end of `paragraph`</span></div><pre class=\"markdown-fallback\">- a &lt;b&gt;x\n- y&lt;/b&gt;</pre>",
+  "problems": [
+   "MDX could not be parsed: Expected a closing tag for `<b>` (1:5-1:8) before the end of `paragraph`"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Expected a closing tag for `&lt;b&gt;` (1:6-1:9) before the end of `paragraph`</span></div><pre class=\"markdown-fallback\">Para &lt;b&gt;x\n\nmore&lt;/b&gt;</pre>",
+  "problems": [
+   "MDX could not be parsed: Expected a closing tag for `<b>` (1:6-1:9) before the end of `paragraph`"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Expected a closing tag for `&lt;b&gt;` (1:1-1:4) before the end of `paragraph`</span></div><pre class=\"markdown-fallback\">&lt;b&gt;x\n\ny&lt;/b&gt;</pre>",
+  "problems": [
+   "MDX could not be parsed: Expected a closing tag for `<b>` (1:1-1:4) before the end of `paragraph`"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Unexpected character `x` (U+0078) before attribute value, expected a character that can start an attribute value, such as `&quot;`, `&#x27;`, or `{`</span></div><pre class=\"markdown-fallback\">text {broken\n\n&lt;Callout title=x /&gt;</pre>",
+  "problems": [
+   "MDX could not be parsed: Unexpected character `x` (U+0078) before attribute value, expected a character that can start an attribute value, such as `\"`, `'`, or `{`"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Unexpected character `x` (U+0078) before attribute value, expected a character that can start an attribute value, such as `&quot;`, `&#x27;`, or `{`</span></div><pre class=\"markdown-fallback\">&lt;Callout title=x /&gt;\n\ntext {broken</pre>",
+  "problems": [
+   "MDX could not be parsed: Unexpected character `x` (U+0078) before attribute value, expected a character that can start an attribute value, such as `\"`, `'`, or `{`"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Expected a closing tag for `&lt;b&gt;` (1:4-1:7) before the end of `emphasis`</span></div><pre class=\"markdown-fallback\">*a &lt;b&gt;c* d&lt;/b&gt;</pre>",
+  "problems": [
+   "MDX could not be parsed: Expected a closing tag for `<b>` (1:4-1:7) before the end of `emphasis`"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Expected a closing tag for `&lt;b&gt;` (1:5-1:8) before the end of `strong`</span></div><pre class=\"markdown-fallback\">**a &lt;b&gt;c** d&lt;/b&gt;</pre>",
+  "problems": [
+   "MDX could not be parsed: Expected a closing tag for `<b>` (1:5-1:8) before the end of `strong`"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Expected a closing tag for `&lt;b&gt;` (1:5-1:8) before the end of `strikethrough`</span></div><pre class=\"markdown-fallback\">~~a &lt;b&gt;c~~ d&lt;/b&gt;</pre>",
+  "problems": [
+   "MDX could not be parsed: Expected a closing tag for `<b>` (1:5-1:8) before the end of `strikethrough`"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Expected a closing tag for `&lt;b&gt;` (1:4-1:7) before the end of `link`</span></div><pre class=\"markdown-fallback\">[a &lt;b&gt;c](u) d&lt;/b&gt;</pre>",
+  "problems": [
+   "MDX could not be parsed: Expected a closing tag for `<b>` (1:4-1:7) before the end of `link`"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Expected a closing tag for `&lt;b&gt;` (1:5-1:8) before the end of `atxHeading`</span></div><pre class=\"markdown-fallback\"># a &lt;b&gt;c\n\nd&lt;/b&gt;</pre>",
+  "problems": [
+   "MDX could not be parsed: Expected a closing tag for `<b>` (1:5-1:8) before the end of `atxHeading`"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Expected a closing tag for `&lt;b&gt;` (1:5-1:8) before the end of `tableHeader`</span></div><pre class=\"markdown-fallback\">| a &lt;b&gt;x |\n|---|\n| y&lt;/b&gt; |</pre>",
+  "problems": [
+   "MDX could not be parsed: Expected a closing tag for `<b>` (1:5-1:8) before the end of `tableHeader`"
+  ]
+ },
+ {
+  "html": "<aside class=\"pm-block pm-callout pm-tone-note\"><p class=\"pm-callout-title\">note</p><p>x</p></aside>",
+  "problems": []
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Unexpected closing tag `&lt;/c&gt;`, expected corresponding closing tag for `&lt;b&gt;` (1:3-1:6)</span></div><pre class=\"markdown-fallback\">x\t&lt;b&gt;\ty\t&lt;/c&gt;</pre>",
+  "problems": [
+   "MDX could not be parsed: Unexpected closing tag `</c>`, expected corresponding closing tag for `<b>` (1:3-1:6)"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Unexpected closing tag `&lt;/c&gt;`, expected corresponding closing tag for `&lt;b&gt;` (1:3-1:6)</span></div><pre class=\"markdown-fallback\">é &lt;b&gt;x&lt;/c&gt;</pre>",
+  "problems": [
+   "MDX could not be parsed: Unexpected closing tag `</c>`, expected corresponding closing tag for `<b>` (1:3-1:6)"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Unexpected closing tag `&lt;/c&gt;`, expected corresponding closing tag for `&lt;b&gt;` (1:4-1:7)</span></div><pre class=\"markdown-fallback\">😀 &lt;b&gt;x&lt;/c&gt;</pre>",
+  "problems": [
+   "MDX could not be parsed: Unexpected closing tag `</c>`, expected corresponding closing tag for `<b>` (1:4-1:7)"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Unexpected closing tag `&lt;/c&gt;`, expected corresponding closing tag for `&lt;b&gt;` (2:7-2:10)</span></div><pre class=\"markdown-fallback\">line1\nline2 &lt;b&gt;x&lt;/c&gt;</pre>",
+  "problems": [
+   "MDX could not be parsed: Unexpected closing tag `</c>`, expected corresponding closing tag for `<b>` (2:7-2:10)"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Expected a closing tag for `&lt;Callout&gt;` (1:1-1:10)</span></div><pre class=\"markdown-fallback\">&lt;Callout&gt;\n  &lt;Callout&gt;\n  x\n&lt;/Callout&gt;</pre>",
+  "problems": [
+   "MDX could not be parsed: Expected a closing tag for `<Callout>` (1:1-1:10)"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Unexpected closing slash `/` in tag, expected an open tag first</span></div><pre class=\"markdown-fallback\">&lt;/&gt;</pre>",
+  "problems": [
+   "MDX could not be parsed: Unexpected closing slash `/` in tag, expected an open tag first"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Expected a closing tag for `&lt;&gt;` (1:1-1:3)</span></div><pre class=\"markdown-fallback\">&lt;&gt;\nx</pre>",
+  "problems": [
+   "MDX could not be parsed: Expected a closing tag for `<>` (1:1-1:3)"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Unexpected closing tag `&lt;/b&gt;`, expected corresponding closing tag for `&lt;a&gt;` (1:1-1:4)</span></div><pre class=\"markdown-fallback\">&lt;a&gt;&lt;/b&gt;</pre>",
+  "problems": [
+   "MDX could not be parsed: Unexpected closing tag `</b>`, expected corresponding closing tag for `<a>` (1:1-1:4)"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Unexpected closing slash `/` in tag, expected an open tag first</span></div><pre class=\"markdown-fallback\">&lt;Callout&gt;&lt;/Callout&gt;&lt;/Callout&gt;</pre>",
+  "problems": [
+   "MDX could not be parsed: Unexpected closing slash `/` in tag, expected an open tag first"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Unexpected closing slash `/` in tag, expected an open tag first</span></div><pre class=\"markdown-fallback\">&lt;Callout&gt;\n&lt;/Callout&gt;\n&lt;/Callout&gt;</pre>",
+  "problems": [
+   "MDX could not be parsed: Unexpected closing slash `/` in tag, expected an open tag first"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Unexpected closing slash `/` in tag, expected an open tag first</span></div><pre class=\"markdown-fallback\">x\n\n&lt;/Callout&gt;\n\n&lt;b&gt;</pre>",
+  "problems": [
+   "MDX could not be parsed: Unexpected closing slash `/` in tag, expected an open tag first"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Expected a closing tag for `&lt;b&gt;` (3:1-3:4) before the end of `paragraph`</span></div><pre class=\"markdown-fallback\">{x}\n\n&lt;b&gt;unclosed</pre>",
+  "problems": [
+   "MDX could not be parsed: Expected a closing tag for `<b>` (3:1-3:4) before the end of `paragraph`"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Expected a closing tag for `&lt;b&gt;` (3:1-3:4) before the end of `paragraph`</span></div><pre class=\"markdown-fallback\">import x from &#x27;y&#x27;\n\n&lt;b&gt;unclosed</pre>",
+  "problems": [
+   "MDX could not be parsed: Expected a closing tag for `<b>` (3:1-3:4) before the end of `paragraph`"
+  ]
+ },
+ {
+  "html": "<aside class=\"pm-block pm-callout pm-tone-note\"><p class=\"pm-callout-title\">note</p><blockquote>\n<p>a</p>\n</blockquote></aside>",
+  "problems": []
+ },
+ {
+  "html": "<blockquote>\n<p>a</p>\n</blockquote>\n<aside class=\"pm-block pm-callout pm-tone-note\"><p class=\"pm-callout-title\">note</p><p>x</p></aside>",
+  "problems": []
+ },
+ {
+  "html": "<blockquote>\n<p><b>x</b>\ny</p>\n</blockquote>",
+  "problems": []
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Callout&gt;: variables are not supported (found &quot;b&quot;)</span></div>",
+  "problems": [
+   "<Callout>: variables are not supported (found \"b\")"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Callout&gt;: spread attributes are not supported</span></div>",
+  "problems": [
+   "<Callout>: spread attributes are not supported"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Diff&gt;: spread attributes are not supported</span></div>",
+  "problems": [
+   "<Diff>: spread attributes are not supported"
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Callout&gt;: unknown prop &quot;x:y&quot;</span></div>",
+  "problems": [
+   "<Callout>: unknown prop \"x:y\""
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Callout&gt;: unknown prop &quot;data-x&quot;</span></div>",
+  "problems": [
+   "<Callout>: unknown prop \"data-x\""
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Callout&gt;: unknown prop &quot;a&quot;; unknown prop &quot;b&quot;</span></div>",
+  "problems": [
+   "<Callout>: unknown prop \"a\"; unknown prop \"b\""
+  ]
+ },
+ {
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Callout&gt;: unknown prop &quot;a&quot;</span></div>",
+  "problems": [
+   "<Callout>: unknown prop \"a\""
+  ]
+ },
+ {
+  "html": "<aside class=\"pm-block pm-callout pm-tone-note\"><p class=\"pm-callout-title\">note</p></aside>",
+  "problems": []
+ },
+ {
+  "html": "<aside class=\"pm-block pm-callout pm-tone-note\"><p class=\"pm-callout-title\">note</p></aside>",
+  "problems": []
+ },
+ {
+  "html": "<aside class=\"pm-block pm-callout pm-tone-note\"><p class=\"pm-callout-title\">\n\n</p></aside>",
+  "problems": []
+ },
+ {
+  "html": "<aside class=\"pm-block pm-callout pm-tone-note\"><p class=\"pm-callout-title\">x</p></aside>",
+  "problems": []
+ },
+ {
+  "html": "<aside class=\"pm-block pm-callout pm-tone-note\"><p class=\"pm-callout-title\">note</p></aside>\n<aside class=\"pm-block pm-callout pm-tone-note\"><p class=\"pm-callout-title\">note</p><p>x</p></aside>\n<aside class=\"pm-block pm-callout pm-tone-note\"><p class=\"pm-callout-title\">note</p></aside>\n<aside class=\"pm-block pm-callout pm-tone-note\"><p class=\"pm-callout-title\">note</p></aside>",
+  "problems": []
+ }
+]

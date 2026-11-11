@@ -1,0 +1,4 @@
+{
+  "html": "<section class=\"pm-block pm-layers\"><header class=\"pm-block-head\"><h4 class=\"pm-block-title\">Layout</h4></header><div class=\"pm-layer\"><div class=\"pm-layer-label\"><strong>Surfaces</strong><span>existing</span></div><ul class=\"pm-layer-items\"><li>Local dashboard</li><li>Hosted app</li></ul></div><div class=\"pm-layer\"><div class=\"pm-layer-label\"><strong>Renderer</strong></div><ul class=\"pm-layer-items\"><li class=\"pm-item-added\" title=\"new module\">src/lib/mdx<span class=\"pm-change pm-change-added\">added</span></li><li>plain</li><li></li></ul></div><div class=\"pm-layer\"><div class=\"pm-layer-label\"><strong>Empty</strong></div><ul class=\"pm-layer-items\"></ul></div></section>",
+  "problems": []
+}
