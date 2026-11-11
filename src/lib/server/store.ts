@@ -1,9 +1,10 @@
-import { del, get, put } from "@vercel/blob"
+import { BlobNotFoundError, del, get, head, put } from "@vercel/blob"
 import yaml from "js-yaml"
 import { getHostedEnvironment } from "./env.ts"
 import { getSql } from "./db.ts"
 import { requirePlanId, sanitizeMarkdown, ValidationError } from "./sanitize.ts"
 import { validatePlanUpload } from "./plan-input.ts"
+import { writeValidatedPlan, type PlanWriteStore } from "./write-plan.ts"
 import { computeRevision } from "../ids.ts"
 import { isPlanStatus, type PlanStatus } from "../types.ts"
 import { createStatusVersion } from "./status-version.ts"
@@ -59,20 +60,35 @@ export async function readMarkdown(plan: HostedPlan): Promise<string> {
   return sanitizeMarkdown(await new Response(blob.stream).text())
 }
 
-export async function writePlan(input: HostedPlanInput): Promise<{ plan: HostedPlan; conflict: boolean }> {
-  const normalized = await validatePlanUpload(input)
-  const existing = await findPlan(normalized.id)
-  if (existing?.revision === normalized.revision) return { plan: existing, conflict: false }
-  if ((existing?.revision ?? null) !== normalized.expectedRevision) return { plan: existing ?? null as never, conflict: true }
-  const objectKey = `plans/${normalized.id}/${normalized.revision}.md`
-  await put(objectKey, normalized.markdown, {
-    access: "private",
-    addRandomSuffix: false,
-    allowOverwrite: false,
-    contentType: "text/markdown; charset=utf-8",
-    token: getHostedEnvironment().blobReadWriteToken,
-  })
-  try {
+// Real storage for the write sequence in write-plan.ts.
+const planWriteStore: PlanWriteStore = {
+  findPlan,
+  async findVersionKey(id, revision) {
+    const rows = await getSql()`SELECT object_key FROM plan_versions WHERE plan_id = ${id} AND revision = ${revision} LIMIT 1` as unknown as { object_key: string }[]
+    return rows[0]?.object_key ?? null
+  },
+  async blobExists(objectKey) {
+    try {
+      await head(objectKey, { token: getHostedEnvironment().blobReadWriteToken })
+      return true
+    } catch (error) {
+      if (error instanceof BlobNotFoundError) return false
+      throw error
+    }
+  },
+  async putBlob(objectKey, markdown) {
+    await put(objectKey, markdown, {
+      access: "private",
+      addRandomSuffix: false,
+      allowOverwrite: false,
+      contentType: "text/markdown; charset=utf-8",
+      token: getHostedEnvironment().blobReadWriteToken,
+    })
+  },
+  async deleteBlob(objectKey) {
+    await del(objectKey, { token: getHostedEnvironment().blobReadWriteToken })
+  },
+  async upsertPlan(normalized, objectKey) {
     const rows = await getSql()`
       INSERT INTO plans (id, title, status, tags, created_at, updated_at, revision, object_key)
       VALUES (${normalized.id}, ${normalized.title}, ${normalized.status}, ${JSON.stringify(normalized.tags)}::jsonb, ${normalized.created}, ${normalized.updated}, ${normalized.revision}, ${objectKey})
@@ -86,13 +102,15 @@ export async function writePlan(input: HostedPlanInput): Promise<{ plan: HostedP
       WHERE plans.revision = ${normalized.expectedRevision}
       RETURNING id, title, status, tags, created_at, updated_at, revision, object_key
     ` as unknown as PlanRow[]
-    if (!rows[0]) return { plan: (await findPlan(normalized.id))!, conflict: true }
-    await getSql()`INSERT INTO plan_versions (plan_id, revision, object_key, created_at) VALUES (${normalized.id}, ${normalized.revision}, ${objectKey}, NOW()) ON CONFLICT (plan_id, revision) DO NOTHING`
-    return { plan: planFromRow(rows[0]), conflict: false }
-  } catch (error) {
-    await del(objectKey, { token: getHostedEnvironment().blobReadWriteToken }).catch(() => undefined)
-    throw error
-  }
+    return rows[0] ? planFromRow(rows[0]) : null
+  },
+  async recordVersion(id, revision, objectKey) {
+    await getSql()`INSERT INTO plan_versions (plan_id, revision, object_key, created_at) VALUES (${id}, ${revision}, ${objectKey}, NOW()) ON CONFLICT (plan_id, revision) DO NOTHING`
+  },
+}
+
+export async function writePlan(input: HostedPlanInput): Promise<{ plan: HostedPlan; conflict: boolean }> {
+  return writeValidatedPlan(planWriteStore, await validatePlanUpload(input))
 }
 
 export async function updatePlanStatus(id: string, status: PlanStatus): Promise<{ plan: HostedPlan | null; conflict: boolean }> {
