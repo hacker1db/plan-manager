@@ -42,6 +42,7 @@ var dashboardFS embed.FS
 
 const (
 	maxBodyBytes      = 64 * 1024
+	maxPlanBodyBytes  = 2 * 1024 * 1024
 	stabilityDelay    = 120 * time.Millisecond
 	watchDebounce     = 300 * time.Millisecond
 	reconcileInterval = 5 * time.Second
@@ -53,7 +54,7 @@ var (
 	validID          = regexp.MustCompile(`^[A-Za-z0-9_-]{4,128}$`)
 	revisionPattern  = regexp.MustCompile(`(?i)^[a-f0-9]{64}$`)
 	detailRoute      = regexp.MustCompile(`^/api/plans/([^/]+)$`)
-	actionRoute      = regexp.MustCompile(`^/api/plans/([^/]+)/(status|archive|copy-path|open-in-editor)$`)
+	actionRoute      = regexp.MustCompile(`^/api/plans/([^/]+)/(status|archive|copy-path|open-in-editor|body)$`)
 	taskRoute        = regexp.MustCompile(`^/api/plans/([^/]+)/tasks/(\d+)$`)
 	planPageRoute    = regexp.MustCompile(`^/plans/[^/]+$`)
 )
@@ -109,6 +110,7 @@ type strictPlan struct {
 	filePath   string
 	revision   string
 	isArchived bool
+	modified   time.Time
 }
 
 // Start listens on host:port and begins watching the plan home.
@@ -311,6 +313,7 @@ func (s *Server) readStrict(p string) (*strictPlan, error) {
 	return &strictPlan{
 		Meta: plans.NormalizeMeta(raw), body: body, content: content, filePath: p,
 		revision: plans.Revision(content), isArchived: filepath.Dir(p) == s.archive,
+		modified: info.ModTime(),
 	}, nil
 }
 
@@ -554,12 +557,16 @@ func (s *Server) authorized(w http.ResponseWriter, r *http.Request) bool {
 }
 
 func readBody(w http.ResponseWriter, r *http.Request, v any) bool {
-	data, err := io.ReadAll(io.LimitReader(r.Body, maxBodyBytes+1))
+	return readBodyLimit(w, r, v, maxBodyBytes)
+}
+
+func readBodyLimit(w http.ResponseWriter, r *http.Request, v any, limit int) bool {
+	data, err := io.ReadAll(io.LimitReader(r.Body, int64(limit)+1))
 	if err != nil {
 		writeError(w, 400, err.Error())
 		return false
 	}
-	if len(data) > maxBodyBytes {
+	if len(data) > limit {
 		writeError(w, 413, "request body too large")
 		return false
 	}
@@ -577,12 +584,37 @@ type summary struct {
 	Revision   string   `json:"revision"`
 	URL        string   `json:"url"`
 	IsArchived bool     `json:"isArchived"`
+	// Touched is the later of the frontmatter dates and the file's
+	// modification time, so edits made outside plan-manager count too.
+	Touched string `json:"touched"`
 }
 
 func planURL(id string) string { return "/plans/" + url.PathEscape(id) }
 
 func (p *strictPlan) summary() summary {
-	return summary{p.ID, p.Title, p.Status, p.Created, p.Updated, p.Tags, p.revision, planURL(p.ID), p.isArchived}
+	return summary{p.ID, p.Title, p.Status, p.Created, p.Updated, p.Tags, p.revision, planURL(p.ID), p.isArchived, p.touched().UTC().Format("2006-01-02T15:04:05.000Z")}
+}
+
+func (p *strictPlan) touched() time.Time {
+	latest := p.modified
+	for _, v := range []string{p.Updated, p.Created} {
+		if t, err := time.Parse(time.RFC3339Nano, v); err == nil && t.After(latest) {
+			latest = t
+		}
+	}
+	return latest
+}
+
+// sortByTouched orders plans most recently touched first; ties keep a stable
+// title order.
+func sortByTouched(list []*strictPlan) {
+	sort.SliceStable(list, func(i, j int) bool {
+		a, b := list[i].touched(), list[j].touched()
+		if !a.Equal(b) {
+			return a.After(b)
+		}
+		return strings.ToLower(list[i].Title) < strings.ToLower(list[j].Title)
+	})
 }
 
 func matches(p *strictPlan, q string) bool {
@@ -628,8 +660,12 @@ func (s *Server) handle(w http.ResponseWriter, r *http.Request) {
 	case get && path == "/_events":
 		s.serveEvents(w, r)
 		return
+	case get && path == "/api/t3/projects":
+		s.serveT3Projects(w, r)
+		return
 	case get && (path == "/api/plans" || path == "/api/search"):
 		list, bad := s.index()
+		sortByTouched(list)
 		q := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("q")))
 		out := []summary{}
 		for _, p := range list {
@@ -643,6 +679,12 @@ func (s *Server) handle(w http.ResponseWriter, r *http.Request) {
 
 	if m := detailRoute.FindStringSubmatch(path); get && m != nil {
 		s.serveDetail(w, unescape(m[1]), seq)
+		return
+	}
+	if m := t3Route.FindStringSubmatch(path); post && m != nil {
+		if s.authorized(w, r) {
+			s.startT3Thread(w, r, unescape(m[1]))
+		}
 		return
 	}
 	if m := taskRoute.FindStringSubmatch(path); post && m != nil {
@@ -659,6 +701,8 @@ func (s *Server) handle(w http.ResponseWriter, r *http.Request) {
 		switch m[2] {
 		case "status":
 			s.setStatus(w, r, id)
+		case "body":
+			s.saveBody(w, r, id)
 		case "archive":
 			s.archivePlan(w, id)
 		case "copy-path":
@@ -804,7 +848,7 @@ func (s *Server) serveDetail(w http.ResponseWriter, id string, seq int) {
 	var html any
 	renderState := "unavailable"
 	if s.pandocAvailable() {
-		if out, err := RenderMarkdown(p.body); err == nil {
+		if out, err := RenderMarkdown(plans.StripComments(p.body)); err == nil {
 			html, renderState = out, "rendered"
 		} else {
 			renderState = "failed"
@@ -813,7 +857,8 @@ func (s *Server) serveDetail(w http.ResponseWriter, id string, seq int) {
 	writeJSON(w, 200, map[string]any{
 		"id": p.ID, "title": p.Title, "status": p.Status, "created": p.Created, "updated": p.Updated,
 		"tags": p.Tags, "revision": p.revision, "body": p.body, "html": html, "renderState": renderState,
-		"filePath": p.filePath, "url": planURL(p.ID), "isArchived": p.isArchived, "sequence": seq,
+		"comments": plans.Comments(p.body),
+		"filePath": p.filePath, "source": p.Source, "url": planURL(p.ID), "isArchived": p.isArchived, "sequence": seq,
 	})
 }
 
@@ -851,6 +896,66 @@ func (s *Server) setStatus(w http.ResponseWriter, r *http.Request, id string) {
 	}
 	s.scheduleScan()
 	writeJSON(w, 200, map[string]any{"id": id, "status": updated.Status, "revision": updated.revision, "url": planURL(id)})
+}
+
+// saveBody replaces a plan's Markdown body from the dashboard editor. The
+// client's revision must match the file on disk so a concurrent edit is never
+// silently overwritten.
+func (s *Server) saveBody(w http.ResponseWriter, r *http.Request, id string) {
+	var body struct {
+		Body     *string `json:"body"`
+		Revision *string `json:"revision"`
+	}
+	if !readBodyLimit(w, r, &body, maxPlanBodyBytes) {
+		return
+	}
+	if body.Body == nil || body.Revision == nil || !revisionPattern.MatchString(*body.Revision) || strings.ContainsRune(*body.Body, 0) {
+		writeError(w, 400, "invalid plan update")
+		return
+	}
+	next := strings.ReplaceAll(*body.Body, "\r\n", "\n")
+	type result struct {
+		state string
+		plan  *strictPlan
+	}
+	res, err := lock.With(s.home, func() (result, error) {
+		p, err := s.findPlan(id)
+		if err != nil {
+			return result{}, err
+		}
+		if p == nil {
+			return result{state: "not-found"}, nil
+		}
+		if p.revision != *body.Revision {
+			return result{state: "stale"}, nil
+		}
+		if next == p.body {
+			return result{state: "unchanged", plan: p}, nil
+		}
+		np, err := s.write(p, p.Meta, next)
+		return result{state: "updated", plan: np}, err
+	})
+	if lockConflict(err) {
+		writeError(w, 409, err.Error())
+		return
+	}
+	if err != nil {
+		writeError(w, 500, "internal server error")
+		return
+	}
+	switch res.state {
+	case "not-found":
+		writeError(w, 404, "plan not found")
+		return
+	case "stale":
+		writeError(w, 409, "stale plan revision")
+		return
+	}
+	s.scheduleScan()
+	writeJSON(w, 200, map[string]any{
+		"id": id, "revision": res.plan.revision, "changed": res.state == "updated",
+		"comments": plans.Comments(res.plan.body), "url": planURL(id),
+	})
 }
 
 func (s *Server) toggleTask(w http.ResponseWriter, r *http.Request, id, indexText string) {
