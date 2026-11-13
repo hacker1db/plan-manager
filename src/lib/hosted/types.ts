@@ -30,3 +30,17 @@ export type CliToken = {
 }
 
 export type TokenRecord = CliToken & { secretHash: string }
+
+// Read-only v1 API response contract, shared by the hosted routes and the Expo mobile app.
+// Keep this file dependency-free: the mobile app compiles against it directly.
+export type HeadingAnchor = { id: string; path: string[]; title: string; fingerprint: string }
+
+export type PlanListResponse = { version: 1; plans: DashboardPlan[]; nextOffset?: number | null }
+
+export type PlanRenderResponse = {
+  version: 1
+  plan: DashboardPlan
+  html: string
+  headings: HeadingAnchor[]
+  statusUnavailableReason: string | null
+}

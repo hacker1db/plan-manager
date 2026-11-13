@@ -2,13 +2,13 @@ import assert from "node:assert/strict"
 import {after, beforeEach, test} from "node:test"
 import {closeViteServer, load} from "./vite-ssr"
 after(closeViteServer)
-const ENV = {WORKOS_CLIENT_ID: "client_web", WORKOS_API_KEY: "sk_test_fake", WORKOS_COOKIE_PASSWORD: "fixture-only-".repeat(4), WORKOS_REDIRECT_URI: "https://plans.example/callback", PLAN_MANAGER_OWNER_WORKOS_USER_IDS: "user_owner", DATABASE_URL: "postgres://fake", BLOB_READ_WRITE_TOKEN: "fake", PLAN_MANAGER_TOKEN_PEPPER: "pepper", PLAN_MANAGER_WORKOS_AUTHKIT_DOMAIN: "https://auth.example", PLAN_MANAGER_WORKOS_CLI_CLIENT_ID: "client_cli", PLAN_MANAGER_WORKOS_CLI_AUDIENCE: "plans"}
+const ENV = {WORKOS_CLIENT_ID: "client_web", WORKOS_API_KEY: "sk_test_fake", WORKOS_COOKIE_PASSWORD: "fixture-only-".repeat(4), WORKOS_REDIRECT_URI: "https://plans.example/callback", PLAN_MANAGER_OWNER_WORKOS_USER_IDS: "user_owner", DATABASE_URL: "postgres://fake", BLOB_READ_WRITE_TOKEN: "fake", PLAN_MANAGER_TOKEN_PEPPER: "pepper", PLAN_MANAGER_WORKOS_AUTHKIT_DOMAIN: "https://auth.example", PLAN_MANAGER_WORKOS_CLI_CLIENT_ID: "client_cli", PLAN_MANAGER_WORKOS_CLI_AUDIENCE: "plans", PLAN_MANAGER_WORKOS_NATIVE_CLIENT_ID: "client_native"}
 beforeEach(async () => { (await load("/src/lib/server/env.ts")).setEnvironmentSource(ENV) })
 test("WorkOS owner routes reject anonymous and non-owner sessions before storage", async () => {
   for (const path of ["/src/routes/api/plans/+server.ts", "/src/routes/api/v1/plans/+server.ts", "/src/routes/api/v1/plans/[id]/content/+server.ts"]) {
     const {GET} = await load(path)
     for (const [user, status] of [[null,401],[{id:"other"},403]] as const) {
-      const response = await GET({url:new URL("https://plans.example/api/v1/plans"),params:{id:"plan_1234"},locals:{auth:{user}}})
+      const response = await GET({request:new Request("https://plans.example/api/v1/plans"),url:new URL("https://plans.example/api/v1/plans"),params:{id:"plan_1234"},locals:{auth:{user}}})
       assert.equal(response.status,status)
     }
   }
@@ -51,7 +51,28 @@ test("native status keeps cookie CSRF and rejects unverified bearer credentials"
   const call = (headers: Record<string, string>) => POST({request: new Request("https://plans.example/api/v1/plans/plan_1234/status", {method: "POST", headers, body: "not json"}), params: {id: "plan_1234"}, locals: {auth: {user: {id: "user_owner"}}}})
   assert.equal((await call({"Content-Type": "application/json"})).status, 403)
   assert.equal((await call({"Content-Type": "application/json", Origin: "https://evil.example"})).status, 403)
-  assert.equal((await call({"Content-Type": "application/json", Authorization: "Bearer forged", Cookie: "session=valid"})).status, 403)
-  assert.equal((await call({"Content-Type": "application/json", Authorization: "Bearer forged"})).status, 403)
+  // A bad bearer is rejected outright and never falls back to the owner's cookie session.
+  assert.equal((await call({"Content-Type": "application/json", Authorization: "Bearer forged", Cookie: "session=valid"})).status, 401)
+  assert.equal((await call({"Content-Type": "application/json", Authorization: "Bearer forged"})).status, 401)
+  assert.equal((await call({"Content-Type": "application/json", Authorization: "Bearer pm_abcdefgh_" + "x".repeat(40)})).status, 401)
+  assert.equal((await call({"Content-Type": "application/json", Authorization: "Basic dXNlcjpwYXNz"})).status, 401)
   assert.equal((await call({"Content-Type": "application/json", Origin: "https://plans.example"})).status, 400)
+})
+
+test("v1 read routes reject bad bearers without consulting the cookie session", async () => {
+  for (const path of ["/src/routes/api/v1/plans/+server.ts", "/src/routes/api/v1/plans/[id]/+server.ts", "/src/routes/api/v1/plans/[id]/render/+server.ts", "/src/routes/api/v1/plans/[id]/content/+server.ts"]) {
+    const {GET} = await load(path)
+    const request = new Request("https://plans.example/api/v1/plans", {headers: {Authorization: "Bearer forged"}})
+    const response = await GET({request, url: new URL(request.url), params: {id: "plan_1234"}, locals: {auth: {user: {id: "user_owner"}}}})
+    assert.equal(response.status, 401, path)
+  }
+})
+test("native bearer access is disabled until a native client is configured", async () => {
+  const {requireOwnerRequest} = await load("/src/lib/server/auth.ts")
+  const {PLAN_MANAGER_WORKOS_NATIVE_CLIENT_ID: _unset, ...withoutNative} = ENV
+  ;(await load("/src/lib/server/env.ts")).setEnvironmentSource(withoutNative)
+  const access = await requireOwnerRequest(new Request("https://plans.example/x", {headers: {Authorization: "Bearer a.b.c"}}), {user: null})
+  assert.equal(access.denied.status, 503)
+  const cookie = await requireOwnerRequest(new Request("https://plans.example/x"), {user: {id: "user_owner"}})
+  assert.deepEqual(cookie, {denied: null, bearer: false})
 })

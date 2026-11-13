@@ -1,7 +1,8 @@
 import {createHash} from "node:crypto"
 import {renderPlanHtml} from "./plan-markdown.tsx"
 
-export type HeadingAnchor = {id: string; path: string[]; title: string; fingerprint: string}
+import type {HeadingAnchor} from "../hosted/types.ts"
+export type {HeadingAnchor}
 const hash = (text: string) => createHash("sha256").update(text).digest("hex")
 // Input is escaped static output from our non-executing Markdown/MDX renderer, never raw HTML.
 export function mobileDocument(markdown: string): {html: string; headings: HeadingAnchor[]} {

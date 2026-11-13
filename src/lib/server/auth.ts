@@ -5,6 +5,7 @@ import { findToken } from "./store"
 import { parseBearer, tokenAuthorizes } from "./token"
 import type { PlanScope } from "../hosted/types.ts"
 import { verifyWorkosCliToken } from "./workos-cli"
+import { verifyWorkosNativeToken } from "./workos-native"
 
 export { verifyWorkosCliToken } from "./workos-cli"
 
@@ -25,6 +26,31 @@ export function requireOwnerResponse(auth: AuthKitAuth): Response | null {
   } catch (error) {
     if (error instanceof HostedConfigurationError) return Response.json({ error: "Hosted service is unavailable" }, { status: 503 })
     throw error
+  }
+}
+
+export type OwnerAccess = { denied: Response; bearer?: never } | { denied: null; bearer: boolean }
+
+/**
+ * Owner read/write gate for the v1 API. A request carrying Authorization must present a native
+ * WorkOS access token; the browser cookie session is only consulted when no Authorization header
+ * is sent, so a bad bearer never silently falls back to ambient cookies. `bearer` lets callers skip
+ * CSRF origin checks that only matter for cookie-authenticated requests.
+ */
+export async function requireOwnerRequest(request: Request, auth: AuthKitAuth): Promise<OwnerAccess> {
+  const authorization = request.headers.get("authorization")
+  if (authorization === null) {
+    const denied = requireOwnerResponse(auth)
+    return denied ? { denied } : { denied: null, bearer: false }
+  }
+  const bearer = bearerValue(authorization)
+  // pm_ upload tokens and malformed headers never grant owner reads.
+  if (!bearer || bearer.startsWith("pm_")) return { denied: unauthorized() }
+  try {
+    return await verifyWorkosNativeToken(bearer) ? { denied: null, bearer: true } : { denied: forbidden() }
+  } catch (error) {
+    if (error instanceof HostedConfigurationError) return { denied: Response.json({ error: "Native sign-in is not configured" }, { status: 503 }) }
+    return { denied: unauthorized() }
   }
 }
 

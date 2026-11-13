@@ -2,6 +2,7 @@ import assert from "node:assert/strict"
 import { test } from "node:test"
 import { createLocalJWKSet, exportJWK, generateKeyPair, SignJWT } from "jose"
 import { verifyWorkosCliToken } from "../../src/lib/server/workos-cli"
+import { getNativeOAuthConfiguration, verifyWorkosNativeToken } from "../../src/lib/server/workos-native"
 import { HostedConfigurationError, getCliOAuthConfiguration, getHostedEnvironment, getOwnerWorkosUserIds, isAllowedOwner, ownerConfigured, workosCliClaimsCanAccess } from "../../src/lib/server/env"
 import { publicPlan } from "../../src/lib/server/api"
 import { requirePlanId, requireRevision, sanitizeMarkdown } from "../../src/lib/server/sanitize"
@@ -142,6 +143,54 @@ test("CLI JWT verification rejects tokens without exp or sub", async () => {
   await assert.rejects(verifyWorkosCliToken(noExp, cliEnvironment, getKey), /"exp" claim/)
   const noSub = await base().setExpirationTime("5m").sign(privateKey)
   await assert.rejects(verifyWorkosCliToken(noSub, cliEnvironment, getKey), /"sub" claim/)
+})
+
+const nativeEnvironment = {
+  PLAN_MANAGER_OWNER_WORKOS_USER_IDS: "user_owner",
+  PLAN_MANAGER_WORKOS_NATIVE_CLIENT_ID: "client_native",
+  PLAN_MANAGER_WORKOS_AUTHKIT_DOMAIN: "https://auth.example",
+  PLAN_MANAGER_WORKOS_CLI_CLIENT_ID: "client_cli",
+  PLAN_MANAGER_WORKOS_CLI_AUDIENCE: "plans",
+}
+const nativeIssuer = "https://api.workos.com/user_management/client_native"
+
+test("native WorkOS configuration is opt-in and derives the WorkOS issuer and JWKS", () => {
+  assert.throws(() => getNativeOAuthConfiguration({}), HostedConfigurationError)
+  assert.throws(() => getNativeOAuthConfiguration({ PLAN_MANAGER_WORKOS_NATIVE_CLIENT_ID: "not-a-client" }), HostedConfigurationError)
+  assert.deepEqual(getNativeOAuthConfiguration(nativeEnvironment), {
+    clientId: "client_native",
+    issuer: nativeIssuer,
+    jwksUrl: "https://api.workos.com/sso/jwks/client_native",
+  })
+  assert.equal(getNativeOAuthConfiguration({ ...nativeEnvironment, PLAN_MANAGER_WORKOS_NATIVE_ISSUER: "https://auth.example/" }).issuer, "https://auth.example")
+  assert.throws(() => getNativeOAuthConfiguration({ ...nativeEnvironment, PLAN_MANAGER_WORKOS_NATIVE_ISSUER: "http://auth.example" }), HostedConfigurationError)
+})
+
+test("native JWT verification accepts only owner tokens from the native issuer", async () => {
+  const { publicKey, privateKey } = await generateKeyPair("RS256")
+  const getKey = createLocalJWKSet({ keys: [{ ...await exportJWK(publicKey), kid: "test", alg: "RS256", use: "sig" }] })
+  const sign = (subject: string | null = "user_owner", issuer = nativeIssuer, expiry: string | null = "5m") => {
+    let jwt = new SignJWT({ sid: "session_1" }).setProtectedHeader({ alg: "RS256", kid: "test" }).setIssuer(issuer).setIssuedAt()
+    if (subject) jwt = jwt.setSubject(subject)
+    if (expiry) jwt = jwt.setExpirationTime(expiry)
+    return jwt.sign(privateKey)
+  }
+
+  assert.equal(await verifyWorkosNativeToken(await sign(), nativeEnvironment, getKey), "user_owner")
+  assert.equal(await verifyWorkosNativeToken(await sign("user_other"), nativeEnvironment, getKey), null)
+  // A CLI Connect token is issued by the AuthKit domain and must not work as a native token.
+  await assert.rejects(verifyWorkosNativeToken(await sign("user_owner", "https://auth.example"), nativeEnvironment, getKey), /"iss" claim/)
+  await assert.rejects(verifyWorkosNativeToken(await sign("user_owner", nativeIssuer, "-1m"), nativeEnvironment, getKey), /"exp" claim/)
+  await assert.rejects(verifyWorkosNativeToken(await sign("user_owner", nativeIssuer, null), nativeEnvironment, getKey), /"exp" claim/)
+  await assert.rejects(verifyWorkosNativeToken(await sign(null), nativeEnvironment, getKey), /"sub" claim/)
+
+  const other = await generateKeyPair("RS256")
+  const foreign = await new SignJWT({}).setProtectedHeader({ alg: "RS256", kid: "test" }).setSubject("user_owner").setIssuer(nativeIssuer).setExpirationTime("5m").sign(other.privateKey)
+  await assert.rejects(verifyWorkosNativeToken(foreign, nativeEnvironment, getKey))
+
+  const symmetric = new TextEncoder().encode("0123456789abcdef0123456789abcdef")
+  const hs256 = await new SignJWT({}).setProtectedHeader({ alg: "HS256", kid: "test" }).setSubject("user_owner").setIssuer(nativeIssuer).setExpirationTime("5m").sign(symmetric)
+  await assert.rejects(verifyWorkosNativeToken(hs256, nativeEnvironment, getKey))
 })
 
 test("plan IDs, revisions, and markdown reject malformed input", () => {

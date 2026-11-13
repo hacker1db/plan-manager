@@ -46,11 +46,17 @@ Create a public WorkOS Connect application named `Plan Manager CLI` with CLI Aut
 
 The CLI targets `https://planmanager.hacker1db.dev` by default; set `PLAN_MANAGER_URL` to use another deployment. `plan auth login` prints a user code and WorkOS verification URL, then stores the returned access and rotating refresh pair in macOS Keychain. `plan auth logout` removes the local credential; revoke the WorkOS grant separately when provider-side invalidation is required. Version-1 Clerk records require a new login.
 
+### Native app access
+
+The Expo mobile app (`mobile/`) signs in with the WorkOS public-client PKCE flow and calls the `/api/v1/plans` read routes (list, plan, `render`, `content`) and `POST /api/v1/plans/<id>/status` with `Authorization: Bearer <WorkOS access token>`. Native access is off until `PLAN_MANAGER_WORKOS_NATIVE_CLIENT_ID` is set; without it, bearer requests return 503. The API accepts a native token only after RS256 signature verification against `https://api.workos.com/sso/jwks/<native client>`, an exact issuer match (`https://api.workos.com/user_management/<native client>` by default, or `PLAN_MANAGER_WORKOS_NATIVE_ISSUER` when a custom authentication domain issues the tokens), required `exp`/`sub`, and owner-allowlist membership of `sub`. CLI Connect tokens have a different issuer and are rejected. A request that carries any `Authorization` header is judged only by that header and never falls back to the browser cookie. Bearer status changes skip the cookie CSRF origin check because browsers never attach bearer headers automatically; the expected-revision conflict check still applies.
+
+In WorkOS, register the app's reverse-domain private-scheme callback (for example `dev.hacker1db.planmanager://callback`) as a redirect URI for the native client. Set the same value as `PLAN_MANAGER_WORKOS_REDIRECT_URI` and the client ID as `PLAN_MANAGER_WORKOS_CLIENT_ID` in `mobile/.env.local` (see `mobile/README.md`). Neither is a secret.
+
 Existing `pm_...` Plan Manager tokens remain an explicit compatibility bridge. They are scoped, expiring, revocable, and hashed at rest, but they are bearer credentials with no WorkOS session or TOTP binding. `plan auth login --stdin` is only for those tokens. Do not mint one to bypass failed WorkOS login. Deployment Protection credentials are separate from Plan Manager credentials. See [`auth.md`](../auth.md) for the full threat boundary.
 
 ## Vercel environment configuration
 
-Set these exact variables independently for Development, Preview, and Production: `WORKOS_CLIENT_ID`, `WORKOS_API_KEY`, `WORKOS_COOKIE_PASSWORD`, `WORKOS_REDIRECT_URI`, `PLAN_MANAGER_OWNER_WORKOS_USER_IDS`, `PLAN_MANAGER_WORKOS_AUTHKIT_DOMAIN`, `PLAN_MANAGER_WORKOS_CLI_CLIENT_ID`, and `PLAN_MANAGER_WORKOS_CLI_AUDIENCE`. Preserve the existing `DATABASE_URL`, `BLOB_READ_WRITE_TOKEN`, and `PLAN_MANAGER_TOKEN_PEPPER`. Values in source and tickets must remain placeholders such as `<set-in-vercel>`.
+Set these exact variables independently for Development, Preview, and Production: `WORKOS_CLIENT_ID`, `WORKOS_API_KEY`, `WORKOS_COOKIE_PASSWORD`, `WORKOS_REDIRECT_URI`, `PLAN_MANAGER_OWNER_WORKOS_USER_IDS`, `PLAN_MANAGER_WORKOS_AUTHKIT_DOMAIN`, `PLAN_MANAGER_WORKOS_CLI_CLIENT_ID`, and `PLAN_MANAGER_WORKOS_CLI_AUDIENCE`. To enable the iOS app, also set `PLAN_MANAGER_WORKOS_NATIVE_CLIENT_ID` (and `PLAN_MANAGER_WORKOS_NATIVE_ISSUER` only if tokens are issued by a custom authentication domain). Preserve the existing `DATABASE_URL`, `BLOB_READ_WRITE_TOKEN`, and `PLAN_MANAGER_TOKEN_PEPPER`. Values in source and tickets must remain placeholders such as `<set-in-vercel>`.
 
 | Environment | Browser callback | Approved post-logout URL | CLI details |
 | --- | --- | --- | --- |
