@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "playwright": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@playwright/mcp@latest",
+        "--output-dir",
+        ".claude/playwright/output",
+        "--user-data-dir",
+        ".claude/playwright/profile"
+      ]
+    }
+  }
+}
