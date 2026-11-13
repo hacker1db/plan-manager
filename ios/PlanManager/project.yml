@@ -16,7 +16,7 @@ settings:
     INFOPLIST_KEY_PlanServiceURL: "$(PLAN_SERVICE_URL)"
     INFOPLIST_KEY_WorkOSClientID: "$(WORKOS_CLIENT_ID)"
     INFOPLIST_KEY_WorkOSRedirectURI: "$(WORKOS_REDIRECT_URI)"
-    PLAN_SERVICE_URL: ""
+    PLAN_SERVICE_URL: "https://planmanager.hacker1db.dev"
     WORKOS_CLIENT_ID: ""
     WORKOS_REDIRECT_URI: ""
 targets:

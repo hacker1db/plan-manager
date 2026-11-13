@@ -28,7 +28,7 @@
 /* Begin PBXFileReference section */
 		0732BB644F008D41EAFD3FEE /* PlanManagerTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = PlanManagerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		0C17056AA4D002BDC09DF629 /* Reader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Reader.swift; sourceTree = "<group>"; };
-		5D83C33337A209F918C7C289 /* PlanManager.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = PlanManager.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		5D83C33337A209F918C7C289 /* PlanManager.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PlanManager.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		87DDD125CEE6EE582CED400A /* PlanManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanManagerTests.swift; sourceTree = "<group>"; };
 		8FDC17D2ACE416C94EC98BDD /* PlanManagerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanManagerApp.swift; sourceTree = "<group>"; };
 		E2D10FC1C39D56C8DB78ED70 /* NativeSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeSession.swift; sourceTree = "<group>"; };
@@ -132,8 +132,6 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
-				TargetAttributes = {
-				};
 			};
 			buildConfigurationList = BDEA0097E4AA94B957B07B5F /* Build configuration list for PBXProject "PlanManager" */;
 			developmentRegion = en;
@@ -194,6 +192,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = DYY5WB84FX;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -263,7 +262,7 @@
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
-				PLAN_SERVICE_URL = "";
+				PLAN_SERVICE_URL = "https://planmanager.hacker1db.dev";
 				PRODUCT_BUNDLE_IDENTIFIER = dev.example.PlanManager;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -329,7 +328,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
-				PLAN_SERVICE_URL = "";
+				PLAN_SERVICE_URL = "https://planmanager.hacker1db.dev";
 				PRODUCT_BUNDLE_IDENTIFIER = dev.example.PlanManager;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -377,6 +376,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = DYY5WB84FX;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
