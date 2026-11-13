@@ -7,6 +7,38 @@ import { spawn, spawnSync } from 'node:child_process'
 
 const BIN = new URL('../../bin/plan', import.meta.url).pathname
 
+test('capture repairs legacy IDs in place and remains idempotent', async () => {
+  const f = await fixture()
+  try {
+    await mkdir(f.planHome, { recursive: true })
+    const source = join(f.planHome, 'Legacy Plan.md')
+    const body = '# Legacy Plan\n\nKeep [[Related Note]] and all content.\n'
+    await writeFile(source, `---\nid: Legacy Plan\naliases: [Old Plan]\n---\n${body}`)
+    const copy = join(f.planHome, 'older-import.md')
+    const copyRaw = `---\nid: imported_plan\ntitle: Imported\nsource: ${source}\n---\nDifferent content\n`
+    await writeFile(copy, copyRaw)
+    const first = planCmd(['capture', source, '--json'], f.env)
+    assert.equal(first.status, 0, first.stderr)
+    const repaired = JSON.parse(first.stdout)
+    assert.equal(repaired.path, source)
+    assert.equal(repaired.title, 'Legacy Plan')
+    assert.match(repaired.id, /^[A-Za-z0-9_-]{4,128}$/)
+    const raw = await readFile(source, 'utf8')
+    assert.ok(raw.endsWith(body))
+    assert.match(raw, /Old Plan/)
+    const second = planCmd(['capture', source, '--json'], f.env)
+    assert.equal(second.status, 0, second.stderr)
+    const unchanged = JSON.parse(second.stdout)
+    assert.equal(unchanged.id, repaired.id)
+    assert.equal(unchanged.capture.action, 'unchanged')
+    assert.equal(unchanged.revision, repaired.revision)
+    assert.equal(await readFile(copy, 'utf8'), copyRaw)
+    assert.deepEqual(await readdir(f.planHome), ['Legacy Plan.md', 'archive', 'older-import.md'])
+  } finally {
+    await rm(f.root, { recursive: true })
+  }
+})
+
 function planCmd(args, env = {}) {
   return spawnSync(process.execPath, [BIN, ...args], {
     encoding: 'utf8',

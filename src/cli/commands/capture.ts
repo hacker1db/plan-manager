@@ -75,6 +75,7 @@ function convertHtml(raw) {
 
 function comparableMeta(meta) {
   return JSON.stringify({
+    id: meta.id,
     title: meta.title,
     status: meta.status,
     tags: meta.tags,
@@ -140,7 +141,11 @@ export async function cmdCapture(args, opts) {
       const { meta: sourceMeta, body } = parseFrontmatter(converted)
       const canonicalBody = body.startsWith('\n') ? body : `\n${body}`
       const inferredTitle = isHtml ? htmlTitle(raw) : sourceMeta.title
-      const matches = await sourceMatches(sourcePath)
+      const candidates = await sourceMatches(sourcePath)
+      // A library file is its own capture target, even when an older import
+      // elsewhere records that file as its source. Do not overwrite that copy.
+      const inPlace = candidates.find(plan => normalize(resolve(plan.filePath)) === sourcePath)
+      const matches = inPlace ? [inPlace] : candidates
       if (matches.length > 1) {
         throw captureError(
           `Artifact source is already associated with multiple plans: ${matches.map(item => item.meta.id).join(', ')}`,
@@ -154,9 +159,10 @@ export async function cmdCapture(args, opts) {
         const existing = matches[0]
         const meta = normalizeMeta({
           ...existing.meta,
+          id: /^[A-Za-z0-9_-]{4,128}$/.test(existing.meta.id) ? existing.meta.id : generateId(),
           ...(sourceMeta.status ? { status: sourceMeta.status } : {}),
           ...(Array.isArray(sourceMeta.tags) ? { tags: sourceMeta.tags } : {}),
-          title: opts.title || inferredTitle || existing.meta.title,
+          title: opts.title || inferredTitle || (existing.meta.title === 'Untitled' ? artifactTitle(sourcePath) : existing.meta.title),
           source: sourcePath,
         })
         if (existing.body === canonicalBody && comparableMeta(existing.meta) === comparableMeta(meta)) {
