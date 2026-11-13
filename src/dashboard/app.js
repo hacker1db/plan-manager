@@ -175,8 +175,11 @@ function planCard(plan, index) {
   metadata.append(statusBadge(plan.status))
   const date = document.createElement('time')
   date.className = 'plan-date'
-  date.dateTime = plan.updated
-  date.textContent = new Date(plan.updated).toLocaleString()
+  // Local summaries carry `touched` (includes edits made outside plan-manager).
+  const touched = plan.touched ?? plan.updated
+  date.dateTime = touched
+  date.textContent = new Date(touched).toLocaleString()
+  date.title = 'Last touched'
   metadata.append(date)
   for (const tag of plan.tags) {
     const tagElement = document.createElement('span')

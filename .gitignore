@@ -14,10 +14,11 @@ src/lib/hosted/generated-dashboard.ts
 .vercel
 .temp.values.txt
 
-# Check in project skills only; the rest of .claude stays local
+# Check in project skills and shared settings; the rest of .claude stays local
 !.claude/
 .claude/*
 !.claude/skills/
+!.claude/settings.json
 .omc/
 
 /cli/bin/
