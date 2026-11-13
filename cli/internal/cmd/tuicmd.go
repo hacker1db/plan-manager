@@ -32,11 +32,11 @@ func newTUICmd(opts *options) *cobra.Command {
 			}
 			return tui.Run(tui.Backend{
 				SetStatus: func(id, status string) error {
-					_, _, err := SetStatus(id, status)
+					_, _, err := SetStatus(id, status, false)
 					return err
 				},
 				Archive: func(id string) error {
-					_, err := ArchivePlan(id)
+					_, err := ArchivePlan(id, false)
 					return err
 				},
 				Create:     func(title string) (*plans.Plan, error) { return CreatePlan(newMeta(title), "") },

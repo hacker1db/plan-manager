@@ -13,6 +13,7 @@ import (
 	"github.com/hacker1db/plan-manager/cli/internal/exitcode"
 	"github.com/hacker1db/plan-manager/cli/internal/lock"
 	"github.com/hacker1db/plan-manager/cli/internal/plans"
+	"github.com/hacker1db/plan-manager/cli/internal/usagecost"
 )
 
 // EditorCommand builds the command that opens path in $EDITOR, $VISUAL, or vi.
@@ -438,17 +439,35 @@ func conflictJSON(current, supplied string) string {
 	return strings.TrimSuffix(b.String(), "\n")
 }
 
-// SetStatus rewrites a plan's status under the write lock.
-func SetStatus(idOrSlug, status string) (previous string, p *plans.Plan, err error) {
+// SetStatus rewrites a plan's status under the write lock. Moving a plan into archived records
+// its linked sessions' token usage first, unless skipCost is set.
+func SetStatus(idOrSlug, status string, skipCost bool) (previous string, p *plans.Plan, err error) {
+	pre, err := resolveContained(idOrSlug)
+	if err != nil {
+		return "", nil, err
+	}
+	var snap *costSnapshot
+	if needsCost(pre, status, skipCost) {
+		if snap, err = collectCost(pre); err != nil {
+			return "", nil, withCostHint(err)
+		}
+	}
 	p, err = lock.With(plans.Home(), func() (*plans.Plan, error) {
-		cur, err := resolveContained(idOrSlug)
+		cur, err := resolveLocked(pre.Meta.ID)
 		if err != nil {
 			return nil, err
 		}
 		previous = cur.Meta.Status
 		meta := cur.Meta
 		meta.Status = status
-		if err := plans.Write(cur.FilePath, meta, cur.Body); err != nil {
+		body := cur.Body
+		if needsCost(cur, status, skipCost) {
+			// snap is nil if the plan looked archived at the first read; apply then refuses.
+			if body, err = snap.apply(cur, &meta); err != nil {
+				return nil, err
+			}
+		}
+		if err := plans.Write(cur.FilePath, meta, body); err != nil {
 			return nil, err
 		}
 		return plans.Read(cur.FilePath)
@@ -457,7 +476,8 @@ func SetStatus(idOrSlug, status string) (previous string, p *plans.Plan, err err
 }
 
 func newStatusCmd(opts *options) *cobra.Command {
-	return &cobra.Command{
+	var skipCost bool
+	c := &cobra.Command{
 		Use:   "status <id-or-slug> <active|completed|archived>",
 		Short: "Change a plan's status",
 		ValidArgsFunction: func(c *cobra.Command, args []string, toComplete string) ([]cobra.Completion, cobra.ShellCompDirective) {
@@ -487,7 +507,7 @@ func newStatusCmd(opts *options) *cobra.Command {
 			if err := plans.InitStorage(); err != nil {
 				return err
 			}
-			prev, p, err := SetStatus(id, status)
+			prev, p, err := SetStatus(id, status, skipCost)
 			if err != nil {
 				return err
 			}
@@ -498,6 +518,8 @@ func newStatusCmd(opts *options) *cobra.Command {
 			return nil
 		},
 	}
+	c.Flags().BoolVar(&skipCost, "skip-cost", false, "when archiving, do not record token usage of linked sessions")
+	return c
 }
 
 // ArchiveResult describes what ArchivePlan did.
@@ -506,47 +528,70 @@ type ArchiveResult struct {
 	Source          string
 	Destination     string
 	Plan            *plans.Plan
+	Cost            *usagecost.Summary // recorded usage, nil when nothing was linked or recorded
 }
 
-// ArchivePlan marks a plan archived and moves it into the archive directory.
-func ArchivePlan(idOrSlug string) (*ArchiveResult, error) {
+// ArchivePlan marks a plan archived and moves it into the archive directory. If the plan is not
+// archived yet and sessions are linked, their token usage is recorded first; a collection failure
+// stops the archive unless skipCost is set. A plan whose status is already archived is only
+// relocated, keeping the summary recorded when its status changed.
+func ArchivePlan(idOrSlug string, skipCost bool) (*ArchiveResult, error) {
 	if err := plans.InitStorage(); err != nil {
 		return nil, err
 	}
+	pre, err := resolveContained(idOrSlug)
+	if err != nil {
+		return nil, err
+	}
+	var snap *costSnapshot
+	if needsCost(pre, plans.StatusArchived, skipCost) {
+		if snap, err = collectCost(pre); err != nil {
+			return nil, withCostHint(err)
+		}
+	}
 	return lock.With(plans.Home(), func() (*ArchiveResult, error) {
-		p, err := resolveContained(idOrSlug)
+		p, err := resolveLocked(pre.Meta.ID)
 		if err != nil {
 			return nil, err
 		}
 		meta := p.Meta
 		meta.Status = plans.StatusArchived
+		body := p.Body
+		var recorded *usagecost.Summary
+		if needsCost(p, plans.StatusArchived, skipCost) {
+			if body, err = snap.apply(p, &meta); err != nil {
+				return nil, err
+			}
+			recorded = snap.summary
+		}
 		if plans.IsArchivedPath(p.FilePath) {
 			if p.Meta.Status != plans.StatusArchived {
-				if err := plans.Write(p.FilePath, meta, p.Body); err != nil {
+				if err := plans.Write(p.FilePath, meta, body); err != nil {
 					return nil, err
 				}
 			}
 			np, err := plans.Read(p.FilePath)
-			return &ArchiveResult{AlreadyArchived: true, Source: p.FilePath, Plan: np}, err
+			return &ArchiveResult{AlreadyArchived: true, Source: p.FilePath, Plan: np, Cost: recorded}, err
 		}
 		dest, err := plans.UniqueArchivePath(plans.Slug(p.FilePath))
 		if err != nil {
 			return nil, err
 		}
-		if err := plans.Write(p.FilePath, meta, p.Body); err != nil {
+		if err := plans.Write(p.FilePath, meta, body); err != nil {
 			return nil, err
 		}
 		if err := os.Rename(p.FilePath, dest); err != nil {
 			return nil, err
 		}
 		np, err := plans.Read(dest)
-		return &ArchiveResult{Source: p.FilePath, Destination: dest, Plan: np}, err
+		return &ArchiveResult{Source: p.FilePath, Destination: dest, Plan: np, Cost: recorded}, err
 	})
 }
 
 func newArchiveCmd(opts *options) *cobra.Command {
-	return &cobra.Command{
-		Use:               "archive <id-or-slug>",
+	var skipCost bool
+	c := &cobra.Command{
+		Use:               "archive <id-or-slug> [--skip-cost]",
 		Short:             "Archive a plan and move it to archive/",
 		ValidArgsFunction: completePlanArg(false),
 		RunE: func(c *cobra.Command, args []string) error {
@@ -554,7 +599,7 @@ func newArchiveCmd(opts *options) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			r, err := ArchivePlan(id)
+			r, err := ArchivePlan(id, skipCost)
 			if err != nil {
 				return err
 			}
@@ -566,7 +611,26 @@ func newArchiveCmd(opts *options) *cobra.Command {
 			} else {
 				fmt.Fprintf(c.OutOrStdout(), "Archived: %s -> %s\n", r.Source, r.Destination)
 			}
+			if !opts.json {
+				printRecordedCost(c, r.Cost)
+			}
 			return nil
 		},
 	}
+	c.Flags().BoolVar(&skipCost, "skip-cost", false, "do not record token usage of linked sessions")
+	return c
+}
+
+// printRecordedCost reports the usage summary an archive just wrote, if any.
+func printRecordedCost(c *cobra.Command, s *usagecost.Summary) {
+	if s == nil {
+		return
+	}
+	est := fmt.Sprintf("at least $%.2f (incomplete)", s.PricedCostUSD)
+	if s.EstimatedCostUSD != nil && s.Complete {
+		est = fmt.Sprintf("$%.2f", *s.EstimatedCostUSD)
+	} else if s.EstimatedCostUSD != nil {
+		est = fmt.Sprintf("$%.2f (incomplete)", *s.EstimatedCostUSD)
+	}
+	fmt.Fprintf(c.OutOrStdout(), "  usage: %d session(s), %d tokens, est. %s\n", len(s.Sessions), s.Totals.Total, est)
 }

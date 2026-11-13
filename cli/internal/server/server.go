@@ -33,6 +33,7 @@ import (
 	"github.com/hacker1db/plan-manager/cli/internal/exitcode"
 	"github.com/hacker1db/plan-manager/cli/internal/lock"
 	"github.com/hacker1db/plan-manager/cli/internal/plans"
+	"github.com/hacker1db/plan-manager/cli/internal/usagecost"
 )
 
 //go:generate sh -c "rm -rf dashboard && cp -R ../../../src/dashboard dashboard"
@@ -660,7 +661,7 @@ func (s *Server) handle(w http.ResponseWriter, r *http.Request) {
 		case "status":
 			s.setStatus(w, r, id)
 		case "archive":
-			s.archivePlan(w, id)
+			s.archivePlan(w, r, id)
 		case "copy-path":
 			if p, _ := s.findPlan(id); p != nil {
 				writeJSON(w, 200, map[string]any{"id": id, "path": p.filePath})
@@ -828,6 +829,14 @@ func (s *Server) setStatus(w http.ResponseWriter, r *http.Request, id string) {
 		writeError(w, 400, "invalid status")
 		return
 	}
+	var snap *costSnap
+	if body.Status == plans.StatusArchived {
+		var ok bool
+		if snap, ok = s.collectCost(w, r, id); !ok {
+			return
+		}
+	}
+	changed := false
 	updated, err := lock.With(s.home, func() (*strictPlan, error) {
 		p, err := s.findPlan(id)
 		if err != nil || p == nil {
@@ -835,8 +844,23 @@ func (s *Server) setStatus(w http.ResponseWriter, r *http.Request, id string) {
 		}
 		meta := p.Meta
 		meta.Status = body.Status
-		return s.write(p, meta, p.body)
+		text := p.body
+		if body.Status == plans.StatusArchived {
+			var state string
+			if text, state, err = applyCost(p, snap, &meta); err != nil {
+				return nil, err
+			}
+			if state == "changed" {
+				changed = true
+				return nil, nil
+			}
+		}
+		return s.write(p, meta, text)
 	})
+	if changed {
+		writeError(w, 409, "linked sessions changed while usage was being collected; try again")
+		return
+	}
 	if lockConflict(err) {
 		writeError(w, 409, err.Error())
 		return
@@ -915,7 +939,58 @@ func (s *Server) toggleTask(w http.ResponseWriter, r *http.Request, id, indexTex
 	writeJSON(w, 200, map[string]any{"id": id, "index": index, "checked": *body.Checked, "revision": res.plan.revision, "url": planURL(id)})
 }
 
-func (s *Server) archivePlan(w http.ResponseWriter, id string) {
+// costSnap is a usage summary collected outside the write lock for the plan state in linked.
+type costSnap struct {
+	linked plans.Meta
+	sum    *usagecost.Summary // nil when no sessions are linked
+}
+
+// collectCost runs ai-usage for the plan's linked sessions when archiving it is a real transition
+// (its status is not archived yet). It returns nil when no collection is needed and writes the
+// HTTP error itself when collection fails.
+func (s *Server) collectCost(w http.ResponseWriter, r *http.Request, id string) (*costSnap, bool) {
+	p, err := s.findPlan(id)
+	if err != nil || p == nil || p.Status == plans.StatusArchived {
+		return nil, true // the locked section reports not-found and duplicates
+	}
+	refs, err := usagecost.Sessions(p.Meta)
+	if err != nil {
+		writeError(w, 400, err.Error())
+		return nil, false
+	}
+	snap := &costSnap{linked: p.Meta}
+	if len(refs) > 0 {
+		if snap.sum, err = usagecost.Collect(r.Context(), refs); err != nil {
+			// Subprocess output stays in the server log; the browser gets a fixed message.
+			fmt.Fprintf(os.Stderr, "plan-manager: recording token usage for %s: %v\n", id, err)
+			writeError(w, 424, "could not record token usage; run \"plan usage cost "+id+"\" for details, or archive with \"plan archive --skip-cost\"")
+			return nil, false
+		}
+	}
+	return snap, true
+}
+
+// applyCost records snap into meta when moving p into archived and returns the new body, or
+// "changed" when the plan moved under the collection (status, identity, or linked sessions).
+func applyCost(p *strictPlan, snap *costSnap, meta *plans.Meta) (string, string, error) {
+	if p.Status == plans.StatusArchived {
+		return p.body, "", nil
+	}
+	if snap == nil || snap.linked.ID != p.ID || !usagecost.SameSessions(snap.linked, p.Meta) {
+		return "", "changed", nil
+	}
+	if snap.sum == nil {
+		return p.body, "", nil
+	}
+	body, err := usagecost.Apply(meta, p.body, snap.sum, time.Now())
+	return body, "", err
+}
+
+func (s *Server) archivePlan(w http.ResponseWriter, r *http.Request, id string) {
+	snap, ok := s.collectCost(w, r, id)
+	if !ok {
+		return
+	}
 	state, err := lock.With(s.home, func() (string, error) {
 		p, err := s.findPlan(id)
 		if err != nil {
@@ -924,7 +999,18 @@ func (s *Server) archivePlan(w http.ResponseWriter, id string) {
 		if p == nil {
 			return "not-found", nil
 		}
+		meta := p.Meta
+		meta.Status = plans.StatusArchived
+		body, state, err := applyCost(p, snap, &meta)
+		if err != nil || state != "" {
+			return state, err
+		}
 		if p.isArchived {
+			if p.Status != plans.StatusArchived {
+				if _, err := s.write(p, meta, body); err != nil {
+					return "", err
+				}
+			}
 			return "archived", nil
 		}
 		dest := filepath.Join(s.archive, filepath.Base(p.filePath))
@@ -933,9 +1019,7 @@ func (s *Server) archivePlan(w http.ResponseWriter, id string) {
 		} else if !errors.Is(err, fs.ErrNotExist) {
 			return "", err
 		}
-		meta := p.Meta
-		meta.Status = plans.StatusArchived
-		if _, err := s.write(p, meta, p.body); err != nil {
+		if _, err := s.write(p, meta, body); err != nil {
 			return "", err
 		}
 		return "archived", os.Rename(p.filePath, dest)
@@ -954,6 +1038,9 @@ func (s *Server) archivePlan(w http.ResponseWriter, id string) {
 		return
 	case "collision":
 		writeError(w, 409, "archive destination already exists")
+		return
+	case "changed":
+		writeError(w, 409, "linked sessions changed while usage was being collected; try again")
 		return
 	}
 	s.scheduleScan()

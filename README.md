@@ -145,6 +145,23 @@ Stage changes are guarded. Work starts only after the submitted plan is approved
 
 These commands append events to a validated `tracking` block in the frontmatter; nothing is rewritten in place. The first event on an existing plan records how it was migrated (an `active` plan starts in `planning`, a `completed` one keeps a legacy completion with unknown review history). Retrying a command with the same `--idempotency-key` changes nothing. A merged PR never moves the stage on its own, and `plan status` refuses to contradict the tracked stage. Each machine gets a random installation ID in `~/.config/plan-manager/installation.json`, so two machines with the same hostname stay distinct. Unknown frontmatter fields are preserved on every write, and a plan written by a newer tracking schema refuses writes from an older `plan` instead of losing data.
 
+### Token usage and estimated cost
+
+Link the AI sessions that worked on a plan, and the plan records what they cost when you archive it:
+
+```sh
+plan usage link migrate-auth-service 'claude-code|personal|638f2833-…' 019a2c4e-…   # tool|profile|id, or a bare id
+plan usage ls migrate-auth-service
+plan usage cost migrate-auth-service            # print the current total
+plan usage cost migrate-auth-service --save     # also write it into the plan
+plan archive migrate-auth-service               # records the summary, then archives
+plan archive migrate-auth-service --skip-cost   # archive without collecting a new summary
+```
+
+The numbers come from [`ai-usage plan-cost`](https://github.com/hacker1db/ai-usage), which reads the local Claude Code, Codex, and Copilot logs and prices them with your `~/.config/ai-usage/pricing.json`. `ai-usage` must be on `PATH`, or set `PLAN_AI_USAGE_BIN`. Moving a plan into `archived` (`plan archive`, `plan status … archived`, the TUI, or the dashboard) records the summary first; if the plan has linked sessions and collection fails, the change is refused (exit code 8, HTTP 424) instead of losing the record. A plan whose status is already `archived` is only moved into `archive/` and keeps the summary it has. Plans with no linked sessions archive as before. Linking or unlinking a session removes any saved summary, since it no longer describes the plan. The managed section is found only as one start and one end marker line outside code fences; anything else is refused for you to fix by hand, never overwritten.
+
+Linked sessions are stored in `usage_sessions`, the summary in `usage_cost` (tokens, `estimated_cost_usd`, and what is missing), and a readable table in a managed "Token usage and estimated cost" section at the end of the body that is replaced, not duplicated, on each save. Costs are estimates from local logs, not billed amounts. A summary with a missing session, an unpriced model, an unreadable log, or no pricing file is saved with `complete: false` and `estimated_cost_usd: null`; `priced_cost_usd` is then a lower bound. Claude Code subagents count toward their parent session; a delegated Codex or Copilot session must be linked on its own.
+
 ### Dashboard
 
 `plan serve` starts the dashboard as a background service. `plan serve --foreground` runs it in the current terminal instead. The server listens only on `127.0.0.1` and checks the `plans.localhost` host name.

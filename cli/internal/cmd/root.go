@@ -69,6 +69,7 @@ func NewRoot() *cobra.Command {
 		newNewCmd(opts), newCreateCmd(opts), newImportCmd(opts), newCaptureCmd(opts),
 		newListCmd(opts), newSearchCmd(opts), newShowCmd(opts), newEditCmd(opts),
 		newUpdateCmd(opts), newStatusCmd(opts), newArchiveCmd(opts),
+		newUsageCmd(opts),
 	} {
 		c.GroupID = "plans"
 		root.AddCommand(c)
