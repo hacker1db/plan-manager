@@ -1,0 +1,6 @@
+{
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Unexpected character `&lt;` (U+003C) before attribute value, expected a character that can start an attribute value, such as `&quot;`, `&#x27;`, or `{` (note: to use an element or fragment as a prop value in MDX, use `{&lt;element /&gt;}`)</span></div><pre class=\"markdown-fallback\">&lt;Callout title=&lt;b/&gt; /&gt;\n</pre>",
+  "problems": [
+    "MDX could not be parsed: Unexpected character `<` (U+003C) before attribute value, expected a character that can start an attribute value, such as `\"`, `'`, or `{` (note: to use an element or fragment as a prop value in MDX, use `{<element />}`)"
+  ]
+}

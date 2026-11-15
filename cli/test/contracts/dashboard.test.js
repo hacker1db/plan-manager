@@ -446,7 +446,7 @@ test('Pandoc rendering removes active HTML and unsafe URL schemes', async () => 
   assert.doesNotMatch(detail.html, /<script|javascript:|onerror=|<input|<form|<button/i)
 })
 
-test('MDX plans render blocks without Pandoc and keep task toggles', {skip: 'Not implemented by Go: retained migration gap'}, async () => {
+test('MDX plans render blocks without Pandoc and keep task toggles', async () => {
   const root = await fixture()
   const filePath = join(root, 'visual.mdx')
   await writeFile(filePath, markdown({

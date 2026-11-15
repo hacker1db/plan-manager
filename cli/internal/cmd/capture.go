@@ -177,11 +177,12 @@ func Capture(source, titleOverride string) (*captureEnvelope, error) {
 				strings.TrimSpace(separators.ReplaceAllString(strings.TrimSuffix(filepath.Base(src), filepath.Ext(src)), " ")), "Untitled")
 			meta.Updated = plans.Now()
 			meta.Source = src
+			dropForeignTracking(&meta)
 			slug, err := plans.UniqueSlug(plans.Slugify(meta.Title))
 			if err != nil {
 				return nil, err
 			}
-			fp := plans.PlanPath(slug)
+			fp := plans.PlanPath(slug, "md")
 			if err := plans.Write(fp, meta, body); err != nil {
 				return nil, err
 			}

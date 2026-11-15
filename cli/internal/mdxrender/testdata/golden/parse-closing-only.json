@@ -1,0 +1,6 @@
+{
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Unexpected closing slash `/` in tag, expected an open tag first</span></div><pre class=\"markdown-fallback\">&lt;/Callout&gt;\n</pre>",
+  "problems": [
+    "MDX could not be parsed: Unexpected closing slash `/` in tag, expected an open tag first"
+  ]
+}

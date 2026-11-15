@@ -1,0 +1,6 @@
+{
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Unexpected extra content in spread: only a single spread is supported</span></div><pre class=\"markdown-fallback\">&lt;Callout {...a, b} /&gt;\n</pre>",
+  "problems": [
+    "MDX could not be parsed: Unexpected extra content in spread: only a single spread is supported"
+  ]
+}

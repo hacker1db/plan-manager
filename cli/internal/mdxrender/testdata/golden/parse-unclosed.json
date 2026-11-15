@@ -1,0 +1,6 @@
+{
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Expected a closing tag for `&lt;b&gt;` (2:14-2:17) before the end of `paragraph`</span></div><pre class=\"markdown-fallback\">&lt;Callout&gt;\nnever closed &lt;b&gt;\n</pre>",
+  "problems": [
+    "MDX could not be parsed: Expected a closing tag for `<b>` (2:14-2:17) before the end of `paragraph`"
+  ]
+}

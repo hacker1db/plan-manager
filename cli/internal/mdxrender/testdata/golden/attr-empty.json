@@ -1,0 +1,6 @@
+{
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Unexpected empty expression</span></div><pre class=\"markdown-fallback\">&lt;Callout title={}&gt;\nx\n&lt;/Callout&gt;\n</pre>",
+  "problems": [
+    "MDX could not be parsed: Unexpected empty expression"
+  ]
+}

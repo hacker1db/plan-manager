@@ -1,0 +1,4 @@
+{
+  "html": "<section class=\"pm-block pm-questions\"><header class=\"pm-block-head\"><h4 class=\"pm-block-title\">Open questions</h4></header><ol><li><p class=\"pm-question\">Render Mermaid?</p><p class=\"pm-recommendation\"><span>Recommended</span> Defer; needs client JS</p><ul class=\"pm-options\"><li>Defer</li><li>Bundle mermaid</li></ul></li><li><p class=\"pm-question\">Second?</p></li></ol></section>\n<section class=\"pm-block pm-questions\"><header class=\"pm-block-head\"><h4 class=\"pm-block-title\">Custom</h4></header><ol></ol></section>",
+  "problems": []
+}

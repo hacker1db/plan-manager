@@ -7,10 +7,13 @@ import (
 	"encoding/hex"
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
 	"gopkg.in/yaml.v3"
+
+	"github.com/hacker1db/plan-manager/cli/internal/tracking"
 )
 
 const (
@@ -40,7 +43,18 @@ type Meta struct {
 	Updated string
 	Tags    []string
 	Source  string
-	Extra   []Field
+	// Format is "mdx" for MDX plans and empty for Markdown.
+	Format string
+	// SchemaVersion and Tracking are the tracking schema and the raw,
+	// unvalidated tracking block; see package tracking.
+	SchemaVersion *int
+	Tracking      *yaml.Node
+	Extra         []Field
+}
+
+// TrackingSource is the metadata package tracking reads.
+func (m Meta) TrackingSource() tracking.Source {
+	return tracking.Source{ID: m.ID, Status: m.Status, SchemaVersion: m.SchemaVersion, Raw: m.Tracking}
 }
 
 type Field struct {
@@ -129,7 +143,7 @@ func ParseFrontmatter(content string) (Raw, string) {
 	return raw, body
 }
 
-var knownKeys = map[string]bool{"id": true, "title": true, "status": true, "created": true, "updated": true, "tags": true, "source": true}
+var knownKeys = map[string]bool{"id": true, "title": true, "status": true, "created": true, "updated": true, "tags": true, "source": true, "format": true, "schemaVersion": true, "tracking": true}
 
 // NormalizeMeta fills defaults for missing or invalid frontmatter fields.
 func NormalizeMeta(raw Raw) Meta {
@@ -159,6 +173,18 @@ func NormalizeMeta(raw Raw) Meta {
 	}
 	if v, ok := raw.Str("source"); ok {
 		m.Source = v
+	}
+	if v, ok := raw.Str("format"); ok && v == "mdx" {
+		m.Format = "mdx"
+	}
+	if n := raw.node("schemaVersion"); n != nil && n.Kind == yaml.ScalarNode && n.Tag == "!!int" {
+		var v int
+		if n.Decode(&v) == nil {
+			m.SchemaVersion = &v
+		}
+	}
+	if n := raw.node("tracking"); n != nil && n.Tag != "!!null" {
+		m.Tracking = detach(n)
 	}
 	for _, k := range raw.keys {
 		if !knownKeys[k] {
@@ -210,6 +236,15 @@ func Render(meta Meta, body string) (string, error) {
 	add("tags", tags)
 	if meta.Source != "" {
 		add("source", strNode(meta.Source))
+	}
+	if meta.Format == "mdx" {
+		add("format", strNode("mdx"))
+	}
+	if meta.SchemaVersion != nil {
+		add("schemaVersion", &yaml.Node{Kind: yaml.ScalarNode, Tag: "!!int", Value: strconv.Itoa(*meta.SchemaVersion)})
+	}
+	if meta.Tracking != nil {
+		add("tracking", meta.Tracking)
 	}
 	for _, f := range meta.Extra {
 		add(f.Key, f.Value)

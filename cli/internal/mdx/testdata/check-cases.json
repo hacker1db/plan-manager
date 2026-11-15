@@ -1,0 +1,1113 @@
+[
+ {
+  "source": "<Callout tone=\"decision\" title=\"Store MDX next to Markdown\">\nPlans keep YAML frontmatter; only the body syntax changes.\n</Callout>",
+  "problems": []
+ },
+ {
+  "source": "<Callout tone=\"decision\" title=\"Store MDX next to Markdown\">\nPlans keep YAML frontmatter; only the body syntax changes.\n</Callout>",
+  "problems": []
+ },
+ {
+  "source": "<Columns>\n<Column label=\"Before\">\nPandoc renders Markdown only.\n</Column>\n<Column label=\"After\">\nMDX plans render typed blocks.\n</Column>\n</Columns>",
+  "problems": []
+ },
+ {
+  "source": "<Columns>\n<Column label=\"Before\">\nPandoc renders Markdown only.\n</Column>\n<Column label=\"After\">\nMDX plans render typed blocks.\n</Column>\n</Columns>",
+  "problems": []
+ },
+ {
+  "source": "<Columns>\n<Column label=\"After\">\nBody\n</Column>\n</Columns>",
+  "problems": []
+ },
+ {
+  "source": "<Column label=\"After\">\n...\n</Column>",
+  "problems": [
+   "<Column> is only valid inside <Columns>"
+  ]
+ },
+ {
+  "source": "<Tabs>\n<Tab label=\"storage.ts\">\n<Diff filename=\"src/lib/storage.ts\" before={\"a\"} after={\"b\"} />\n</Tab>\n</Tabs>",
+  "problems": []
+ },
+ {
+  "source": "<Tabs>\n<Tab label=\"storage.ts\">\n<Diff filename=\"src/lib/storage.ts\" before={\"a\"} after={\"b\"} />\n</Tab>\n</Tabs>",
+  "problems": []
+ },
+ {
+  "source": "<Tabs>\n<Tab label=\"render.tsx\">\nBody\n</Tab>\n</Tabs>",
+  "problems": []
+ },
+ {
+  "source": "<Tab label=\"render.tsx\">\n...\n</Tab>",
+  "problems": [
+   "<Tab> is only valid inside <Tabs>"
+  ]
+ },
+ {
+  "source": "<FileTree files={[{ path: \"src/lib/mdx/render.tsx\", change: \"added\", note: \"MDX renderer\", additions: 420 }, { path: \"src/lib/storage.ts\", change: \"modified\", additions: 12, deletions: 4 }]} />",
+  "problems": []
+ },
+ {
+  "source": "<FileTree files={[{ path: \"src/lib/mdx/render.tsx\", change: \"added\", note: \"MDX renderer\", additions: 420 }, { path: \"src/lib/storage.ts\", change: \"modified\", additions: 12, deletions: 4 }]} />",
+  "problems": []
+ },
+ {
+  "source": "<Diff filename=\"src/lib/storage.ts\" summary=\"List .mdx plans alongside .md\" before={\"if (!name.endsWith('.md')) continue\"} after={\"if (!isPlanFilename(name)) continue\"} annotations={[{ line: 1, note: \"Accepts .md and .mdx\" }]} />",
+  "problems": []
+ },
+ {
+  "source": "<Diff filename=\"src/lib/storage.ts\" summary=\"List .mdx plans alongside .md\" before={\"if (!name.endsWith('.md')) continue\"} after={\"if (!isPlanFilename(name)) continue\"} annotations={[{ line: 1, note: \"Accepts .md and .mdx\" }]} />",
+  "problems": []
+ },
+ {
+  "source": "<AnnotatedCode filename=\"src/lib/mdx/format.ts\" code={\"export function isMdx(meta) {\\n  return meta.format === 'mdx'\\n}\"} annotations={[{ line: 2, note: \"Frontmatter is the portable signal\" }]} />",
+  "problems": []
+ },
+ {
+  "source": "<AnnotatedCode filename=\"src/lib/mdx/format.ts\" code={\"export function isMdx(meta) {\\n  return meta.format === 'mdx'\\n}\"} annotations={[{ line: 2, note: \"Frontmatter is the portable signal\" }]} />",
+  "problems": []
+ },
+ {
+  "source": "<DataModel entities={[{ name: \"PlanMetadata\", fields: [{ name: \"id\", type: \"string\", key: \"pk\" }, { name: \"format\", type: \"\\\"md\\\" | \\\"mdx\\\"\", change: \"added\" }] }]} />",
+  "problems": []
+ },
+ {
+  "source": "<DataModel entities={[{ name: \"PlanMetadata\", fields: [{ name: \"id\", type: \"string\", key: \"pk\" }, { name: \"format\", type: \"\\\"md\\\" | \\\"mdx\\\"\", change: \"added\" }] }]} />",
+  "problems": []
+ },
+ {
+  "source": "<Endpoint method=\"GET\" path=\"/api/plans/:id\" responses={[{ status: 200, example: \"{\\\"format\\\":\\\"mdx\\\"}\" }]}>\nReturns rendered HTML for Markdown and MDX plans.\n</Endpoint>",
+  "problems": []
+ },
+ {
+  "source": "<Endpoint method=\"GET\" path=\"/api/plans/:id\" responses={[{ status: 200, example: \"{\\\"format\\\":\\\"mdx\\\"}\" }]}>\nReturns rendered HTML for Markdown and MDX plans.\n</Endpoint>",
+  "problems": []
+ },
+ {
+  "source": "<Flow steps={[{ label: \"plan.mdx\", detail: \"frontmatter + MDX\" }, { label: \"remark-mdx\", detail: \"parse, never eval\" }, { label: \"React\", detail: \"whitelisted blocks\" }]} />",
+  "problems": []
+ },
+ {
+  "source": "<Flow steps={[{ label: \"plan.mdx\", detail: \"frontmatter + MDX\" }, { label: \"remark-mdx\", detail: \"parse, never eval\" }, { label: \"React\", detail: \"whitelisted blocks\" }]} />",
+  "problems": []
+ },
+ {
+  "source": "<Layers layers={[{ label: \"Surfaces\", items: [\"Local dashboard\", \"Hosted app\"] }, { label: \"Renderer\", items: [{ label: \"src/lib/mdx\", change: \"added\" }] }]} />",
+  "problems": []
+ },
+ {
+  "source": "<Layers layers={[{ label: \"Surfaces\", items: [\"Local dashboard\", \"Hosted app\"] }, { label: \"Renderer\", items: [{ label: \"src/lib/mdx\", change: \"added\" }] }]} />",
+  "problems": []
+ },
+ {
+  "source": "<Questions items={[{ question: \"Render Mermaid?\", recommendation: \"Defer; needs client JS\", options: [\"Defer\", \"Bundle mermaid\"] }]} />",
+  "problems": []
+ },
+ {
+  "source": "<Questions items={[{ question: \"Render Mermaid?\", recommendation: \"Defer; needs client JS\", options: [\"Defer\", \"Bundle mermaid\"] }]} />",
+  "problems": []
+ },
+ {
+  "source": "import fs from \"node:fs\"\n\nexport const x = 1\n\n{globalThis.process.exit(1)}\n\n<Evil onClick={alert(1)} />\n\n<Diff filename=\"a\" before={secret} after=\"b\" />\n\n<Callout title={`hi ${name}`}>x</Callout>\n\n<FileTree files={[{ path: \"a\", __proto__: { polluted: true } }]} />\n\n<Callout {...props}>\nspread\n</Callout>\n\n<script>alert(1)</script>\n\n<a href=\"javascript:alert(1)\">x</a>\n\n[bad](javascript:alert(1))",
+  "problems": [
+   "import and export statements are not supported in plans",
+   "import and export statements are not supported in plans",
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span",
+   "Unknown block <Evil>",
+   "<Diff>: variables are not supported (found \"secret\")",
+   "<Callout> is a block: put its opening and closing tags on their own lines",
+   "<FileTree>: object key \"__proto__\" is not allowed",
+   "<Callout>: spread attributes are not supported"
+  ]
+ },
+ {
+  "source": "<Diff filename=\"a.ts\" />\n\n<FileTree files=\"nope\" />\n\n<Callout tone=\"loud\">\nx\n</Callout>\n\n<Tab label=\"orphan\">\nx\n</Tab>\n\n<Tabs>\nloose text\n</Tabs>\n\n<ApiEndpoint method=\"GET\" path=\"/\" />",
+  "problems": [
+   "<Diff>: missing required prop \"before\"; missing required prop \"after\"",
+   "<FileTree>: prop \"files\" must be array, got string",
+   "<Callout>: prop \"tone\" must be one of note, info, decision, warning, risk, success",
+   "<Tab> is only valid inside <Tabs>",
+   "<Tabs> may only contain <Tab> elements",
+   "Unknown block <ApiEndpoint> — did you mean <Endpoint>?"
+  ]
+ },
+ {
+  "source": "<Callout>\nnever closed <b>",
+  "problems": [
+   "MDX could not be parsed: Expected a closing tag for `<b>` (2:14-2:17) before the end of `paragraph`"
+  ]
+ },
+ {
+  "source": "<Callout>\n- [ ] inside\n</Callout>\n\n- [x] outside",
+  "problems": []
+ },
+ {
+  "source": "<Tabs>\n<Tab label=\"one.ts\">\nFirst\n</Tab>\n<Tab label=\"two.ts\">\nSecond\n</Tab>\n</Tabs>",
+  "problems": []
+ },
+ {
+  "source": "<Diff filename=\"x.ts\" mode=\"unified\" before={\"a\\nb\"} after={\"a\\nc\"} annotations={[{ line: 2, note: \"Renamed\" }]} />",
+  "problems": []
+ },
+ {
+  "source": "# Visual\n\n<Callout tone=\"risk\" title=\"Heads up\">\n- [ ] Inside callout\n</Callout>\n\n<FileTree files={[{ path: \"src/a.ts\", change: \"added\" }]} />\n\n- [x] Outside\n\n<Evil />",
+  "problems": [
+   "Unknown block <Evil>"
+  ]
+ },
+ {
+  "source": "<Diff filename=\"a\" />\n\n<Nope />\n",
+  "problems": [
+   "<Diff>: missing required prop \"before\"; missing required prop \"after\"",
+   "Unknown block <Nope>"
+  ]
+ },
+ {
+  "source": "Some text with a {curly} expression.",
+  "problems": [
+   "{expressions} are not supported in plans"
+  ]
+ },
+ {
+  "source": "Escaped \\{ braces \\} are fine and `code {x}` too.",
+  "problems": []
+ },
+ {
+  "source": "```js\nconst x = {a: 1}\n<Nope />\n```",
+  "problems": []
+ },
+ {
+  "source": "<Callout>\nText right before close\n</Callout>",
+  "problems": []
+ },
+ {
+  "source": "Paragraph text\n<Callout>\ninterrupting\n</Callout>",
+  "problems": []
+ },
+ {
+  "source": "<Callout title=\"x\">Inline content</Callout>",
+  "problems": [
+   "<Callout> is a block: put its opening and closing tags on their own lines"
+  ]
+ },
+ {
+  "source": "Inline <Callout>bad</Callout> in a paragraph.",
+  "problems": [
+   "<Callout> is a block: put its opening and closing tags on their own lines"
+  ]
+ },
+ {
+  "source": "<Columns>\n<Column label=\"A\">\na\n</Column>\n<Column label=\"B\">\nb\n</Column>\n</Columns>",
+  "problems": []
+ },
+ {
+  "source": "<Columns>\n<Tab label=\"x\">\na\n</Tab>\n</Columns>",
+  "problems": [
+   "<Columns> may only contain <Column> elements"
+  ]
+ },
+ {
+  "source": "<Questions items={[{ question: \"Q?\", recommendation: \"R\", options: [\"a\", \"b\"] }]} />",
+  "problems": []
+ },
+ {
+  "source": "<Flow direction=\"diagonal\" steps={[{ label: \"a\" }]} />",
+  "problems": [
+   "<Flow>: prop \"direction\" must be one of horizontal, vertical"
+  ]
+ },
+ {
+  "source": "<Flow steps={[]} extra=\"x\" />",
+  "problems": [
+   "<Flow>: unknown prop \"extra\""
+  ]
+ },
+ {
+  "source": "<Layers layers={[{ label: \"x\", items: [\"a\", { label: \"b\", change: \"added\" }] }]} title={42} />",
+  "problems": [
+   "<Layers>: prop \"title\" must be string, got number"
+  ]
+ },
+ {
+  "source": "<Endpoint method=\"get\" path=\"/x\" />",
+  "problems": [
+   "<Endpoint>: prop \"method\" must be one of GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS"
+  ]
+ },
+ {
+  "source": "<Endpoint method=\"GET\" path=\"/x\" deprecated>\nBody\n</Endpoint>",
+  "problems": []
+ },
+ {
+  "source": "<Endpoint method=\"GET\" path=\"/x\" deprecated=\"yes\" />",
+  "problems": [
+   "<Endpoint>: prop \"deprecated\" must be boolean, got string"
+  ]
+ },
+ {
+  "source": "<Diff filename=\"a\" before={1 + 2} after=\"b\" />",
+  "problems": [
+   "<Diff>: BinaryExpression is not a static value"
+  ]
+ },
+ {
+  "source": "<Diff filename=\"a\" before={foo.bar} after=\"b\" />",
+  "problems": [
+   "<Diff>: MemberExpression is not a static value"
+  ]
+ },
+ {
+  "source": "<Diff filename=\"a\" before={-1} after=\"b\" />",
+  "problems": [
+   "<Diff>: prop \"before\" must be string, got number"
+  ]
+ },
+ {
+  "source": "<Diff filename=\"a\" before={!true} after=\"b\" />",
+  "problems": [
+   "<Diff>: operator ! is not supported"
+  ]
+ },
+ {
+  "source": "<Diff filename=\"a\" before={/re/} after=\"b\" />",
+  "problems": [
+   "<Diff>: regular expressions and bigints are not supported"
+  ]
+ },
+ {
+  "source": "<Diff filename=\"a\" before={10n} after=\"b\" />",
+  "problems": [
+   "<Diff>: regular expressions and bigints are not supported"
+  ]
+ },
+ {
+  "source": "<Diff filename=\"a\" before={() => 1} after=\"b\" />",
+  "problems": [
+   "<Diff>: ArrowFunctionExpression is not a static value"
+  ]
+ },
+ {
+  "source": "<Diff filename=\"a\" before={undefined} after=\"b\" />",
+  "problems": [
+   "<Diff>: missing required prop \"before\""
+  ]
+ },
+ {
+  "source": "<Diff filename=\"a\" before={null} after=\"b\" />",
+  "problems": [
+   "<Diff>: prop \"before\" must be string, got null"
+  ]
+ },
+ {
+  "source": "<Diff filename=\"a\" before={'single'} after={`tpl`} />",
+  "problems": []
+ },
+ {
+  "source": "<Diff filename=\"a\" before={[1,,2]} after=\"b\" />",
+  "problems": [
+   "<Diff>: arrays cannot contain holes or spreads"
+  ]
+ },
+ {
+  "source": "<Diff filename=\"a\" before=\"x\" after=\"b\" annotations={[...xs]} />",
+  "problems": [
+   "<Diff>: arrays cannot contain holes or spreads"
+  ]
+ },
+ {
+  "source": "<Diff filename=\"a\" before=\"x\" after=\"b\" annotations={[{ [k]: 1 }]} />",
+  "problems": [
+   "<Diff>: objects may only contain plain key: value pairs"
+  ]
+ },
+ {
+  "source": "<Diff filename=\"a\" before=\"x\" after=\"b\" annotations={[{ a }]} />",
+  "problems": [
+   "<Diff>: variables are not supported (found \"a\")"
+  ]
+ },
+ {
+  "source": "<Diff filename=\"a\" before=\"x\" after=\"b\" annotations={[{ m() {} }]} />",
+  "problems": [
+   "<Diff>: objects may only contain plain key: value pairs"
+  ]
+ },
+ {
+  "source": "<Diff filename=\"a\" before=\"x\" after=\"b\" annotations={[{ \"constructor\": 1 }]} />",
+  "problems": [
+   "<Diff>: object key \"constructor\" is not allowed"
+  ]
+ },
+ {
+  "source": "<Diff filename=\"a\" before=\"x\" after=\"b\" constructor=\"x\" />",
+  "problems": [
+   "<Diff>: prop \"constructor\" is not allowed"
+  ]
+ },
+ {
+  "source": "<Diff filename=\"a\" before=\"x\" after=\"b\" id=\"anchor\" />",
+  "problems": []
+ },
+ {
+  "source": "<Diff filename=\"a\" before=\"x\" after=\"b\" mode={\"split\"} summary={'s'} language=\"ts\" />",
+  "problems": []
+ },
+ {
+  "source": "<Diff filename=\"a\" before=\"x\" after=\"b\" mode={1} />",
+  "problems": [
+   "<Diff>: prop \"mode\" must be string, got number"
+  ]
+ },
+ {
+  "source": "<Diff filename=\"a\" before={} after=\"b\" />",
+  "problems": [
+   "MDX could not be parsed: Unexpected empty expression"
+  ]
+ },
+ {
+  "source": "<Diff filename=\"a\" before={1; 2} after=\"b\" />",
+  "problems": [
+   "MDX could not be parsed: Could not parse expression with acorn"
+  ]
+ },
+ {
+  "source": "<Diff filename=\"a\" before={a ? b : c} after=\"b\" />",
+  "problems": [
+   "<Diff>: ConditionalExpression is not a static value"
+  ]
+ },
+ {
+  "source": "<Diff filename=\"a\" before={(1)} after=\"b\" />",
+  "problems": [
+   "<Diff>: prop \"before\" must be string, got number"
+  ]
+ },
+ {
+  "source": "<Diff filename=\"a\" before={-(1)} after=\"b\" />",
+  "problems": [
+   "<Diff>: prop \"before\" must be string, got number"
+  ]
+ },
+ {
+  "source": "<Diff filename=\"a\" before={new Date()} after=\"b\" />",
+  "problems": [
+   "<Diff>: NewExpression is not a static value"
+  ]
+ },
+ {
+  "source": "<Diff filename=\"a\" before={x = 1} after=\"b\" />",
+  "problems": [
+   "<Diff>: AssignmentExpression is not a static value"
+  ]
+ },
+ {
+  "source": "<Diff filename=\"a\" before={a, b} after=\"b\" />",
+  "problems": [
+   "<Diff>: SequenceExpression is not a static value"
+  ]
+ },
+ {
+  "source": "<Diff filename=\"a\" before={typeof x} after=\"b\" />",
+  "problems": [
+   "<Diff>: operator typeof is not supported"
+  ]
+ },
+ {
+  "source": "<Diff filename=\"a\" before={fn`x`} after=\"b\" />",
+  "problems": [
+   "<Diff>: TaggedTemplateExpression is not a static value"
+  ]
+ },
+ {
+  "source": "<Diff filename=\"a\" before={\"a\" /* c */} after=\"b\" />",
+  "problems": []
+ },
+ {
+  "source": "<FileTree\n  title=\"Files\"\n  files={[\n    { path: \"a/b.ts\", change: \"added\", additions: 10 },\n    { path: \"c.ts\", change: \"modified\", deletions: 2 },\n  ]}\n/>",
+  "problems": []
+ },
+ {
+  "source": "<Tabs>\n<Tab label=\"a\">\n<Diff filename=\"a\" before=\"x\" after=\"y\" />\n</Tab>\n<Tab label=\"b\">\n<Nope />\n</Tab>\n</Tabs>",
+  "problems": [
+   "Unknown block <Nope>"
+  ]
+ },
+ {
+  "source": "<Tabs title=\"t\">\n\n<Tab label=\"a\">\nx\n</Tab>\n\n</Tabs>",
+  "problems": []
+ },
+ {
+  "source": "<Tabs>\n<Tab label=\"a\">\nx\n</Tab>\n<Tab>\ny\n</Tab>\n</Tabs>",
+  "problems": [
+   "<Tab>: missing required prop \"label\""
+  ]
+ },
+ {
+  "source": "<Callout tone=\"warning\">\n<Nope />\n{x}\n</Callout>",
+  "problems": [
+   "Unknown block <Nope>",
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "source": "<Callout tone=\"bogus\">\n<Nope />\n</Callout>",
+  "problems": [
+   "<Callout>: prop \"tone\" must be one of note, info, decision, warning, risk, success"
+  ]
+ },
+ {
+  "source": "<FileTree files={[]}>\n<Nope />\n</FileTree>",
+  "problems": []
+ },
+ {
+  "source": "<details>\n<summary>More</summary>\n<Nope />\n</details>",
+  "problems": [
+   "Unknown block <Nope>"
+  ]
+ },
+ {
+  "source": "<>\n<Callout>\nx\n</Callout>\n</>",
+  "problems": []
+ },
+ {
+  "source": "a < b",
+  "problems": []
+ },
+ {
+  "source": "Visit <https://example.com>",
+  "problems": [
+   "MDX could not be parsed: Unexpected character `/` (U+002F) before local name, expected a character that can start a name, such as a letter, `$`, or `_` (note: to create a link in MDX, use `[text](url)`)"
+  ]
+ },
+ {
+  "source": "<!-- comment -->",
+  "problems": [
+   "MDX could not be parsed: Unexpected character `!` (U+0021) before name, expected a character that can start a name, such as a letter, `$`, or `_` (note: to create a comment in MDX, use `{/* text */}`)"
+  ]
+ },
+ {
+  "source": "<Callout>\nx",
+  "problems": [
+   "MDX could not be parsed: Expected a closing tag for `<Callout>` (1:1-1:10)"
+  ]
+ },
+ {
+  "source": "</Callout>",
+  "problems": [
+   "MDX could not be parsed: Unexpected closing slash `/` in tag, expected an open tag first"
+  ]
+ },
+ {
+  "source": "<Callout>\nx\n</Columns>",
+  "problems": [
+   "MDX could not be parsed: Unexpected closing tag `</Columns>`, expected corresponding closing tag for `<Callout>` (1:1-1:10)"
+  ]
+ },
+ {
+  "source": "# Heading with {expr}",
+  "problems": [
+   "{expressions} are not supported in plans"
+  ]
+ },
+ {
+  "source": "- item {x}\n- <Callout>inline</Callout>",
+  "problems": [
+   "{expressions} are not supported in plans",
+   "<Callout> is a block: put its opening and closing tags on their own lines"
+  ]
+ },
+ {
+  "source": "> quote <Nope />",
+  "problems": [
+   "Unknown block <Nope>"
+  ]
+ },
+ {
+  "source": "Line one\nLine two {x}",
+  "problems": [
+   "{expressions} are not supported in plans"
+  ]
+ },
+ {
+  "source": "{x}",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "source": "  {x}",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "source": "text {x} more\n{y}",
+  "problems": [
+   "{expressions} are not supported in plans",
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "source": "<Callout title=\"a &amp; b\">\nx\n</Callout>",
+  "problems": []
+ },
+ {
+  "source": "<Callout title='single'>\nx\n</Callout>",
+  "problems": []
+ },
+ {
+  "source": "<callout>\nlower\n</callout>",
+  "problems": []
+ },
+ {
+  "source": "<Foo.Bar />",
+  "problems": [
+   "Unknown block <Foo.Bar>"
+  ]
+ },
+ {
+  "source": "<Diff filename=\"a\" before=\"x\" after=\"b\" annotations={[{ line: 1, note: \"a\" }, { line: 2, note: \"b\", side: \"before\" }]} />",
+  "problems": []
+ },
+ {
+  "source": "export default function X() {}",
+  "problems": [
+   "import and export statements are not supported in plans"
+  ]
+ },
+ {
+  "source": "Not an import statement\nimport later in paragraph",
+  "problems": []
+ },
+ {
+  "source": "<Callout tone=\"note\" tone=\"risk\">\nx\n</Callout>",
+  "problems": []
+ },
+ {
+  "source": "<Callout>x</Callout>",
+  "problems": [
+   "<Callout> is a block: put its opening and closing tags on their own lines"
+  ]
+ },
+ {
+  "source": "<Callout><Nope /></Callout>",
+  "problems": [
+   "Unknown block <Nope>"
+  ]
+ },
+ {
+  "source": "Text <b>bold <Nope /> </b> end",
+  "problems": [
+   "Unknown block <Nope>"
+  ]
+ },
+ {
+  "source": "<Diff filename=\"a\" before=\"x\" after=\"b\" annotations={[{ line: 1e3, note: 'x' }]} />",
+  "problems": []
+ },
+ {
+  "source": "<Diff filename=\"a\" before=\"x\" after=\"b\" annotations={[{ line: 0x10, note: 'x' }]} />",
+  "problems": []
+ },
+ {
+  "source": "<Diff filename=\"a\" before={\"A\\n\"} after=\"b\" />",
+  "problems": []
+ },
+ {
+  "source": "<DataModel entities={[{ name: \"A\", fields: [{ name: \"id\", type: \"string\", key: \"pk\" }] }]} relations={[{ from: \"A\", to: \"B\" }]} />",
+  "problems": []
+ },
+ {
+  "source": "<Endpoint method=\"POST\" path=\"/a\" request={{ contentType: \"application/json\", example: \"{}\" }} responses={[{ status: 201 }]} params={[{ name: \"x\", in: \"query\", type: \"string\" }]}>\nCreates.\n</Endpoint>",
+  "problems": []
+ },
+ {
+  "source": "<Endpoint method=\"POST\" path=\"/a\" request={[]} />",
+  "problems": [
+   "<Endpoint>: prop \"request\" must be object, got array"
+  ]
+ },
+ {
+  "source": "<AnnotatedCode filename=\"a.ts\" code={\"x\"} annotations={[{ line: 1, note: \"n\" }]} />",
+  "problems": []
+ },
+ {
+  "source": "a <b",
+  "problems": [
+   "MDX could not be parsed: Unexpected end of file in name, expected a name character such as letters, digits, `$`, or `_`; whitespace before attributes; or the end of the tag"
+  ]
+ },
+ {
+  "source": "x <3",
+  "problems": [
+   "MDX could not be parsed: Unexpected character `3` (U+0033) before name, expected a character that can start a name, such as a letter, `$`, or `_`"
+  ]
+ },
+ {
+  "source": "a<b",
+  "problems": [
+   "MDX could not be parsed: Unexpected end of file in name, expected a name character such as letters, digits, `$`, or `_`; whitespace before attributes; or the end of the tag"
+  ]
+ },
+ {
+  "source": "a <b> c",
+  "problems": [
+   "MDX could not be parsed: Expected a closing tag for `<b>` (1:3-1:6) before the end of `paragraph`"
+  ]
+ },
+ {
+  "source": "a <!-- c --> b",
+  "problems": [
+   "MDX could not be parsed: Unexpected character `!` (U+0021) before name, expected a character that can start a name, such as a letter, `$`, or `_` (note: to create a comment in MDX, use `{/* text */}`)"
+  ]
+ },
+ {
+  "source": "x\n<",
+  "problems": [
+   "MDX could not be parsed: Unexpected end of file before name, expected a character that can start a name, such as a letter, `$`, or `_`"
+  ]
+ },
+ {
+  "source": "<Diff filename=\"a\" before={/* c */} after=\"b\" />",
+  "problems": [
+   "MDX could not be parsed: Unexpected empty expression"
+  ]
+ },
+ {
+  "source": "{}",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "source": "{/* c */}",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "source": "text\n  {y}  ",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "source": "{x} trailing",
+  "problems": [
+   "{expressions} are not supported in plans"
+  ]
+ },
+ {
+  "source": "<Callout>\n{x}\n</Callout>",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "source": "- {x}",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "source": "a\n\n   {x}\n\nb",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "source": "<Callout> \nx\n</Callout>",
+  "problems": []
+ },
+ {
+  "source": "<Tabs>\n{x}\n</Tabs>",
+  "problems": [
+   "<Tabs> may only contain <Tab> elements"
+  ]
+ },
+ {
+  "source": "text\n{y}\nmore",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "source": "- <Nope />",
+  "problems": [
+   "Unknown block <Nope>"
+  ]
+ },
+ {
+  "source": "- <Callout>\n  x\n  </Callout>",
+  "problems": []
+ },
+ {
+  "source": "1. <Nope />",
+  "problems": [
+   "Unknown block <Nope>"
+  ]
+ },
+ {
+  "source": "- item\n  <Nope />",
+  "problems": [
+   "Unknown block <Nope>"
+  ]
+ },
+ {
+  "source": "- item\n<Nope />",
+  "problems": [
+   "Unknown block <Nope>"
+  ]
+ },
+ {
+  "source": "* {x}",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "source": "> {x}",
+  "problems": [
+   "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+ },
+ {
+  "source": "- a {x}",
+  "problems": [
+   "{expressions} are not supported in plans"
+  ]
+ },
+ {
+  "source": "    <Nope />",
+  "problems": [
+   "Unknown block <Nope>"
+  ]
+ },
+ {
+  "source": "\t<Nope />",
+  "problems": [
+   "Unknown block <Nope>"
+  ]
+ },
+ {
+  "source": "- <Callout>x</Callout>",
+  "problems": [
+   "<Callout> is a block: put its opening and closing tags on their own lines"
+  ]
+ },
+ {
+  "source": "<Callout>\n- <Tab label=\"a\">\n  x\n  </Tab>\n</Callout>",
+  "problems": [
+   "<Tab> is only valid inside <Tabs>"
+  ]
+ },
+ {
+  "source": "a\n- <Nope />",
+  "problems": [
+   "Unknown block <Nope>"
+  ]
+ },
+ {
+  "source": "<Callout>\n\n```\n</Callout>\n```\n\n</Callout>",
+  "problems": []
+ },
+ {
+  "source": "<Callout>\n~~~\n{x} <Nope />\n~~~\n</Callout>",
+  "problems": []
+ },
+ {
+  "source": "Inline `<Nope />` code and ``a ` b {x}`` spans.",
+  "problems": []
+ },
+ {
+  "source": "Unclosed `code {x}",
+  "problems": [
+   "{expressions} are not supported in plans"
+  ]
+ },
+ {
+  "source": "<Callout title=\"multi\nline\">\nx\n</Callout>",
+  "problems": []
+ },
+ {
+  "source": "<Callout\n  tone=\"risk\"\n  title=\"Spread over lines\"\n>\nx\n</Callout>",
+  "problems": []
+ },
+ {
+  "source": "<FileTree files={[\n  { path: \"a\" },\n\n  { path: \"b\" }\n]} />",
+  "problems": []
+ },
+ {
+  "source": "<Tabs>\n<Tab label=\"a\">x</Tab>\n</Tabs>",
+  "problems": [
+   "<Tabs> may only contain <Tab> elements"
+  ]
+ },
+ {
+  "source": "<Tabs><Tab label=\"a\">\nx\n</Tab></Tabs>",
+  "problems": []
+ },
+ {
+  "source": "<Columns>\n\n<Column label=\"A\">\n\n- a\n\n</Column>\n\n</Columns>",
+  "problems": []
+ },
+ {
+  "source": "<Questions items={[{ question: \"a\", options: [\"x\"] }]} title=\"Open questions\" />\n\n## After",
+  "problems": []
+ },
+ {
+  "source": "<Callout>\n## Heading inside\ntext\n</Callout>",
+  "problems": []
+ },
+ {
+  "source": "| a | b |\n| - | - |\n| {x} | <Nope /> |",
+  "problems": [
+   "{expressions} are not supported in plans",
+   "Unknown block <Nope>"
+  ]
+ },
+ {
+  "source": "Hard break  \n<Callout>\nx\n</Callout>",
+  "problems": []
+ },
+ {
+  "source": "<Diff filename=\"a\" before={\"it's\"} after={'say \"hi\"'} />",
+  "problems": []
+ },
+ {
+  "source": "<Diff filename=\"a\" before={`multi\nline`} after=\"b\" />",
+  "problems": []
+ },
+ {
+  "source": "<Diff filename=\"a\" before={\"a\" + \"b\"} after=\"b\" />",
+  "problems": [
+   "<Diff>: BinaryExpression is not a static value"
+  ]
+ },
+ {
+  "source": "<Diff filename=\"a\" before={[\"a\"]} after=\"b\" />",
+  "problems": [
+   "<Diff>: prop \"before\" must be string, got array"
+  ]
+ },
+ {
+  "source": "<Diff filename=\"a\" before={{}} after=\"b\" />",
+  "problems": [
+   "<Diff>: prop \"before\" must be string, got object"
+  ]
+ },
+ {
+  "source": "<Diff filename=\"a\" before={true} after=\"b\" />",
+  "problems": [
+   "<Diff>: prop \"before\" must be string, got boolean"
+  ]
+ },
+ {
+  "source": "<Diff filename=\"a\" before=\"x\" after=\"b\" mode=\"split\" annotations={[{ line: -1, note: \"x\" }]} />",
+  "problems": []
+ },
+ {
+  "source": "<Diff filename=\"a\" before=\"x\" after=\"b\" annotations={[{ \"a-b\": 1, 2: \"two\", 'q': 3 }]} />",
+  "problems": []
+ },
+ {
+  "source": "<Nope>\n<Callout>\nx\n</Callout>\n</Nope>",
+  "problems": [
+   "Unknown block <Nope>"
+  ]
+ },
+ {
+  "source": "<Callout>\n<Nope>\nx\n</Nope>\n</Callout>",
+  "problems": [
+   "Unknown block <Nope>"
+  ]
+ },
+ {
+  "source": "<Callout>\n<callout>\nx\n</callout>\n</Callout>",
+  "problems": []
+ },
+ {
+  "source": "<div>\n<Tab label=\"x\">\ny\n</Tab>\n</div>",
+  "problems": [
+   "<Tab> is only valid inside <Tabs>"
+  ]
+ },
+ {
+  "source": "<Tabs>\n<div>\nx\n</div>\n</Tabs>",
+  "problems": [
+   "<Tabs> may only contain <Tab> elements"
+  ]
+ },
+ {
+  "source": "<Tabs>\n<Tab label=\"a\" />\n</Tabs>",
+  "problems": []
+ },
+ {
+  "source": "<Tabs>\n</Tabs>",
+  "problems": []
+ },
+ {
+  "source": "Line with \\<Nope /> escaped",
+  "problems": []
+ },
+ {
+  "source": "Email me at <me@example.com>",
+  "problems": [
+   "MDX could not be parsed: Unexpected character `@` (U+0040) in name, expected a name character such as letters, digits, `$`, or `_`; whitespace before attributes; or the end of the tag (note: to create a link in MDX, use `[text](url)`)"
+  ]
+ },
+ {
+  "source": "5 > 3 and 2 < 4",
+  "problems": []
+ },
+ {
+  "source": "<Callout>x\n</Callout>",
+  "problems": [
+   "MDX could not be parsed: Expected a closing tag for `<Callout>` (1:1-1:10) before the end of `paragraph`"
+  ]
+ },
+ {
+  "source": "<Callout>\nx</Callout>",
+  "problems": [
+   "MDX could not be parsed: Expected the closing tag `</Callout>` either after the end of `paragraph` (2:12) or another opening tag after the start of `paragraph` (2:1)"
+  ]
+ },
+ {
+  "source": "Text with a {multi\nline} expression",
+  "problems": [
+   "MDX could not be parsed: Could not parse expression with acorn"
+  ]
+ },
+ {
+  "source": "{multi\nline}",
+  "problems": [
+   "MDX could not be parsed: Could not parse expression with acorn"
+  ]
+ },
+ {
+  "source": "<Diff filename=\"a\" before={'a'} after={'b'} summary={\"x\"} annotations={[]} />",
+  "problems": []
+ },
+ {
+  "source": "<Endpoint method=\"GET\" path=\"/a\" change=\"added\" responses={[{ status: 200, description: \"ok\", change: \"modified\" }]}>\nDesc\n</Endpoint>",
+  "problems": []
+ },
+ {
+  "source": "<Endpoint method=\"GET\" path=\"/a\" change=\"new\" />",
+  "problems": [
+   "<Endpoint>: prop \"change\" must be one of added, modified, removed, renamed"
+  ]
+ },
+ {
+  "source": "<Flow title=\"T\" direction=\"vertical\" steps={[{ label: \"a\", detail: \"d\", change: \"removed\" }]} />",
+  "problems": []
+ },
+ {
+  "source": "export const meta = {\n  title: \"x\"\n}\n\n# Title",
+  "problems": [
+   "import and export statements are not supported in plans"
+  ]
+ },
+ {
+  "source": "import A from \"a\"\nimport B from \"b\"",
+  "problems": [
+   "import and export statements are not supported in plans"
+  ]
+ },
+ {
+  "source": "<Callout tone=\"info\" title=\"T\" id=\"x\" />",
+  "problems": []
+ },
+ {
+  "source": "<Callout tone={\"info\"}>\nx\n</Callout>",
+  "problems": []
+ },
+ {
+  "source": "<Layers layers=\"x\" />",
+  "problems": [
+   "<Layers>: prop \"layers\" must be array, got string"
+  ]
+ },
+ {
+  "source": "<Layers />",
+  "problems": [
+   "<Layers>: missing required prop \"layers\""
+  ]
+ },
+ {
+  "source": "<DataModel entities={{}} />",
+  "problems": [
+   "<DataModel>: prop \"entities\" must be array, got object"
+  ]
+ },
+ {
+  "source": "<AnnotatedCode filename=\"a\" code=\"x\" annotations={{}} />",
+  "problems": [
+   "<AnnotatedCode>: prop \"annotations\" must be array, got object"
+  ]
+ },
+ {
+  "source": "<Column label=\"x\">\ny\n</Column>",
+  "problems": [
+   "<Column> is only valid inside <Columns>"
+  ]
+ },
+ {
+  "source": "<Columns>\n<Column label={1}>\ny\n</Column>\n</Columns>",
+  "problems": [
+   "<Column>: prop \"label\" must be string, got number"
+  ]
+ },
+ {
+  "source": "<Callout title={x}>\n<Nope />\n</Callout>",
+  "problems": [
+   "<Callout>: variables are not supported (found \"x\")"
+  ]
+ },
+ {
+  "source": "Text <Nope>with child {x}</Nope> after",
+  "problems": [
+   "Unknown block <Nope>"
+  ]
+ },
+ {
+  "source": "Text <span>with <Callout>x</Callout></span>",
+  "problems": [
+   "<Callout> is a block: put its opening and closing tags on their own lines"
+  ]
+ },
+ {
+  "source": "<b>Bold line</b>",
+  "problems": []
+ },
+ {
+  "source": "<br />",
+  "problems": []
+ },
+ {
+  "source": "<Callout />",
+  "problems": []
+ },
+ {
+  "source": "<Callout/>",
+  "problems": []
+ },
+ {
+  "source": "<Callout   >\nx\n</Callout   >",
+  "problems": []
+ },
+ {
+  "source": "<Callout>\nx\n</ Callout>",
+  "problems": []
+ },
+ {
+  "source": "<Callout>\nx\n</Callout extra>\n",
+  "problems": [
+   "MDX could not be parsed: Unexpected attribute in closing tag, expected the end of the tag"
+  ]
+ },
+ {
+  "source": "\nPlans can now be written as **MDX**: ordinary Markdown with typed review blocks such as file trees, split diffs, data models, endpoint contracts, flows, layers, and open questions. The local dashboard and the hosted viewer render them the same way. This lets plans and recaps produced by the new `visual-plan` and `visual-recap` skills live as plain `.mdx` files in Git, instead of HTML exports or a hosted database.\n\nThe key decision is that MDX is **parsed, never compiled or evaluated**. `remark-mdx` turns the source into an AST. Each capitalized JSX tag is looked up in a registry of allowed blocks, and its props are read from the ESTree as static literals. Imports, exports, `{expressions}`, variables, spreads, and unknown tags all render as inline error cards. The same registry generates `plan blocks`, so agents author from the live catalog, and `plan check` reports the same errors with a non-zero exit for CI.\n\n<Flow title=\"Render pipeline\" steps={[{\"label\": \"plan.mdx\", \"detail\": \"YAML frontmatter + MDX body\"}, {\"label\": \"remark-mdx\", \"detail\": \"AST only; nothing is executed\"}, {\"label\": \"Registry check\", \"detail\": \"known tag, static props, required fields\", \"change\": \"added\"}, {\"label\": \"React blocks\", \"detail\": \"shared by both surfaces\", \"change\": \"added\"}, {\"label\": \"Dashboards\", \"detail\": \"local: static HTML · hosted: client portal\"}]} />\n\n<Columns>\n<Column label=\"Before\">\n\n- Plans are `.md` only.\n- Local: Pandoc → HTML → regex sanitizer.\n- Hosted: `react-markdown`, raw HTML skipped.\n- Structured content is a hand-written table or a fenced code block.\n\n</Column>\n<Column label=\"After\">\n\n- Plans are `.md` or `.mdx`, identified by one slug.\n- MDX: one React renderer for both surfaces, with no Pandoc needed.\n- Markdown plans render exactly as before.\n- Structured content is typed blocks, validated by `plan check`.\n\n</Column>\n</Columns>\n\n<Callout tone=\"decision\" title=\"Frontmatter, not the database, carries the format\">\nHosted plans are stored as raw source in Blob storage. Reading `format: mdx` from the frontmatter avoids a schema migration and keeps `plan push` unchanged. Writes to `.mdx` files stamp the key automatically. Push refuses an `.mdx` file that lacks it, so the hosted site never shows MDX as raw Markdown.\n</Callout>\n\n<Callout tone=\"decision\" title=\"Tabs are CSS-only\">\nThe local dashboard injects static HTML, so Tabs use radio inputs and `:checked` selectors instead of client state. The same markup works on the hosted portal without hydration. The stylesheet supports up to 12 tabs per block.\n</Callout>\n\n<Layers title=\"New module layout\" layers={[{\"label\": \"Surfaces\", \"note\": \"existing\", \"items\": [\"src/server/server.ts\", \"src/components/plan-markdown.tsx\", \"src/dashboard/style.css\"]}, {\"label\": \"Renderer\", \"note\": \"src/lib/mdx\", \"items\": [{\"label\": \"render.tsx\", \"change\": \"added\"}, {\"label\": \"html.tsx\", \"change\": \"added\"}]}, {\"label\": \"Contract\", \"note\": \"src/lib/mdx\", \"items\": [{\"label\": \"blocks.ts\", \"change\": \"added\"}, {\"label\": \"static-props.ts\", \"change\": \"added\"}, {\"label\": \"format.ts\", \"change\": \"added\"}]}, {\"label\": \"CLI\", \"items\": [{\"label\": \"plan blocks\", \"change\": \"added\"}, {\"label\": \"plan check\", \"change\": \"added\"}, {\"label\": \"--format md|mdx\", \"change\": \"added\"}]}]} />\n\n<DataModel title=\"Types\" entities={[{\"name\": \"PlanMetadata\", \"note\": \"src/lib/types.ts; serialized as YAML frontmatter\", \"fields\": [{\"name\": \"id\", \"type\": \"string\", \"key\": \"pk\"}, {\"name\": \"title\", \"type\": \"string\"}, {\"name\": \"status\", \"type\": \"PlanStatus\"}, {\"name\": \"format\", \"type\": \"'mdx' | undefined\", \"change\": \"added\", \"note\": \"absent means Markdown\"}]}, {\"name\": \"CliOptions\", \"note\": \"src/lib/types.ts\", \"fields\": [{\"name\": \"format\", \"type\": \"string | undefined\", \"change\": \"added\", \"note\": \"validated by requestedFormat()\"}]}]} />\n\n<Endpoint method=\"GET\" path=\"/api/plans/:id\" change=\"modified\" responses={[{\"status\": 200, \"description\": \"Local dashboard plan detail\", \"change\": \"modified\", \"example\": \"{\\\"id\\\": \\\"mdxRecap_7fK2pQ9xLw3\\\", \\\"format\\\": \\\"mdx\\\", \\\"renderState\\\": \\\"rendered\\\", \\\"html\\\": \\\"<aside class=\\\\\\\"pm-block pm-callout\\\\\\\">\\\\u2026</aside>\\\", \\\"revision\\\": \\\"<sha256>\\\"}\"}]}>\n\nLocal server only. Adds `format`. For MDX plans, `html` comes from the React renderer and `renderState` no longer depends on Pandoc.\n\n</Endpoint>\n\n<Endpoint method=\"GET\" path=\"/api/v1/plans/:id/content\" change=\"modified\" params={[{\"name\": \"id\", \"in\": \"path\", \"type\": \"string\", \"required\": true}]} responses={[{\"status\": 200, \"description\": \"Raw plan source. The download filename is now <id>.mdx for MDX plans.\", \"change\": \"modified\"}]}>\n\nHosted, owner-only. Same body as before; only the `Content-Disposition` filename extension changes.\n\n</Endpoint>\n\n<FileTree files={[{\"path\": \".claude/skills/visual-plan/SKILL.md\", \"change\": \"added\", \"additions\": 139, \"deletions\": 0, \"note\": \"MDX adaptation of Builder.io visual-plan\"}, {\"path\": \".claude/skills/visual-recap/SKILL.md\", \"change\": \"added\", \"additions\": 98, \"deletions\": 0, \"note\": \"MDX adaptation of Builder.io visual-recap\"}, {\"path\": \".gitignore\", \"change\": \"modified\", \"additions\": 5, \"deletions\": 0, \"note\": \"Check in .claude/skills only\"}, {\"path\": \"README.md\", \"change\": \"modified\", \"additions\": 31, \"deletions\": 0}, {\"path\": \"package.json\", \"change\": \"modified\", \"additions\": 2, \"deletions\": 1}, {\"path\": \"pnpm-lock.yaml\", \"change\": \"modified\", \"additions\": 151, \"deletions\": 0, \"note\": \"remark-mdx and its micromark/estree deps\"}, {\"path\": \"src/app/api/v1/plans/[id]/content/route.ts\", \"change\": \"modified\", \"additions\": 4, \"deletions\": 1}, {\"path\": \"src/cli/commands/archive.ts\", \"change\": \"modified\", \"additions\": 3, \"deletions\": 2}, {\"path\": \"src/cli/commands/blocks.ts\", \"change\": \"added\", \"additions\": 10, \"deletions\": 0, \"note\": \"plan blocks [--json]\"}, {\"path\": \"src/cli/commands/check.ts\", \"change\": \"added\", \"additions\": 48, \"deletions\": 0, \"note\": \"plan check validator for agents and CI\"}, {\"path\": \"src/cli/commands/completion.ts\", \"change\": \"modified\", \"additions\": 3, \"deletions\": 2}, {\"path\": \"src/cli/commands/create.ts\", \"change\": \"modified\", \"additions\": 5, \"deletions\": 2}, {\"path\": \"src/cli/commands/import.ts\", \"change\": \"modified\", \"additions\": 4, \"deletions\": 3}, {\"path\": \"src/cli/commands/new.ts\", \"change\": \"modified\", \"additions\": 4, \"deletions\": 2}, {\"path\": \"src/cli/commands/remote.ts\", \"change\": \"modified\", \"additions\": 4, \"deletions\": 0, \"note\": \"Push refuses MDX without frontmatter signal\"}, {\"path\": \"src/cli/format-option.ts\", \"change\": \"added\", \"additions\": 10, \"deletions\": 0, \"note\": \"Shared --format md|mdx parsing\"}, {\"path\": \"src/cli/index.ts\", \"change\": \"modified\", \"additions\": 11, \"deletions\": 2}, {\"path\": \"src/components/hosted-plan-portal.tsx\", \"change\": \"modified\", \"additions\": 2, \"deletions\": 1}, {\"path\": \"src/components/plan-markdown.tsx\", \"change\": \"modified\", \"additions\": 4, \"deletions\": 1, \"note\": \"Hosted switch on format: mdx\"}, {\"path\": \"src/dashboard/style.css\", \"change\": \"modified\", \"additions\": 273, \"deletions\": 0, \"note\": \"Block styles on the terminal palette\"}, {\"path\": \"src/lib/mdx/blocks.ts\", \"change\": \"added\", \"additions\": 227, \"deletions\": 0, \"note\": \"Block registry: validation + plan blocks catalog\"}, {\"path\": \"src/lib/mdx/format.ts\", \"change\": \"added\", \"additions\": 36, \"deletions\": 0, \"note\": \"md/mdx detection from extension and frontmatter\"}, {\"path\": \"src/lib/mdx/html.tsx\", \"change\": \"added\", \"additions\": 14, \"deletions\": 0, \"note\": \"Server-only renderToStaticMarkup entry\"}, {\"path\": \"src/lib/mdx/render.tsx\", \"change\": \"added\", \"additions\": 497, \"deletions\": 0, \"note\": \"Parse-only MDX renderer and block components\"}, {\"path\": \"src/lib/mdx/static-props.ts\", \"change\": \"added\", \"additions\": 75, \"deletions\": 0, \"note\": \"ESTree literal evaluator for props\"}, {\"path\": \"src/lib/metadata.ts\", \"change\": \"modified\", \"additions\": 5, \"deletions\": 2}, {\"path\": \"src/lib/storage.ts\", \"change\": \"modified\", \"additions\": 18, \"deletions\": 13, \"note\": \"Lists .mdx; slugs shared across formats\"}, {\"path\": \"src/lib/types.ts\", \"change\": \"modified\", \"additions\": 2, \"deletions\": 2}, {\"path\": \"src/server/server.ts\", \"change\": \"modified\", \"additions\": 14, \"deletions\": 2, \"note\": \"MDX rendered without Pandoc\"}, {\"path\": \"test/cli/create.test.js\", \"change\": \"modified\", \"additions\": 67, \"deletions\": 0}, {\"path\": \"test/cli/dashboard.test.js\", \"change\": \"modified\", \"additions\": 28, \"deletions\": 0}, {\"path\": \"test/hosted/dashboard.test.tsx\", \"change\": \"modified\", \"additions\": 12, \"deletions\": 0}, {\"path\": \"test/lib/mdx.test.js\", \"change\": \"added\", \"additions\": 144, \"deletions\": 0, \"note\": \"Renderer, safety, validation, diff, storage\"}, {\"path\": \"tsconfig.cli.json\", \"change\": \"modified\", \"additions\": 4, \"deletions\": 2}, {\"path\": \"tsconfig.json\", \"change\": \"modified\", \"additions\": 1, \"deletions\": 0}, {\"path\": \"docs/recaps/mdx-visual-plans.mdx\", \"change\": \"added\", \"note\": \"This recap\"}]} />\n\n## Key changes\n\n<Tabs>\n<Tab label=\"render.tsx\">\n\n<AnnotatedCode filename=\"src/lib/mdx/render.tsx\" language=\"tsx\" summary=\"remark-rehype handler: every capitalized JSX element becomes a placeholder resolved against the registry.\" code={\"  function jsx(state: any, node: any, flow: boolean) {\\n    const name: string | null = node.name\\n    if (name === null) return state.all(node)\\n    if (/^[a-z]/.test(name)) {\\n      if (!(flow ? FLOW_HTML : INLINE_HTML).has(name)) return state.all(node)\\n      const result = { type: 'element', tagName: name, properties: {}, children: state.all(node) }\\n      state.patch(node, result)\\n      return result\\n    }\\n    const record: BlockRecord = { index: records.length, name, props: {}, inline: !flow, parent: stack.at(-1)?.name ?? null, parentIndex: stack.at(-1)?.index ?? null }\\n    records.push(record)\\n    const spec = BLOCKS_BY_NAME.get(name)\\n    if (!spec) {\\n      record.error = unknownBlockMessage(name)\\n    } else if (!flow) {\\n      record.error = `<${name}> is a block: put its opening and closing tags on their own lines`\\n    } else if (spec.parent && record.parent !== spec.parent) {\\n      record.error = `<${name}> is only valid inside <${spec.parent}>`\\n    } else {\\n      try {\\n        record.props = staticProps(node.attributes)\\n        const problems = validateBlockProps(spec, record.props)\\n        if (problems.length) record.error = `<${name}>: ${problems.join('; ')}`\\n      } catch (error) {\\n        record.error = `<${name}>: ${(error as Error).message}`\\n      }\\n    }\\n    if (!record.error && spec && spec.children !== 'markdown' && spec.children !== 'none') {\\n      const stray = node.children.find((child: any) => child.type !== 'mdxJsxFlowElement' || child.name !== spec.children)\\n      if (stray) record.error = `<${name}> may only contain <${spec.children}> elements`\\n    }\\n    stack.push(record)\\n    const children = record.error ? [] : state.all(node)\\n    stack.pop()\\n    if (name === 'Tabs') {\\n      record.tabs = records\\n        .filter(child => child.parentIndex === record.index && child.name === 'Tab')\\n        .map(child => String(child.props.label ?? ''))\\n    }\\n    const result = placeholder(record, children)\\n    state.patch(node, result)\\n    return result\\n  }\"} annotations={[{\"line\": 4, \"note\": \"Lowercase HTML is limited to a small inline/flow allowlist with all attributes dropped\"}, {\"line\": 12, \"note\": \"Unknown tags never render; they become an error card with a did-you-mean hint\"}, {\"line\": 21, \"note\": \"Props come from the ESTree literal evaluator, never from running code\"}, {\"line\": 35, \"note\": \"Tab labels are collected by parent index so nested Tabs stay independent\"}]} />\n\n</Tab>\n<Tab label=\"static-props.ts\">\n\n<AnnotatedCode filename=\"src/lib/mdx/static-props.ts\" language=\"ts\" summary=\"The whole trust boundary: only literal shapes survive.\" code={\"export function evaluateStatic(node: EstreeNode): unknown {\\n  switch (node.type) {\\n    case 'Literal':\\n      if (node.regex || typeof node.bigint === 'string') throw new StaticPropError('regular expressions and bigints are not supported')\\n      return node.value\\n    case 'TemplateLiteral':\\n      if (node.expressions.length > 0) throw new StaticPropError('template literals cannot interpolate ${...}')\\n      return node.quasis.map((quasi: EstreeNode) => quasi.value.cooked ?? quasi.value.raw).join('')\\n    case 'ArrayExpression':\\n      return node.elements.map((element: EstreeNode | null) => {\\n        if (!element || element.type === 'SpreadElement') throw new StaticPropError('arrays cannot contain holes or spreads')\\n        return evaluateStatic(element)\\n      })\\n    case 'ObjectExpression': {\\n      const result: Record<string, unknown> = {}\\n      for (const property of node.properties as EstreeNode[]) {\\n        if (property.type !== 'Property' || property.kind !== 'init' || property.computed || property.method) {\\n          throw new StaticPropError('objects may only contain plain key: value pairs')\\n        }\\n        const key = property.key.type === 'Identifier' ? property.key.name : property.key.value\\n        if (typeof key !== 'string' && typeof key !== 'number') throw new StaticPropError('object keys must be names or strings')\\n        if (FORBIDDEN_KEYS.has(String(key))) throw new StaticPropError(`object key \\\"${key}\\\" is not allowed`)\\n        result[String(key)] = evaluateStatic(property.value)\\n      }\\n      return result\\n    }\\n    case 'UnaryExpression':\\n      if ((node.operator === '-' || node.operator === '+') && node.argument.type === 'Literal' && typeof node.argument.value === 'number') {\\n        return node.operator === '-' ? -node.argument.value : node.argument.value\\n      }\\n      throw new StaticPropError(`operator ${node.operator} is not supported`)\\n    case 'Identifier':\\n      if (node.name === 'undefined') return undefined\\n      throw new StaticPropError(`variables are not supported (found \\\"${node.name}\\\")`)\\n    default:\\n      throw new StaticPropError(`${node.type} is not a static value`)\\n  }\\n}\"} annotations={[{\"line\": 6, \"note\": \"Template literals are allowed only without ${...} interpolation\"}, {\"line\": 22, \"note\": \"__proto__ / constructor / prototype keys are rejected to rule out prototype pollution\"}, {\"line\": 32, \"note\": \"Any variable reference is an error, so plans cannot read globals\"}]} />\n\n</Tab>\n<Tab label=\"storage.ts\">\n\n<Diff filename=\"src/lib/storage.ts\" language=\"ts\" summary=\"Plan files may be .md or .mdx; a slug identifies one plan regardless of extension.\" before={\"import { lstatSync, realpathSync } from 'node:fs'\\nimport { getPlanHome } from './config.js'\\n\\nexport function planHome() {\\n⋯\\n  const files = []\\n  for (const entry of entries) {\\n    if (!entry.isFile() || !entry.name.endsWith('.md')) continue\\n    const filePath = join(dir, entry.name)\\n    if (await containedPathReal(filePath)) files.push(filePath)\\n⋯\\n}\\n\\nexport function planPath(slug) {\\n  return join(planHome(), `${slug}.md`)\\n}\\n\\nexport function archivePath(slug) {\\n  return join(archiveDir(), `${slug}.md`)\\n}\\n\\n⋯\\n      return { filePath: f, meta: parsed.meta }\\n    }\\n    const slug = f.replace(/\\\\.md$/, '').split('/').pop()\\n    if (slug === idOrSlug) {\\n      matches.push({ filePath: f, meta: parsed.meta })\\n⋯\\n\\nexport async function uniqueSlug(baseSlug) {\\n  if (!(await pathEntryExists(planPath(baseSlug)))) return baseSlug\\n  for (let i = 2; i <= 99; i++) {\\n    const candidate = `${baseSlug}-${i}`\\n    if (!(await pathEntryExists(planPath(candidate)))) return candidate\\n  }\\n  const err = new Error(`No available filename slot for slug \\\"${baseSlug}\\\"`)\\n⋯\\n}\\n\\nexport async function uniqueArchivePath(baseSlug) {\\n  const first = archivePath(baseSlug)\\n  if (!(await pathEntryExists(first))) return first\\n  for (let i = 2; i <= 999; i++) {\\n    const candidate = archivePath(`${baseSlug}-${i}`)\\n    if (!(await pathEntryExists(candidate))) return candidate\\n  }\\n  const err = new Error(`No available archive filename slot for slug \\\"${baseSlug}\\\"`)\"} after={\"import { lstatSync, realpathSync } from 'node:fs'\\nimport { getPlanHome } from './config.js'\\nimport { extensionFor, isPlanFilename, stripPlanExtension } from './mdx/format.js'\\n\\nexport function planHome() {\\n⋯\\n  const files = []\\n  for (const entry of entries) {\\n    if (!entry.isFile() || !isPlanFilename(entry.name)) continue\\n    const filePath = join(dir, entry.name)\\n    if (await containedPathReal(filePath)) files.push(filePath)\\n⋯\\n}\\n\\nexport function planPath(slug, format = 'md') {\\n  return join(planHome(), `${slug}${extensionFor(format)}`)\\n}\\n\\nexport function archivePath(slug, format = 'md') {\\n  return join(archiveDir(), `${slug}${extensionFor(format)}`)\\n}\\n\\nasync function slugTaken(pathFor, slug) {\\n  // A slug is one identifier regardless of format, so plan.md and plan.mdx never coexist.\\n  return (await pathEntryExists(pathFor(slug, 'md'))) || (await pathEntryExists(pathFor(slug, 'mdx')))\\n}\\n\\n⋯\\n      return { filePath: f, meta: parsed.meta }\\n    }\\n    const slug = stripPlanExtension(f.split('/').pop())\\n    if (slug === idOrSlug) {\\n      matches.push({ filePath: f, meta: parsed.meta })\\n⋯\\n\\nexport async function uniqueSlug(baseSlug) {\\n  if (!(await slugTaken(planPath, baseSlug))) return baseSlug\\n  for (let i = 2; i <= 99; i++) {\\n    const candidate = `${baseSlug}-${i}`\\n    if (!(await slugTaken(planPath, candidate))) return candidate\\n  }\\n  const err = new Error(`No available filename slot for slug \\\"${baseSlug}\\\"`)\\n⋯\\n}\\n\\nexport async function uniqueArchivePath(baseSlug, format = 'md') {\\n  if (!(await slugTaken(archivePath, baseSlug))) return archivePath(baseSlug, format)\\n  for (let i = 2; i <= 999; i++) {\\n    const candidate = `${baseSlug}-${i}`\\n    if (!(await slugTaken(archivePath, candidate))) return archivePath(candidate, format)\\n  }\\n  const err = new Error(`No available archive filename slot for slug \\\"${baseSlug}\\\"`)\"} annotations={[{\"line\": 9, \"note\": \"Listing picks up .mdx files\"}, {\"line\": 23, \"note\": \"plan.md and plan.mdx can never coexist, so slug lookups stay unambiguous\"}, {\"line\": 46, \"note\": \"Archiving keeps the original extension\"}]} />\n\n</Tab>\n<Tab label=\"server.ts\">\n\n<Diff filename=\"src/server/server.ts\" language=\"ts\" summary=\"The local dashboard renders MDX in-process and only falls back to Pandoc for Markdown.\" before={\"import { computeRevision } from '../lib/ids.js'\\nimport { parseFrontmatter } from '../lib/metadata.js'\\nimport { withPlanWriteLock } from '../lib/write-lock.js'\\n\\n⋯\\n      const entries = await readdir(directory, { withFileTypes: true })\\n      for (const entry of entries) {\\n        if (!entry.isFile() || entry.isSymbolicLink() || !entry.name.endsWith('.md')) continue\\n        const filePath = join(directory, entry.name)\\n        if (isContained(planHome, filePath)) files.push(filePath)\\n⋯\\n    return {\\n      meta: parsed.meta,\\n      body: parsed.body,\\n      raw,\\n⋯\\n    }\\n    const updatedMeta = { ...meta, updated: new Date().toISOString() }\\n    const frontmatter = yaml.dump(updatedMeta, { lineWidth: -1 }).trimEnd()\\n    const content = `---\\\\n${frontmatter}\\\\n---\\\\n${body.startsWith('\\\\n') ? body : `\\\\n${body}`}`\\n⋯\\n      let html = null\\n      let renderState = 'unavailable'\\n      if (await pandocIsAvailable()) {\\n        try {\\n          html = await renderMarkdown(plan.body)\\n⋯\\n        tags: plan.meta.tags,\\n        revision: plan.revision,\\n        body: plan.body,\\n        html,\"} after={\"import { computeRevision } from '../lib/ids.js'\\nimport { parseFrontmatter } from '../lib/metadata.js'\\nimport { formatFromPath, isPlanFilename } from '../lib/mdx/format.js'\\nimport { renderMdxToHtml } from '../lib/mdx/html.js'\\nimport { withPlanWriteLock } from '../lib/write-lock.js'\\n\\n⋯\\n      const entries = await readdir(directory, { withFileTypes: true })\\n      for (const entry of entries) {\\n        if (!entry.isFile() || entry.isSymbolicLink() || !isPlanFilename(entry.name)) continue\\n        const filePath = join(directory, entry.name)\\n        if (isContained(planHome, filePath)) files.push(filePath)\\n⋯\\n    return {\\n      meta: parsed.meta,\\n      format: parsed.meta.format === 'mdx' || formatFromPath(filePath) === 'mdx' ? 'mdx' : 'md',\\n      body: parsed.body,\\n      raw,\\n⋯\\n    }\\n    const updatedMeta = { ...meta, updated: new Date().toISOString() }\\n    if (formatFromPath(filePath) === 'mdx') updatedMeta.format = 'mdx'\\n    const frontmatter = yaml.dump(updatedMeta, { lineWidth: -1 }).trimEnd()\\n    const content = `---\\\\n${frontmatter}\\\\n---\\\\n${body.startsWith('\\\\n') ? body : `\\\\n${body}`}`\\n⋯\\n      let html = null\\n      let renderState = 'unavailable'\\n      if (plan.format === 'mdx') {\\n        try {\\n          html = renderMdxToHtml(plan.body)\\n          renderState = 'rendered'\\n        } catch {\\n          renderState = 'failed'\\n        }\\n      } else if (await pandocIsAvailable()) {\\n        try {\\n          html = await renderMarkdown(plan.body)\\n⋯\\n        tags: plan.meta.tags,\\n        revision: plan.revision,\\n        format: plan.format,\\n        body: plan.body,\\n        html,\"} annotations={[{\"line\": 16, \"note\": \"Format is resolved once at index time from frontmatter or extension\"}, {\"line\": 30, \"note\": \"No Pandoc dependency for MDX plans\"}, {\"line\": 41, \"note\": \"Detail API exposes the format to the client\"}]} />\n\n</Tab>\n<Tab label=\"plan-markdown.tsx\">\n\n<Diff filename=\"src/components/plan-markdown.tsx\" language=\"tsx\" summary=\"The hosted viewer picks the renderer from frontmatter, so no database migration is needed.\" before={\"import ReactMarkdown from \\\"react-markdown\\\"\\nimport remarkGfm from \\\"remark-gfm\\\"\\n\\nexport function markdownBody(markdown: string): string {\\n  return markdown.replace(/^---\\\\r?\\\\n[\\\\s\\\\S]*?\\\\r?\\\\n---(?:\\\\r?\\\\n|$)/, \\\"\\\")\\n}\\n\\nexport default function PlanMarkdown({ markdown }: { markdown: string }) {\\n  return <article className=\\\"markdown-body\\\"><ReactMarkdown remarkPlugins={[remarkGfm]} skipHtml components={{ img: ({ alt }) => <span>{alt}</span> }}>{markdownBody(markdown)}</ReactMarkdown></article>\\n}\"} after={\"import ReactMarkdown from \\\"react-markdown\\\"\\nimport remarkGfm from \\\"remark-gfm\\\"\\nimport { sourceFormat, stripFrontmatter } from \\\"@/lib/mdx/format\\\"\\nimport { PlanMdx } from \\\"@/lib/mdx/render\\\"\\n\\nexport function markdownBody(markdown: string): string {\\n  return stripFrontmatter(markdown)\\n}\\n\\nexport default function PlanMarkdown({ markdown }: { markdown: string }) {\\n  if (sourceFormat(markdown) === \\\"mdx\\\") return <article className=\\\"markdown-body\\\"><PlanMdx source={markdownBody(markdown)} /></article>\\n  return <article className=\\\"markdown-body\\\"><ReactMarkdown remarkPlugins={[remarkGfm]} skipHtml components={{ img: ({ alt }) => <span>{alt}</span> }}>{markdownBody(markdown)}</ReactMarkdown></article>\\n}\"} annotations={[{\"line\": 11, \"note\": \"Hosted rows store raw source; `format: mdx` in frontmatter is the only signal\"}]} />\n\n</Tab>\n<Tab label=\"metadata.ts\">\n\n<Diff filename=\"src/lib/metadata.ts\" language=\"ts\" summary=\"Every write to an .mdx file stamps `format: mdx`, keeping the hosted signal in sync.\" before={\"import { atomicWrite } from './storage.js'\\nimport { generateId } from './ids.js'\\nimport { PLAN_STATUSES, type ParsedPlan, type PlanMetadata, type PlanStatus, type UnknownRecord } from './types.js'\\n\\n⋯\\n}\\n\\nexport function normalizeMeta(raw: UnknownRecord, _filePath?: string): PlanMetadata {\\n  const now = new Date().toISOString()\\n  const status = typeof raw.status === 'string' && STATUS_VALUES.has(raw.status as PlanStatus)\\n⋯\\n    tags: Array.isArray(raw.tags) ? raw.tags.filter((tag): tag is string => typeof tag === 'string') : [],\\n    ...(raw.source != null ? { source: String(raw.source) } : {}),\\n  }\\n}\\n⋯\\n\\nexport async function writePlan(filePath: string, meta: PlanMetadata, body: string): Promise<void> {\\n  const updated = { ...meta, updated: new Date().toISOString() }\\n  const frontmatter = yaml.dump(updated, { lineWidth: -1 }).trimEnd()\\n  const content = `---\\\\n${frontmatter}\\\\n---\\\\n${body.startsWith('\\\\n') ? body : '\\\\n' + body}`\"} after={\"import { atomicWrite } from './storage.js'\\nimport { generateId } from './ids.js'\\nimport { formatFromPath } from './mdx/format.js'\\nimport { PLAN_STATUSES, type ParsedPlan, type PlanMetadata, type PlanStatus, type UnknownRecord } from './types.js'\\n\\n⋯\\n}\\n\\nexport function normalizeMeta(raw: UnknownRecord, filePath?: string): PlanMetadata {\\n  const now = new Date().toISOString()\\n  const status = typeof raw.status === 'string' && STATUS_VALUES.has(raw.status as PlanStatus)\\n⋯\\n    tags: Array.isArray(raw.tags) ? raw.tags.filter((tag): tag is string => typeof tag === 'string') : [],\\n    ...(raw.source != null ? { source: String(raw.source) } : {}),\\n    ...(raw.format === 'mdx' || (filePath !== undefined && formatFromPath(filePath) === 'mdx') ? { format: 'mdx' as const } : {}),\\n  }\\n}\\n⋯\\n\\nexport async function writePlan(filePath: string, meta: PlanMetadata, body: string): Promise<void> {\\n  const updated: PlanMetadata = { ...meta, updated: new Date().toISOString() }\\n  if (formatFromPath(filePath) === 'mdx') updated.format = 'mdx'\\n  const frontmatter = yaml.dump(updated, { lineWidth: -1 }).trimEnd()\\n  const content = `---\\\\n${frontmatter}\\\\n---\\\\n${body.startsWith('\\\\n') ? body : '\\\\n' + body}`\"} annotations={[{\"line\": 15, \"note\": \"Reads infer format from the extension for hand-written files\"}, {\"line\": 22, \"note\": \"Writes persist it into frontmatter\"}]} />\n\n</Tab>\n<Tab label=\"remote.ts\">\n\n<Diff filename=\"src/cli/commands/remote.ts\" language=\"ts\" summary=\"Push fails loudly instead of silently uploading MDX that the hosted site would show as raw Markdown.\" before={\"import { readPlan } from '../../lib/metadata.js'\\nimport { buildEnvelope } from '../../lib/envelope.js'\\nimport { EXIT } from '../exit.js'\\n\\n⋯\\n  const resolved = await resolveByIdOrSlug(identifier)\\n  const parsed = await readPlan(resolved.filePath)\\n  const envelope = await buildEnvelope(parsed)\\n  const response = await fetch(`${site.url}/api/v1/plans/${encodeURIComponent(envelope.id)}/versions`, {\"} after={\"import { readPlan } from '../../lib/metadata.js'\\nimport { buildEnvelope } from '../../lib/envelope.js'\\nimport { sourceFormat } from '../../lib/mdx/format.js'\\nimport { EXIT } from '../exit.js'\\n\\n⋯\\n  const resolved = await resolveByIdOrSlug(identifier)\\n  const parsed = await readPlan(resolved.filePath)\\n  if (parsed.meta.format === 'mdx' && sourceFormat(parsed.raw) !== 'mdx') {\\n    throw new Error(`MDX plan ${parsed.meta.id} needs \\\"format: mdx\\\" in its frontmatter so the hosted site renders it; add it or run plan update`)\\n  }\\n  const envelope = await buildEnvelope(parsed)\\n  const response = await fetch(`${site.url}/api/v1/plans/${encodeURIComponent(envelope.id)}/versions`, {\"} annotations={[{\"line\": 10, \"note\": \"Fix path: add the key, or run plan update to restamp\"}]} />\n\n</Tab>\n</Tabs>\n\n<Callout tone=\"risk\" title=\"Task toggles count raw markers\">\nThe dashboard's task toggle still finds the Nth `- [ ]` marker by regex over the raw body. JSON-string props are single-line, so they cannot shift the count. A multi-line template-literal prop that contains a line starting with `- [ ]` would shift it, the same way a fenced code block already can for Markdown plans.\n</Callout>\n\n<Questions items={[{\"question\": \"Render Mermaid diagrams?\", \"recommendation\": \"Defer. Flow and Layers cover structure without shipping client JS to the local dashboard.\", \"options\": [\"Defer\", \"Bundle mermaid on hosted only\"]}, {\"question\": \"Add syntax highlighting to Diff and AnnotatedCode?\", \"recommendation\": \"Defer. It would mean a highlighter dependency in both bundles; the line diff and annotations carry the review signal today.\"}, {\"question\": \"Let the dashboard browse a repo docs/ folder next to PLAN_HOME?\", \"recommendation\": \"Use PLAN_HOME=docs/plans plan serve or plan import for now, and revisit if multi-root becomes common.\"}]} />\n",
+  "problems": []
+ }
+]

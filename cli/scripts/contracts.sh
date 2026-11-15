@@ -14,7 +14,8 @@ trap 'rm -rf "$work"' EXIT
 mkdir -p "$work/bin" "$work/test/cli" "$work/dist/server"
 cp "$repo_dir/package.json" "$work/package.json"
 cp "$cli_dir"/test/contracts/create.test.js "$cli_dir"/test/contracts/capture.test.js \
-   "$cli_dir"/test/contracts/contracts.test.js "$cli_dir"/test/contracts/dashboard.test.js "$work/test/cli/"
+   "$cli_dir"/test/contracts/contracts.test.js "$cli_dir"/test/contracts/dashboard.test.js \
+   "$cli_dir"/test/contracts/tracking.test.js "$cli_dir"/test/contracts/reviews.test.js "$work/test/cli/"
 # doctor reports the Go runtime under "runtime" rather than "node".
 sed -i.bak 's/assert.ok(report.node)/assert.ok(report.runtime)/' "$work/test/cli/create.test.js"
 # Completion suggests slugs rather than IDs, and supports fish.

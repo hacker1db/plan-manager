@@ -1,0 +1,6 @@
+{
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Unexpected character `#` (U+0023) in name, expected a name character such as letters, digits, `$`, or `_`; whitespace before attributes; or the end of the tag</span></div><pre class=\"markdown-fallback\">&lt;Callout#x&gt;\n</pre>",
+  "problems": [
+    "MDX could not be parsed: Unexpected character `#` (U+0023) in name, expected a name character such as letters, digits, `$`, or `_`; whitespace before attributes; or the end of the tag"
+  ]
+}

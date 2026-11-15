@@ -1,0 +1,4 @@
+{
+  "html": "<aside class=\"pm-block pm-callout pm-tone-note\"><p class=\"pm-callout-title\">crlf</p><p>Line one\r\nLine two</p></aside>\n<ul class=\"contains-task-list\">\n<li class=\"task-list-item\"><input type=\"checkbox\" disabled=\"\" data-plan-task=\"true\"/> task</li>\n</ul>",
+  "problems": []
+}

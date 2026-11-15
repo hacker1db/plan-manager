@@ -43,8 +43,9 @@ For bash, use `source <(plan completion bash)`. Fish and PowerShell scripts are
 available through `plan completion fish` and `plan completion powershell`.
 
 The TypeScript CLI has been removed. The Go command tree (`plan --help`) is the
-supported CLI surface. Historical TypeScript-only tracking/journey and MDX
-`blocks`/`check` commands are not implemented by Go; hosted MDX rendering remains.
+supported CLI surface, including journey tracking (`stage`, `review`, `session`,
+`pr`, `complete`, `reopen`), `.mdx` plans, `blocks`/`check`, and in-process MDX
+rendering in the local dashboard.
 
 ## Usage
 
