@@ -1,7 +1,7 @@
 import type { AuthKitAuth } from "@workos/authkit-sveltekit"
 import { getHostedEnvironment, HostedConfigurationError } from "./env"
 import { forbidden, unauthorized } from "./api"
-import { findToken } from "./store"
+import { findToken, touchToken } from "./store"
 import { parseBearer, tokenAuthorizes } from "./token"
 import type { PlanScope } from "../hosted/types.ts"
 import { verifyWorkosCliToken } from "./workos-cli"
@@ -47,7 +47,10 @@ export async function requireWriteToken(request: Request, scope: PlanScope): Pro
   if (!parsed) return unauthorized()
   try {
     const record = await findToken(parsed.id)
-    return await tokenAuthorizes(record, parsed.secret, getHostedEnvironment().tokenPepper, scope) ? null : forbidden()
+    if (!await tokenAuthorizes(record, parsed.secret, getHostedEnvironment().tokenPepper, scope)) return forbidden()
+    // Best effort: a failed last-used update (e.g. migration 002 not yet applied) must not fail the request.
+    await touchToken(parsed.id).catch(() => undefined)
+    return null
   } catch (error) {
     if (error instanceof HostedConfigurationError) return Response.json({ error: "Hosted service is unavailable" }, { status: 503 })
     throw error

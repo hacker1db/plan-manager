@@ -1,12 +1,15 @@
-import { del, get, put } from "@vercel/blob"
+import { BlobNotFoundError, del, get, head, put } from "@vercel/blob"
 import yaml from "js-yaml"
 import { getHostedEnvironment } from "./env.ts"
 import { getSql } from "./db.ts"
-import { requirePlanId, requireRevision, safeTags, safeText, sanitizeMarkdown } from "./sanitize.ts"
+import { requirePlanId, sanitizeMarkdown, ValidationError } from "./sanitize.ts"
+import { validatePlanUpload } from "./plan-input.ts"
+import { writeValidatedPlan, type PlanWriteStore } from "./write-plan.ts"
 import { computeRevision } from "../ids.ts"
 import { isPlanStatus, type PlanStatus } from "../types.ts"
 import { createStatusVersion } from "./status-version.ts"
-import type { CliToken, HostedPlan, HostedPlanInput, PlanScope, TokenRecord } from "../hosted/types.ts"
+import type { CliToken, HostedPlan, HostedPlanInput, PlanScope, TokenRecord, TokenSummary } from "../hosted/types.ts"
+import { tokenSummaryFromRow, type TokenListRow } from "./token.ts"
 
 type PlanRow = {
   id: string
@@ -40,25 +43,6 @@ function planFromRow(row: PlanRow): HostedPlan {
   }
 }
 
-function normalizeInput(value: HostedPlanInput): HostedPlanInput {
-  const status = value.status
-  if (!["active", "completed", "archived"].includes(status)) throw new Error("Invalid plan status")
-  const created = new Date(value.created)
-  const updated = new Date(value.updated)
-  if (Number.isNaN(created.valueOf()) || Number.isNaN(updated.valueOf())) throw new Error("Invalid plan timestamp")
-  return {
-    id: requirePlanId(value.id),
-    title: safeText(value.title, "title", 256),
-    status,
-    tags: safeTags(value.tags),
-    created: created.toISOString(),
-    updated: updated.toISOString(),
-    markdown: sanitizeMarkdown(value.markdown),
-    revision: requireRevision(value.revision),
-    expectedRevision: value.expectedRevision === null ? null : requireRevision(value.expectedRevision),
-  }
-}
-
 export async function listPlans(): Promise<HostedPlan[]> {
   const rows = await getSql()`SELECT id, title, status, tags, created_at, updated_at, revision, object_key FROM plans ORDER BY updated_at DESC` as unknown as PlanRow[]
   return rows.map(planFromRow)
@@ -76,20 +60,35 @@ export async function readMarkdown(plan: HostedPlan): Promise<string> {
   return sanitizeMarkdown(await new Response(blob.stream).text())
 }
 
-export async function writePlan(input: HostedPlanInput): Promise<{ plan: HostedPlan; conflict: boolean }> {
-  const normalized = normalizeInput(input)
-  const existing = await findPlan(normalized.id)
-  if (existing?.revision === normalized.revision) return { plan: existing, conflict: false }
-  if ((existing?.revision ?? null) !== normalized.expectedRevision) return { plan: existing ?? null as never, conflict: true }
-  const objectKey = `plans/${normalized.id}/${normalized.revision}.md`
-  await put(objectKey, normalized.markdown, {
-    access: "private",
-    addRandomSuffix: false,
-    allowOverwrite: false,
-    contentType: "text/markdown; charset=utf-8",
-    token: getHostedEnvironment().blobReadWriteToken,
-  })
-  try {
+// Real storage for the write sequence in write-plan.ts.
+const planWriteStore: PlanWriteStore = {
+  findPlan,
+  async findVersionKey(id, revision) {
+    const rows = await getSql()`SELECT object_key FROM plan_versions WHERE plan_id = ${id} AND revision = ${revision} LIMIT 1` as unknown as { object_key: string }[]
+    return rows[0]?.object_key ?? null
+  },
+  async blobExists(objectKey) {
+    try {
+      await head(objectKey, { token: getHostedEnvironment().blobReadWriteToken })
+      return true
+    } catch (error) {
+      if (error instanceof BlobNotFoundError) return false
+      throw error
+    }
+  },
+  async putBlob(objectKey, markdown) {
+    await put(objectKey, markdown, {
+      access: "private",
+      addRandomSuffix: false,
+      allowOverwrite: false,
+      contentType: "text/markdown; charset=utf-8",
+      token: getHostedEnvironment().blobReadWriteToken,
+    })
+  },
+  async deleteBlob(objectKey) {
+    await del(objectKey, { token: getHostedEnvironment().blobReadWriteToken })
+  },
+  async upsertPlan(normalized, objectKey) {
     const rows = await getSql()`
       INSERT INTO plans (id, title, status, tags, created_at, updated_at, revision, object_key)
       VALUES (${normalized.id}, ${normalized.title}, ${normalized.status}, ${JSON.stringify(normalized.tags)}::jsonb, ${normalized.created}, ${normalized.updated}, ${normalized.revision}, ${objectKey})
@@ -103,17 +102,19 @@ export async function writePlan(input: HostedPlanInput): Promise<{ plan: HostedP
       WHERE plans.revision = ${normalized.expectedRevision}
       RETURNING id, title, status, tags, created_at, updated_at, revision, object_key
     ` as unknown as PlanRow[]
-    if (!rows[0]) return { plan: (await findPlan(normalized.id))!, conflict: true }
-    await getSql()`INSERT INTO plan_versions (plan_id, revision, object_key, created_at) VALUES (${normalized.id}, ${normalized.revision}, ${objectKey}, NOW()) ON CONFLICT (plan_id, revision) DO NOTHING`
-    return { plan: planFromRow(rows[0]), conflict: false }
-  } catch (error) {
-    await del(objectKey, { token: getHostedEnvironment().blobReadWriteToken }).catch(() => undefined)
-    throw error
-  }
+    return rows[0] ? planFromRow(rows[0]) : null
+  },
+  async recordVersion(id, revision, objectKey) {
+    await getSql()`INSERT INTO plan_versions (plan_id, revision, object_key, created_at) VALUES (${id}, ${revision}, ${objectKey}, NOW()) ON CONFLICT (plan_id, revision) DO NOTHING`
+  },
+}
+
+export async function writePlan(input: HostedPlanInput): Promise<{ plan: HostedPlan; conflict: boolean }> {
+  return writeValidatedPlan(planWriteStore, await validatePlanUpload(input))
 }
 
 export async function updatePlanStatus(id: string, status: PlanStatus): Promise<{ plan: HostedPlan | null; conflict: boolean }> {
-  if (!isPlanStatus(status)) throw new Error("Invalid plan status")
+  if (!isPlanStatus(status)) throw new ValidationError("Invalid plan status")
   const existing = await findPlan(id)
   if (!existing) return { plan: null, conflict: false }
   if (existing.status === status) return { plan: existing, conflict: false }
@@ -138,11 +139,21 @@ export async function findToken(id: string): Promise<TokenRecord | null> {
 }
 
 export async function createToken(record: TokenRecord): Promise<CliToken> {
-  await getSql()`INSERT INTO cli_tokens (id, secret_hash, scopes, expires_at) VALUES (${record.id}, ${record.secretHash}, ${JSON.stringify(record.scopes)}::jsonb, ${record.expiresAt.toISOString()})`
+  await getSql()`INSERT INTO cli_tokens (id, secret_hash, scopes, expires_at, created_at) VALUES (${record.id}, ${record.secretHash}, ${JSON.stringify(record.scopes)}::jsonb, ${record.expiresAt.toISOString()}, NOW())`
   return { id: record.id, scopes: record.scopes, expiresAt: record.expiresAt, revokedAt: null }
 }
 
 export async function revokeToken(id: string): Promise<boolean> {
   const rows = await getSql()`UPDATE cli_tokens SET revoked_at = NOW() WHERE id = ${id} AND revoked_at IS NULL RETURNING id` as unknown as { id: string }[]
   return Boolean(rows[0])
+}
+
+// Owner token listing. Selects only the public columns; secret_hash is never read here.
+export async function listTokens(): Promise<TokenSummary[]> {
+  const rows = await getSql()`SELECT id, scopes, expires_at, revoked_at, last_used_at, created_at FROM cli_tokens ORDER BY created_at DESC NULLS LAST, id` as unknown as TokenListRow[]
+  return rows.map(tokenSummaryFromRow)
+}
+
+export async function touchToken(id: string): Promise<void> {
+  await getSql()`UPDATE cli_tokens SET last_used_at = NOW() WHERE id = ${id}`
 }

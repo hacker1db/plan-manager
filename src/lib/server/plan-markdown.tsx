@@ -4,6 +4,7 @@ import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import { sourceFormat, stripFrontmatter } from "../mdx/format.ts"
 import { PlanMdx } from "../mdx/render.tsx"
+import { rehypeAlignClasses } from "../mdx/align.ts"
 
 // Server-only plan renderer for the hosted viewer. It reuses the exact renderers the
 // Next.js app shipped: react-markdown + GFM with raw HTML skipped for Markdown, and the
@@ -41,7 +42,7 @@ export function PlanPre({ node, children, ...rest }: ComponentProps<"pre"> & { n
 
 export function PlanMarkdown({ markdown }: { markdown: string }) {
   if (sourceFormat(markdown) === "mdx") return <article className="markdown-body"><PlanMdx source={markdownBody(markdown)} components={{ pre: PlanPre }} /></article>
-  return <article className="markdown-body"><ReactMarkdown remarkPlugins={[remarkGfm]} skipHtml components={{ img: ({ alt }) => <span>{alt}</span>, pre: PlanPre }}>{markdownBody(markdown)}</ReactMarkdown></article>
+  return <article className="markdown-body"><ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeAlignClasses]} skipHtml components={{ img: ({ alt }) => <span>{alt}</span>, pre: PlanPre }}>{markdownBody(markdown)}</ReactMarkdown></article>
 }
 
 export function renderPlanHtml(markdown: string): string {

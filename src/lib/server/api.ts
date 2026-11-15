@@ -1,4 +1,5 @@
 import { HostedConfigurationError } from "./env.ts"
+import { ValidationError } from "./sanitize.ts"
 
 // Framework-neutral JSON helpers: route handlers return standard Responses so the
 // status codes and bodies stay identical to the former Next.js route handlers.
@@ -13,6 +14,7 @@ export const PRIVATE_NO_STORE = { "Cache-Control": "private, no-store" } as cons
 export function apiError(error: unknown): Response {
   if (error instanceof HostedConfigurationError) return unavailable()
   if (error instanceof SyntaxError) return jsonResponse({ error: "Invalid JSON" }, { status: 400 })
+  if (error instanceof ValidationError) return jsonResponse({ error: error.message }, { status: 400 })
   return jsonResponse({ error: "Request failed" }, { status: 500 })
 }
 
