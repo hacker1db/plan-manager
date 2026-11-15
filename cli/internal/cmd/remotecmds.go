@@ -165,8 +165,8 @@ func PushPlans(args []string, all bool) ([]remote.PushResult, error) {
 		}
 		r, err := remote.Push(site, token, remote.PushPayload{
 			ID: env.ID, Title: env.Title, Status: env.Status, Tags: env.Tags, Created: env.Created,
-			Updated: env.Updated, Markdown: p.Raw, Revision: env.Revision, ExpectedRevision: expected,
-		})
+			Updated: env.Updated, Markdown: p.Raw, ExpectedRevision: expected,
+		}) // Push normalizes line endings and sets Revision to the hash of the bytes it sends.
 		if err != nil {
 			return nil, err
 		}
