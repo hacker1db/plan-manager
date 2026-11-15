@@ -710,6 +710,11 @@ main { min-width: 0; }
   text-align: left;
 }
 
+/* GFM column alignment as classes, not inline style attributes (blocked by the hosted CSP). */
+.markdown-body .pm-align-left { text-align: left; }
+.markdown-body .pm-align-center { text-align: center; }
+.markdown-body .pm-align-right { text-align: right; }
+
 .markdown-body th {
   background: var(--panel-raised);
   font-family: var(--mono);
@@ -1136,3 +1141,6 @@ span.pm-block-error { display: inline; margin: 0; padding: 0 0.3em; }
 .mermaid-diagram details { margin-top: 0.8em; text-align: left; }
 .mermaid-diagram summary { cursor: pointer; color: var(--muted); font-size: 0.85em; }
 .mermaid-diagram details pre { margin-top: 0.6em; }
+
+/* Hosted app root wrapper (src/app.html); a class instead of an inline style for the CSP. */
+.sveltekit-root { display: contents; }
