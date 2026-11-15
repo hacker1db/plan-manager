@@ -25,7 +25,8 @@
     "test:lib": "TSX_TSCONFIG_PATH=tsconfig.tests.json node --import tsx --test 'test/lib/*.js'",
     "test:cli": "cd cli && go test ./...",
     "db:migrate": "node --env-file=.env.local --import tsx scripts/migrate-hosted.ts",
-    "test:contracts": "sh cli/scripts/contracts.sh"
+    "test:contracts": "sh cli/scripts/contracts.sh",
+    "promote": "sh scripts/promote.sh"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.2",

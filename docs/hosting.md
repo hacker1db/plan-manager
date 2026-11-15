@@ -6,7 +6,7 @@ The SvelteKit application in `src/routes` serves the private plan library at `ht
 
 Push the complete plan-manager repository to GitHub, then connect that repository to the existing `hacker1dbs-projects/plan-manager` Vercel project. Keep the existing project so its domain, integrations, and environment variables are preserved.
 
-Set the existing Vercel project's root directory to the repository root (`.`). Use the SvelteKit framework preset, `pnpm install --frozen-lockfile` as the install command, and `pnpm build` as the build command. `@sveltejs/adapter-vercel` produces output for the explicitly selected `nodejs24.x` runtime. Select the desired production branch after it exists on GitHub. The build creates the CLI output and then builds the SvelteKit app from `src/routes`.
+Set the existing Vercel project's root directory to the repository root (`.`). Use the SvelteKit framework preset, `pnpm install --frozen-lockfile` as the install command, and `pnpm build` as the build command. `@sveltejs/adapter-vercel` produces output for the explicitly selected `nodejs24.x` runtime. The production branch is `main`. The `preview` branch deploys to the Preview environment at `https://preview.planmanager.hacker1db.dev`; feature pull requests target `preview`, and `pnpm promote` opens the release pull request from `preview` into `main` (see [`AGENTS.md`](../AGENTS.md)). The build creates the CLI output and then builds the SvelteKit app from `src/routes`.
 
 Commit application source, migrations, tests, `pnpm-lock.yaml`, and `.env.example`. Local `.env*` secrets, `.vercel/`, `.svelte-kit/`, `node_modules/`, and TypeScript caches are ignored. Never commit credentials or deployment-protection bypass tokens. The local `.vercel/` directory only identifies the linked project; it is not a Git backup.
 
@@ -50,12 +50,12 @@ Existing `pm_...` Plan Manager tokens remain an explicit compatibility bridge. T
 
 ## Vercel environment configuration
 
-Set these exact variables independently for Development, Preview, and Production: `WORKOS_CLIENT_ID`, `WORKOS_API_KEY`, `WORKOS_COOKIE_PASSWORD`, `WORKOS_REDIRECT_URI`, `PLAN_MANAGER_OWNER_WORKOS_USER_IDS`, `PLAN_MANAGER_WORKOS_AUTHKIT_DOMAIN`, `PLAN_MANAGER_WORKOS_CLI_CLIENT_ID`, and `PLAN_MANAGER_WORKOS_CLI_AUDIENCE`. Preserve the existing `DATABASE_URL`, `BLOB_READ_WRITE_TOKEN`, and `PLAN_MANAGER_TOKEN_PEPPER`. Values in source and tickets must remain placeholders such as `<set-in-vercel>`.
+Set these exact variables independently for Development, Preview, and Production: `WORKOS_CLIENT_ID`, `WORKOS_API_KEY`, `WORKOS_COOKIE_PASSWORD`, `WORKOS_REDIRECT_URI`, `PLAN_MANAGER_OWNER_WORKOS_USER_IDS`, `PLAN_MANAGER_WORKOS_AUTHKIT_DOMAIN`, `PLAN_MANAGER_WORKOS_CLI_CLIENT_ID`, and `PLAN_MANAGER_WORKOS_CLI_AUDIENCE`. Production and Preview each also need their own `DATABASE_URL` (a separate Neon database), `BLOB_READ_WRITE_TOKEN` (a separate private Blob store), and `PLAN_MANAGER_TOKEN_PEPPER`; never share them across environments. Values in source and tickets must remain placeholders such as `<set-in-vercel>`.
 
 | Environment | Browser callback | Approved post-logout URL | CLI details |
 | --- | --- | --- | --- |
 | Development | `http://localhost:5173/callback` | `http://localhost:5173/` | Development AuthKit domain, public CLI client, development audience |
-| Preview | `https://<stable-preview-origin>/callback` | `https://<stable-preview-origin>/` | Isolated preview AuthKit domain/client/audience; avoid unbounded preview wildcards |
+| Preview (branch `preview`) | `https://preview.planmanager.hacker1db.dev/callback` | `https://preview.planmanager.hacker1db.dev/` | WorkOS Staging environment AuthKit domain/client/audience; scope variables to the `preview` branch and avoid preview wildcards |
 | Production | `https://planmanager.hacker1db.dev/callback` | `https://planmanager.hacker1db.dev/` | Production AuthKit domain, public CLI client, production audience |
 
 Variable changes do not modify an existing deployment. Redeploy the affected environment, then verify browser login/logout, non-owner denial, TOTP MFA, CLI device login, token rotation, and an authorized write. Preview must pass before production.
