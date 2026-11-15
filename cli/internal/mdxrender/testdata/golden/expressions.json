@@ -1,0 +1,15 @@
+{
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>\n<p>x <span class=\"pm-block-error\" role=\"note\">{expressions} are not supported in plans</span> y</p>\n<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>\n<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>\n<p>Text <span class=\"pm-block-error\" role=\"note\">{expressions} are not supported in plans</span> more</p>\n<p>Braces { escaped }</p>\n<p><code>{code span}</code></p>\n<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>\n<aside class=\"pm-block pm-callout pm-tone-note\"><p class=\"pm-callout-title\">note</p><p>after expression</p></aside>\n<aside class=\"pm-block pm-callout pm-tone-note\"><p class=\"pm-callout-title\">note</p><div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div><p>expression after tag</p></aside>\n<p><span class=\"pm-block-error\" role=\"note\">{expressions} are not supported in plans</span> text after</p>\n<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>\n<p>multiline <span class=\"pm-block-error\" role=\"note\">{expressions} are not supported in plans</span> expression</p>",
+  "problems": [
+    "{expressions} are not supported in plans; escape braces as \\{ or use a code span",
+    "{expressions} are not supported in plans",
+    "{expressions} are not supported in plans; escape braces as \\{ or use a code span",
+    "{expressions} are not supported in plans; escape braces as \\{ or use a code span",
+    "{expressions} are not supported in plans",
+    "{expressions} are not supported in plans; escape braces as \\{ or use a code span",
+    "{expressions} are not supported in plans; escape braces as \\{ or use a code span",
+    "{expressions} are not supported in plans",
+    "{expressions} are not supported in plans; escape braces as \\{ or use a code span",
+    "{expressions} are not supported in plans"
+  ]
+}

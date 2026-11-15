@@ -1,0 +1,10 @@
+{
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Tabs&gt; may only contain &lt;Tab&gt; elements</span></div>\n<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Tab&gt; is only valid inside &lt;Tabs&gt;</span></div>\n<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Columns&gt; may only contain &lt;Column&gt; elements</span></div>\n<aside class=\"pm-block pm-callout pm-tone-note\"><p class=\"pm-callout-title\">note</p><div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Column&gt; is only valid inside &lt;Columns&gt;</span></div></aside>\n<section class=\"pm-block pm-tabs\"><input class=\"pm-tab-input\" type=\"radio\" id=\"pm-tabs-5-0\" name=\"pm-tabs-5\" checked=\"\"/><div class=\"pm-tab-list\"><label for=\"pm-tabs-5-0\"></label></div><div class=\"pm-tab-panels\"><div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>&lt;Tab&gt;: missing required prop &quot;label&quot;</span></div></div></section>",
+  "problems": [
+    "<Tabs> may only contain <Tab> elements",
+    "<Tab> is only valid inside <Tabs>",
+    "<Columns> may only contain <Column> elements",
+    "<Column> is only valid inside <Columns>",
+    "<Tab>: missing required prop \"label\""
+  ]
+}

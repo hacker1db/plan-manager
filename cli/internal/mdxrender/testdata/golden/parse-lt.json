@@ -1,0 +1,6 @@
+{
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Unexpected character `=` (U+003D) before name, expected a character that can start a name, such as a letter, `$`, or `_`</span></div><pre class=\"markdown-fallback\">a &lt;= b and a &lt;3\n</pre>",
+  "problems": [
+    "MDX could not be parsed: Unexpected character `=` (U+003D) before name, expected a character that can start a name, such as a letter, `$`, or `_`"
+  ]
+}

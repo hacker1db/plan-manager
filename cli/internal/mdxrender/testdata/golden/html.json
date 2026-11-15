@@ -1,0 +1,6 @@
+{
+  "html": "<p>alert(1)</p>\n<div><p>flow div <strong>bold</strong></p></div>\n<details><p>Sum\nHidden</p></details>\n<p>Text with <b>bold</b>, <i>it</i>, <kbd>K</kbd>, <span>span</span>, link, , <u>u</u> and <br/> break.</p>\n<p><p>paragraph tag</p></p>\n<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>{expressions} are not supported in plans; escape braces as \\{ or use a code span</span></div>",
+  "problems": [
+    "{expressions} are not supported in plans; escape braces as \\{ or use a code span"
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "html": "<aside class=\"pm-block pm-callout pm-tone-risk\"><p class=\"pm-callout-title\">Heads up</p><ul class=\"contains-task-list\">\n<li class=\"task-list-item\"><input type=\"checkbox\" disabled=\"\" data-plan-task=\"true\"/> Inside callout</li>\n</ul></aside>\n<section class=\"pm-block pm-tree\"><header class=\"pm-block-head\"><h4 class=\"pm-block-title\">Changed files</h4><p class=\"pm-block-summary\">1 file · <span class=\"pm-plus\">+0</span> <span class=\"pm-minus\">−0</span></p></header><ul><li class=\"pm-tree-dir\"><span class=\"pm-tree-name\">src/</span><ul><li class=\"pm-tree-file\"><span class=\"pm-tree-name\">a.ts</span><span class=\"pm-change pm-change-added\">added</span></li></ul></li></ul></section>\n<ul class=\"contains-task-list\">\n<li class=\"task-list-item\"><input type=\"checkbox\" disabled=\"\" data-plan-task=\"true\" checked=\"\"/> Outside</li>\n</ul>\n<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>Unknown block &lt;Evil&gt;</span></div>",
+  "problems": [
+    "Unknown block <Evil>"
+  ]
+}

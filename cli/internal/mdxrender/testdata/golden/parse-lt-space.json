@@ -1,0 +1,4 @@
+{
+  "html": "<p>a &lt; b is fine</p>",
+  "problems": []
+}

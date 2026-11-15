@@ -1,0 +1,6 @@
+{
+  "html": "<div class=\"pm-block-error\" role=\"note\"><strong>Plan block error</strong><span>MDX could not be parsed: Unexpected `Property` in code: only spread elements are supported</span></div><pre class=\"markdown-fallback\">&lt;Callout {a} /&gt;\n</pre>",
+  "problems": [
+    "MDX could not be parsed: Unexpected `Property` in code: only spread elements are supported"
+  ]
+}
