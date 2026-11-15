@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestSanitizeHTML(t *testing.T) {
@@ -35,5 +36,27 @@ func TestEmbeddedDashboardMatchesSource(t *testing.T) {
 		if err != nil || !bytes.Equal(got, want) {
 			t.Errorf("embedded %s is stale; run go generate ./internal/server", e.Name())
 		}
+	}
+}
+
+func TestSortByTouchedNewestFirst(t *testing.T) {
+	old := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	mk := func(title, updated string, modified time.Time) *strictPlan {
+		p := &strictPlan{modified: modified}
+		p.Title, p.Updated, p.Created = title, updated, "2025-01-01T00:00:00.000Z"
+		return p
+	}
+	list := []*strictPlan{
+		mk("old", "2026-01-01T00:00:00.000Z", old),
+		mk("edited in obsidian", "2026-01-01T00:00:00.000Z", old.Add(72*time.Hour)),
+		mk("new", "2026-01-02T00:00:00.000Z", old),
+	}
+	sortByTouched(list)
+	var got []string
+	for _, p := range list {
+		got = append(got, p.Title)
+	}
+	if strings.Join(got, ",") != "edited in obsidian,new,old" {
+		t.Fatalf("order = %v", got)
 	}
 }

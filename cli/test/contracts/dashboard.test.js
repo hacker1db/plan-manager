@@ -316,6 +316,60 @@ test('task toggles persist one Markdown marker with CSRF and revision checks', a
   assert.equal(await readFile(filePath, 'utf8'), afterUpdate)
 })
 
+test('source edits save with CSRF and revision checks and comments stay out of the preview', async () => {
+  const root = await fixture()
+  const filePath = join(root, 'edit.md')
+  await writeFile(filePath, markdown({ id: 'edit_plan', body: '# Edit\n\n- [ ] Ship it\n' }))
+  const { base } = await running({ planHome: root })
+  const session = await fetch(`${base}/_session`).then(response => response.json())
+  const detail = await fetch(`${base}/api/plans/edit_plan`).then(response => response.json())
+  assert.deepEqual(detail.comments, [])
+  const nextBody = '# Edit\n\n- [ ] Ship it <!-- plan-comment: split into two steps -->\n- [ ] Verify\n'
+
+  const rejected = await fetch(`${base}/api/plans/edit_plan/body`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ body: nextBody, revision: detail.revision }),
+  })
+  assert.equal(rejected.status, 403)
+
+  const headers = { 'Content-Type': 'application/json', 'X-CSRF-Token': session.csrfToken }
+  const invalid = await fetch(`${base}/api/plans/edit_plan/body`, {
+    method: 'POST', headers, body: JSON.stringify({ body: nextBody }),
+  })
+  assert.equal(invalid.status, 400)
+
+  const saved = await fetch(`${base}/api/plans/edit_plan/body`, {
+    method: 'POST', headers, body: JSON.stringify({ body: nextBody, revision: detail.revision }),
+  }).then(response => value(response))
+  assert.equal(saved.response.status, 200)
+  assert.equal(saved.body.changed, true)
+  assert.deepEqual(saved.body.comments, [{ line: 4, text: 'split into two steps' }])
+  const onDisk = await readFile(filePath, 'utf8')
+  assert.match(onDisk, /^---\nid: edit_plan\n/)
+  assert.ok(onDisk.endsWith(nextBody))
+
+  const stale = await fetch(`${base}/api/plans/edit_plan/body`, {
+    method: 'POST', headers, body: JSON.stringify({ body: '# Lost', revision: detail.revision }),
+  })
+  assert.equal(stale.status, 409)
+  assert.equal(await readFile(filePath, 'utf8'), onDisk)
+
+  const after = await fetch(`${base}/api/plans/edit_plan`).then(response => response.json())
+  assert.equal(after.revision, saved.body.revision)
+  assert.deepEqual(after.comments, [{ line: 4, text: 'split into two steps' }])
+  if (after.html !== null) {
+    assert.doesNotMatch(after.html, /plan-comment|split into two steps/)
+    assert.match(after.html, /Verify/)
+  }
+
+  // Large plans fit, beyond the 64 KiB limit for other mutations.
+  const large = await fetch(`${base}/api/plans/edit_plan/body`, {
+    method: 'POST', headers, body: JSON.stringify({ body: `# Big\n\n${'line\n'.repeat(40000)}`, revision: after.revision }),
+  })
+  assert.equal(large.status, 200)
+})
+
 test('copy-path and editor actions are contained and CSRF protected', async () => {
   const root = await fixture()
   const filePath = join(root, 'actions.md')
