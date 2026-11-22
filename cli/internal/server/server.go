@@ -1024,11 +1024,17 @@ func (s *Server) archivePlan(w http.ResponseWriter, id string) {
 		if p.isArchived {
 			return "archived", nil
 		}
-		dest := filepath.Join(s.archive, filepath.Base(p.filePath))
-		if _, err := os.Lstat(dest); err == nil {
-			return "collision", nil
-		} else if !errors.Is(err, fs.ErrNotExist) {
-			return "", err
+		base := filepath.Base(p.filePath)
+		dest := filepath.Join(s.archive, base)
+		// A slug is one plan across formats, as the CLI's archive and
+		// slug checks treat it: x.md must not join an archived x.mdx.
+		slug := strings.TrimSuffix(base, filepath.Ext(base))
+		for _, format := range plans.Formats {
+			if _, err := os.Lstat(filepath.Join(s.archive, slug+plans.ExtensionFor(format))); err == nil {
+				return "collision", nil
+			} else if !errors.Is(err, fs.ErrNotExist) {
+				return "", err
+			}
 		}
 		meta := p.Meta
 		meta.Status = plans.StatusArchived
