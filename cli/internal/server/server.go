@@ -420,6 +420,9 @@ func (s *Server) write(p *strictPlan, meta plans.Meta, body string) (*strictPlan
 		return nil, errors.New("path traversal rejected")
 	}
 	meta.Updated = plans.Now()
+	if err := plans.AssertWritable(meta); err != nil {
+		return nil, &writeRefused{err}
+	}
 	content, err := plans.Render(meta, body)
 	if err != nil {
 		return nil, err
@@ -668,6 +671,28 @@ func lockConflict(err error) bool {
 	return errors.As(err, &e) && e.Code == exitcode.Conflict
 }
 
+// writeRefused is a write that plans.AssertWritable refused: a newer
+// tracking schema, too much unknown frontmatter, or a status that
+// contradicts the tracked stage. The dashboard reports it as a conflict.
+type writeRefused struct{ err error }
+
+func (e *writeRefused) Error() string { return e.err.Error() }
+func (e *writeRefused) Unwrap() error { return e.err }
+
+// writeFailure reports a failed dashboard write: 409 for a lock conflict or
+// a refused write, 500 otherwise.
+func writeFailure(w http.ResponseWriter, err error) {
+	var refused *writeRefused
+	switch {
+	case lockConflict(err):
+		writeError(w, 409, err.Error())
+	case errors.As(err, &refused):
+		writeError(w, 409, refused.Error())
+	default:
+		writeError(w, 500, "internal server error")
+	}
+}
+
 func (s *Server) handle(w http.ResponseWriter, r *http.Request) {
 	if !s.sameOrigin(w, r) {
 		return
@@ -912,12 +937,8 @@ func (s *Server) setStatus(w http.ResponseWriter, r *http.Request, id string) {
 		meta.Status = body.Status
 		return s.write(p, meta, p.body)
 	})
-	if lockConflict(err) {
-		writeError(w, 409, err.Error())
-		return
-	}
 	if err != nil {
-		writeError(w, 500, "internal server error")
+		writeFailure(w, err)
 		return
 	}
 	if updated == nil {
@@ -972,12 +993,8 @@ func (s *Server) toggleTask(w http.ResponseWriter, r *http.Request, id, indexTex
 		np, err := s.write(p, p.Meta, next)
 		return result{state: "updated", plan: np}, err
 	})
-	if lockConflict(err) {
-		writeError(w, 409, err.Error())
-		return
-	}
 	if err != nil {
-		writeError(w, 500, "internal server error")
+		writeFailure(w, err)
 		return
 	}
 	switch res.state {
@@ -1020,12 +1037,8 @@ func (s *Server) archivePlan(w http.ResponseWriter, id string) {
 		}
 		return "archived", os.Rename(p.filePath, dest)
 	})
-	if lockConflict(err) {
-		writeError(w, 409, err.Error())
-		return
-	}
 	if err != nil {
-		writeError(w, 500, "internal server error")
+		writeFailure(w, err)
 		return
 	}
 	switch state {

@@ -214,10 +214,11 @@ const (
 	maxUnknownBytes  = 65536
 )
 
-// assertWritable refuses writes that would drop or rewrite metadata the CLI
+// AssertWritable refuses writes that would drop or rewrite metadata the CLI
 // does not understand: newer tracking schemas and oversized unknown
 // frontmatter. It also refuses a status that contradicts the tracked stage.
-func assertWritable(meta Meta) error {
+// Every writer must call it; Write does.
+func AssertWritable(meta Meta) error {
 	if meta.SchemaVersion != nil && *meta.SchemaVersion > tracking.SchemaVersion {
 		return exitcode.New(exitcode.InvalidInput, "Plan %s uses tracking schema %d; upgrade plan before writing it", meta.ID, *meta.SchemaVersion)
 	}
@@ -240,7 +241,7 @@ func Write(path string, meta Meta, body string) error {
 	if FormatFromPath(path) == "mdx" {
 		meta.Format = "mdx"
 	}
-	if err := assertWritable(meta); err != nil {
+	if err := AssertWritable(meta); err != nil {
 		return err
 	}
 	content, err := Render(meta, body)
