@@ -1066,6 +1066,11 @@ func (s *Server) toggleTask(w http.ResponseWriter, r *http.Request, id, indexTex
 			return result{state: "stale"}, nil
 		}
 		next, ok := plans.UpdateTaskMarker(p.body, index, *body.Checked)
+		if p.Format == "mdx" {
+			// The dashboard numbers rendered checkboxes, and MDX props can
+			// hold `- [ ]` text that renders as none.
+			next, ok = mdxrender.SetTask(p.body, index, *body.Checked)
+		}
 		if !ok {
 			return result{state: "invalid-index"}, nil
 		}
