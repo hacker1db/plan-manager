@@ -701,6 +701,7 @@ type serializer struct {
 	b        strings.Builder
 	problems []string
 	overflow bool
+	tasks    []int // source offsets of task checkboxes, in output order
 }
 
 func (s *serializer) write(n *hNode, parent string) {
@@ -727,6 +728,9 @@ func (s *serializer) write(n *hNode, parent string) {
 			s.write(c, parent)
 		}
 	default:
+		if n.task {
+			s.tasks = append(s.tasks, n.taskAt)
+		}
 		s.b.WriteString("<" + n.tag)
 		for _, a := range n.attrs {
 			s.b.WriteString(" " + a.name + `="` + htmlEscaper.Replace(a.value) + `"`)
@@ -745,12 +749,17 @@ func (s *serializer) write(n *hNode, parent string) {
 
 // render is PlanMdx: it renders source to HTML and collects block problems.
 func render(source string) (string, []string) {
+	s := renderSerialized(source)
+	return s.b.String(), s.problems
+}
+
+func renderSerialized(source string) *serializer {
 	s := &serializer{}
-	fallback := func(message string) (string, []string) {
+	fallback := func(message string) *serializer {
 		s = &serializer{problems: []string{message}}
 		s.write(blockError(message, false), "")
 		s.writeFallback(source)
-		return s.b.String(), s.problems
+		return s
 	}
 	if bracketDepth(source) > maxBracketNesting {
 		return fallback(fmt.Sprintf("MDX could not be parsed: brackets are nested more than %d levels deep", maxBracketNesting))
@@ -770,7 +779,27 @@ func render(source string) (string, []string) {
 	if s.overflow {
 		return fallback(fmt.Sprintf("Rendered plan is larger than %d bytes", maxHTMLBytes))
 	}
-	return s.b.String(), s.problems
+	return s
+}
+
+// SetTask checks or unchecks the index-th task checkbox in the rendered
+// plan, counting the checkboxes the dashboard shows. Counting `- [ ]` in the
+// source instead would also count text inside props such as a Diff's
+// `before`. It reports false when there is no such checkbox.
+func SetTask(source string, index int, checked bool) (string, bool) {
+	tasks := renderSerialized(source).tasks
+	if index < 0 || index >= len(tasks) {
+		return source, false
+	}
+	at := tasks[index]
+	if at < 0 || at+3 > len(source) || source[at] != '[' || source[at+2] != ']' || !strings.ContainsRune(" xX", rune(source[at+1])) {
+		return source, false
+	}
+	mark := " "
+	if checked {
+		mark = "x"
+	}
+	return source[:at+1] + mark + source[at+2:], true
 }
 
 // writeFallback shows the source as escaped text, bypassing the output cap;

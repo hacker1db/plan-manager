@@ -504,6 +504,7 @@ type mdNode struct {
 	start    int
 	spread   bool
 	checked  int // -1 not a task, 0 unchecked, 1 checked
+	taskAt   int // source offset of a task's `[`, or -1
 	lang     string
 	url      string
 	title    *string
@@ -754,12 +755,16 @@ func (b *builder) node(n gast.Node) {
 		}
 		b.container(&mdNode{typ: "list", ordered: x.IsOrdered(), start: x.Start, spread: !x.IsTight, token: token}, n)
 	case *gast.ListItem:
-		m := &mdNode{typ: "listItem", checked: -1, token: "listItem"}
+		m := &mdNode{typ: "listItem", checked: -1, taskAt: -1, token: "listItem"}
 		if first := x.FirstChild(); first != nil {
 			if box, ok := first.FirstChild().(*east.TaskCheckBox); ok && !b.emptyTask(first, box) {
 				m.checked = 0
 				if box.IsChecked {
 					m.checked = 1
+				}
+				// The checkbox opens the item's first line.
+				if lines := first.Lines(); lines.Len() > 0 {
+					m.taskAt = b.pos.original(lines.At(0).Start)
 				}
 				first.RemoveChild(first, box)
 				if t, ok := first.FirstChild().(*gast.Text); ok {

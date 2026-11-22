@@ -46,3 +46,21 @@ func TestMDXPlansRenderInProcess(t *testing.T) {
 		t.Errorf("rendered html = %q", html)
 	}
 }
+
+func TestMDXTaskToggleSkipsPropText(t *testing.T) {
+	body := "<Diff filename=\"a.md\" before={`intro\n- [ ] not a task`} after=\"b\" />\n\n<Callout tone=\"risk\">\n- [ ] Real task\n</Callout>\n"
+	ts := startServer(t, map[string]string{"t.mdx": planFile("task_plan", "", body)})
+	_, res := ts.do("GET", "/api/plans/task_plan", "")
+	var detail struct {
+		Revision string `json:"revision"`
+	}
+	decode(t, res, &detail)
+	status, res := ts.do("POST", "/api/plans/task_plan/tasks/0", `{"checked":true,"revision":"`+detail.Revision+`"}`)
+	if status != 200 {
+		t.Fatalf("status %d: %s", status, res)
+	}
+	got := ts.read("t.mdx")
+	if !strings.Contains(got, "- [x] Real task") || !strings.Contains(got, "- [ ] not a task") {
+		t.Fatalf("wrong task toggled:\n%s", got)
+	}
+}

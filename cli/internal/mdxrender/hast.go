@@ -20,6 +20,8 @@ type hNode struct {
 	attrs    []hAttr
 	children []*hNode
 	record   *blockRecord // placeholder for a block
+	task     bool         // a task checkbox; taskAt is its source offset
+	taskAt   int
 }
 
 func txt(s string) *hNode { return &hNode{isText: true, text: s} }
@@ -350,7 +352,9 @@ func (s *toHast) listItem(n, parent *mdNode) *hNode {
 		if len(paragraph.children) > 0 {
 			paragraph.children = append([]*hNode{txt(" ")}, paragraph.children...)
 		}
-		paragraph.children = append([]*hNode{taskInput(n.checked == 1)}, paragraph.children...)
+		input := taskInput(n.checked == 1)
+		input.task, input.taskAt = true, n.taskAt
+		paragraph.children = append([]*hNode{input}, paragraph.children...)
 		a = attrs("class", "task-list-item")
 	}
 	var children []*hNode
