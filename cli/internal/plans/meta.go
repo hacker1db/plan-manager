@@ -129,7 +129,7 @@ func ParseFrontmatter(content string) (Raw, string) {
 		return Raw{}, body
 	}
 	m := doc.Content[0]
-	if m.Kind != yaml.MappingNode {
+	if m.Kind != yaml.MappingNode || !withinNodeLimit(m) {
 		return Raw{}, body
 	}
 	raw := Raw{values: map[string]*yaml.Node{}}
@@ -192,6 +192,45 @@ func NormalizeMeta(raw Raw) Meta {
 		}
 	}
 	return m
+}
+
+// maxFrontmatterNodes bounds frontmatter size with aliases expanded. detach
+// copies alias targets, so a few hundred bytes of nested aliases (an alias
+// bomb) would otherwise expand to gigabytes on every read.
+const maxFrontmatterNodes = 10_000
+
+// withinNodeLimit reports whether n expands to at most maxFrontmatterNodes
+// nodes and has no alias cycle. Sizes are memoized per node, so the check is
+// linear in the parsed tree rather than in its expansion.
+func withinNodeLimit(n *yaml.Node) bool {
+	const visiting = -1
+	sizes := map[*yaml.Node]int{}
+	var size func(n *yaml.Node) int
+	size = func(n *yaml.Node) int {
+		if n == nil {
+			return 0
+		}
+		if n.Kind == yaml.AliasNode && n.Alias != nil {
+			return size(n.Alias)
+		}
+		switch s, seen := sizes[n]; {
+		case seen && s == visiting:
+			return maxFrontmatterNodes + 1 // an alias cycle never ends
+		case seen:
+			return s
+		}
+		sizes[n] = visiting
+		total := 1
+		for _, child := range n.Content {
+			total += size(child)
+			if total > maxFrontmatterNodes {
+				break
+			}
+		}
+		sizes[n] = total
+		return total
+	}
+	return size(n) <= maxFrontmatterNodes
 }
 
 // detach deep-copies n with aliases replaced by their targets and anchors
