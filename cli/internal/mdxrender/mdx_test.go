@@ -207,3 +207,17 @@ func TestOutputIsInert(t *testing.T) {
 		}
 	}
 }
+
+// The dashboard's Content Security Policy blocks inline styles, so table
+// alignment must be a class.
+func TestTableAlignmentUsesClasses(t *testing.T) {
+	html := RenderHTML("| a | b | c |\n|:--|:-:|--:|\n| 1 | 2 | 3 |\n")
+	for _, want := range []string{`<th class="pm-align-left">a</th>`, `<td class="pm-align-center">2</td>`, `<td class="pm-align-right">3</td>`} {
+		if !strings.Contains(html, want) {
+			t.Errorf("missing %s in %s", want, html)
+		}
+	}
+	if strings.Contains(html, "style=") {
+		t.Errorf("inline style in %s", html)
+	}
+}
