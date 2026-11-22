@@ -62,3 +62,18 @@ func TestDashboardRefusesNewerTrackingSchema(t *testing.T) {
 		t.Fatal("refused writes modified the plan")
 	}
 }
+
+func TestArchiveRefusesSlugTakenInOtherFormat(t *testing.T) {
+	live := planFile("live_plan", "", "Live\n")
+	archived := planFile("old_plan", "status: archived\n", "Old\n")
+	for _, c := range []struct{ live, archived string }{{"x.md", "archive/x.mdx"}, {"x.mdx", "archive/x.md"}} {
+		ts := startServer(t, map[string]string{c.live: live, c.archived: archived})
+		status, res := ts.do("POST", "/api/plans/live_plan/archive", "")
+		if status != 409 || !strings.Contains(res, "archive destination already exists") {
+			t.Fatalf("%s: status %d: %s", c.live, status, res)
+		}
+		if ts.read(c.live) != live {
+			t.Fatalf("%s changed", c.live)
+		}
+	}
+}
