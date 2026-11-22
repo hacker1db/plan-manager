@@ -92,6 +92,66 @@ type Server struct {
 
 	pandocOnce sync.Once
 	pandocOK   bool
+
+	mdx mdxCache
+}
+
+// MDX renders are cached by plan revision so a page load re-renders only a
+// changed plan, and a render that outlives mdxRenderTimeout is reported as
+// failed (the dashboard shows the source) instead of holding the request.
+// The render keeps running and fills the cache when it finishes.
+var (
+	renderMDX        = mdxrender.RenderHTML
+	mdxRenderTimeout = 5 * time.Second
+)
+
+const mdxCacheSize = 64
+
+const mdxRenderFailed = `<div class="pm-block-error" role="note"><strong>Plan block error</strong><span>MDX could not be rendered</span></div>`
+
+type mdxRender struct {
+	done chan struct{}
+	html string
+}
+
+type mdxCache struct {
+	renderFn func(string) string
+	timeout  time.Duration
+
+	mu      sync.Mutex
+	entries map[string]*mdxRender
+}
+
+func (c *mdxCache) render(revision, body string) (string, bool) {
+	c.mu.Lock()
+	e := c.entries[revision]
+	if e == nil {
+		if c.entries == nil || len(c.entries) >= mdxCacheSize {
+			c.entries = map[string]*mdxRender{}
+		}
+		e = &mdxRender{done: make(chan struct{})}
+		c.entries[revision] = e
+		go func() {
+			defer close(e.done)
+			// net/http recovers a handler's panics; this goroutine must
+			// recover its own or one bad plan would stop the server.
+			defer func() {
+				if recover() != nil {
+					e.html = mdxRenderFailed
+				}
+			}()
+			e.html = c.renderFn(body)
+		}()
+	}
+	c.mu.Unlock()
+	timer := time.NewTimer(c.timeout)
+	defer timer.Stop()
+	select {
+	case <-e.done:
+		return e.html, true
+	case <-timer.C:
+		return "", false
+	}
 }
 
 type record struct {
@@ -126,6 +186,7 @@ func Start(opts Options) (*Server, error) {
 		clients: map[chan string]struct{}{}, stop: make(chan struct{}),
 		watchDebounce: or(opts.WatchDebounce, watchDebounce), stabilityDelay: or(opts.StabilityDelay, stabilityDelay),
 		reconcileInterval: or(opts.ReconcileInterval, reconcileInterval),
+		mdx:               mdxCache{renderFn: renderMDX, timeout: mdxRenderTimeout},
 	}
 	for _, d := range []string{s.home, s.archive} {
 		if err := ensureDirectory(d); err != nil {
@@ -300,7 +361,7 @@ func (s *Server) readStrict(p string) (*strictPlan, error) {
 	if !info.Mode().IsRegular() {
 		return nil, errors.New("plan is not a regular file")
 	}
-	data, err := os.ReadFile(p)
+	data, err := plans.ReadFile(p)
 	if err != nil {
 		return nil, err
 	}
@@ -388,7 +449,7 @@ func (s *Server) captureSnapshot() snapshot {
 	var recs []record
 	var lines []string
 	for _, f := range s.planFiles() {
-		data, err := os.ReadFile(f)
+		data, err := plans.ReadFile(f)
 		if err != nil {
 			continue
 		}
@@ -812,7 +873,11 @@ func (s *Server) serveDetail(w http.ResponseWriter, id string, seq int) {
 	if p.Format == "mdx" {
 		// MDX renders in-process: parsed, never evaluated, and no Pandoc.
 		format = "mdx"
-		html, renderState = mdxrender.RenderHTML(p.body), "rendered"
+		if out, ok := s.mdx.render(p.revision, p.body); ok {
+			html, renderState = out, "rendered"
+		} else {
+			renderState = "failed"
+		}
 	} else if s.pandocAvailable() {
 		if out, err := RenderMarkdown(p.body); err == nil {
 			html, renderState = out, "rendered"

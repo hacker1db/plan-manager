@@ -1,6 +1,7 @@
 package mdxrender
 
 import (
+	"bytes"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -36,18 +37,20 @@ func gfmAtext(r rune) bool {
 // unicodePunctuation is micromark's /\p{P}|\p{S}/u.
 func unicodePunctuation(r rune) bool { return r >= 0 && (unicode.IsPunct(r) || unicode.IsSymbol(r)) }
 
-type literalScanner struct{ s string }
+// literalScanner reads the line in place: copying the rest of the line at
+// every trigger character made long punctuation runs quadratic.
+type literalScanner struct{ s []byte }
 
 func (l literalScanner) at(i int) rune {
 	if i >= len(l.s) {
 		return -1
 	}
-	r, _ := utf8.DecodeRuneInString(l.s[i:])
+	r, _ := utf8.DecodeRune(l.s[i:])
 	return r
 }
 
 func (l literalScanner) size(i int) int {
-	_, n := utf8.DecodeRuneInString(l.s[i:])
+	_, n := utf8.DecodeRune(l.s[i:])
 	return n
 }
 
@@ -142,7 +145,7 @@ func previousWww(prev rune) bool {
 }
 
 func (l literalScanner) www(prev rune) (int, bool) {
-	if !previousWww(prev) || len(l.s) < 5 || !strings.EqualFold(l.s[:4], "www.") {
+	if !previousWww(prev) || len(l.s) < 5 || !bytes.EqualFold(l.s[:4], []byte("www.")) {
 		return 0, false
 	}
 	end, ok := l.domain(0)
@@ -160,7 +163,7 @@ func (l literalScanner) protocol(prev rune) (int, bool) {
 	for i < len(l.s) && i < 5 && asciiAlpha(rune(l.s[i])) {
 		i++
 	}
-	if p := strings.ToLower(l.s[:i]); (p != "http" && p != "https") || !strings.HasPrefix(l.s[i:], "://") {
+	if p := strings.ToLower(string(l.s[:i])); (p != "http" && p != "https") || !bytes.HasPrefix(l.s[i:], []byte("://")) {
 		return 0, false
 	}
 	i += 3
@@ -238,15 +241,15 @@ func (autolinkParser) Parse(parent gast.Node, block gtext.Reader, pc parser.Cont
 	} else if p := block.PrecendingCharacter(); p != '\n' {
 		prev = p
 	}
-	l := literalScanner{s: string(line[skip:])}
+	l := literalScanner{s: line[skip:]}
 	// micromark tries the email construct first at every start character.
 	url, end, ok := "", 0, false
 	if end, ok = l.email(prev); ok {
-		url = "mailto:" + l.s[:end]
+		url = "mailto:" + string(l.s[:end])
 	} else if end, ok = l.www(prev); ok {
-		url = "http://" + l.s[:end]
+		url = "http://" + string(l.s[:end])
 	} else if end, ok = l.protocol(prev); ok {
-		url = l.s[:end]
+		url = string(l.s[:end])
 	}
 	if !ok || end == 0 {
 		return nil
@@ -255,5 +258,5 @@ func (autolinkParser) Parse(parent gast.Node, block gtext.Reader, pc parser.Cont
 		gast.MergeOrAppendTextSegment(parent, seg.WithStop(seg.Start+skip))
 	}
 	block.Advance(skip + end)
-	return &literalLinkNode{url: url, text: l.s[:end]}
+	return &literalLinkNode{url: url, text: string(l.s[:end])}
 }

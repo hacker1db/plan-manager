@@ -78,7 +78,7 @@ func newCheckCmd(opts *options) *cobra.Command {
 					}
 					return exitcode.New(code, "%s", err.Error())
 				}
-				data, err := os.ReadFile(path)
+				data, err := plans.ReadFile(path)
 				if err != nil {
 					return err
 				}

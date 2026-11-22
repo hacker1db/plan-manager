@@ -46,8 +46,9 @@ type jsProp struct {
 }
 
 type jsError struct {
-	msg   string
-	atEnd bool
+	msg      string
+	atEnd    bool
+	consumed int // end of the last token the parser accepted
 }
 
 type tokKind int
@@ -82,11 +83,28 @@ type jsParser struct {
 	prevEnd      int
 	lastTemplate *jsNode
 	scope        *moduleScope
+	depth        int
 }
 
+// maxJSDepth bounds expression nesting. The parser is recursive descent, so
+// without a bound a deeply nested prop such as `[[[[…]]]]` overflows the
+// goroutine stack, a fatal error that recover() cannot catch.
+const maxJSDepth = 200
+
 func (p *jsParser) fail(msg string) {
-	panic(&jsError{msg: msg, atEnd: p.pos >= len(p.src)})
+	panic(&jsError{msg: msg, atEnd: p.pos >= len(p.src), consumed: p.prevEnd})
 }
+
+// enter records one level of recursion and fails once nesting passes
+// maxJSDepth; pair it with a deferred leave.
+func (p *jsParser) enter() {
+	p.depth++
+	if p.depth > maxJSDepth {
+		p.fail("Expression is nested too deeply")
+	}
+}
+
+func (p *jsParser) leave() { p.depth-- }
 
 func parseJS(src string, fn func(p *jsParser)) (err *jsError) {
 	p := &jsParser{src: src}
@@ -574,6 +592,8 @@ func (p *jsParser) parseExpression() *jsNode {
 var assignOps = map[string]bool{"=": true, "+=": true, "-=": true, "*=": true, "/=": true, "%=": true, "**=": true, "<<=": true, ">>=": true, ">>>=": true, "&=": true, "|=": true, "^=": true, "&&=": true, "||=": true, "??=": true}
 
 func (p *jsParser) parseAssign() *jsNode {
+	p.enter()
+	defer p.leave()
 	start := p.tok.start
 	if p.tok.kind == tName && !p.tok.escaped {
 		switch p.tok.value {
@@ -764,6 +784,8 @@ func isLogical(n *jsNode, ops ...string) bool {
 }
 
 func (p *jsParser) parseUnary() *jsNode {
+	p.enter()
+	defer p.leave()
 	start := p.tok.start
 	if p.tok.kind == tPunct {
 		switch p.tok.value {
@@ -888,6 +910,8 @@ func (p *jsParser) parseArguments() {
 }
 
 func (p *jsParser) parseAtom() *jsNode {
+	p.enter()
+	defer p.leave()
 	start := p.tok.start
 	switch p.tok.kind {
 	case tNum:
@@ -1436,6 +1460,8 @@ func (p *jsParser) jsxExpression(allowEmpty bool) {
 // parseJSX parses an element whose `<` is the current token; on return p.pos
 // is just after the element.
 func (p *jsParser) parseJSX(start int) {
+	p.enter()
+	defer p.leave()
 	p.pos = start + 1
 	name := p.jsxElementName()
 	for {

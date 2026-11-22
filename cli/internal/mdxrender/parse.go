@@ -2,6 +2,7 @@ package mdxrender
 
 import (
 	"bytes"
+	"fmt"
 	"html"
 	"regexp"
 	"sort"
@@ -74,9 +75,18 @@ var stateKey = parser.NewContextKey()
 
 type parseState struct {
 	source  []byte
+	text    string // source as a string, converted once rather than per block
 	errs    []rankedError
 	imports []string // names imported by earlier ESM blocks
+	rests   map[gast.Node]*blockText
+	budget  *workBudget
 }
+
+// failed reports whether a construct has already crashed. Micromark throws
+// at the first crash and later crashes rank after it, so once one is
+// recorded nothing scanned afterwards can change the result; skipping the
+// scans keeps a plan full of `{` or `<` from rescanning to the end at each.
+func (st *parseState) failed() bool { return len(st.errs) > 0 }
 
 // Micromark tokenizes all flow (block) constructs before any text (inline)
 // constructs, and throws at the first crash, so errors rank by phase, then
@@ -101,12 +111,12 @@ func (flowParser) Trigger() []byte { return []byte{'<', '{'} }
 func (flowParser) Open(parent gast.Node, reader gtext.Reader, pc parser.Context) (gast.Node, parser.State) {
 	line, seg := reader.PeekLine()
 	pos := pc.BlockOffset()
-	if pos < 0 || pos >= len(line) || (line[pos] != '<' && line[pos] != '{') || seg.Padding != 0 {
+	if pos < 0 || pos >= len(line) || (line[pos] != '<' && line[pos] != '{') || seg.Padding != 0 || pc.Get(stateKey).(*parseState).failed() {
 		return nil, parser.NoChildren
 	}
-	source := reader.Source()
 	start := seg.Start + pos
-	sc := &scanner{s: string(source), i: start}
+	st := pc.Get(stateKey).(*parseState)
+	sc := &scanner{s: st.text, i: start, budget: st.budget}
 	items, ok, err := sc.scanFlow()
 	if err != nil {
 		record(pc, 1, start, err)
@@ -171,6 +181,10 @@ func (esmParser) Open(parent gast.Node, reader gtext.Reader, pc parser.Context) 
 			end = lineEnd(next)
 		}
 		st := pc.Get(stateKey).(*parseState)
+		if !st.budget.spend(end - start) {
+			record(pc, 1, start, errTooComplex)
+			return nil, parser.NoChildren
+		}
 		types, imports, jsErr := parseModule(string(source[start:end]), st.imports)
 		if jsErr != nil {
 			if end < len(source) && (jsErr.atEnd || jsErr.msg == "Unterminated comment") {
@@ -234,6 +248,77 @@ func (b indentTolerant) Open(parent gast.Node, reader gtext.Reader, pc parser.Co
 
 // ---------- inline parsers ----------
 
+// blockText is an inline block's text, each byte's absolute source offset,
+// and where each line starts in both.
+type blockText struct {
+	s         string
+	offsets   []int
+	lineStart []int
+	segs      []gtext.Segment
+}
+
+func newBlockText(source []byte, lines *gtext.Segments) *blockText {
+	t := &blockText{}
+	last := 0
+	if lines.Len() > 0 {
+		last = lines.At(lines.Len() - 1).Stop
+	}
+	var b strings.Builder
+	for i := 0; i < lines.Len(); i++ {
+		seg := lines.At(i)
+		t.segs = append(t.segs, seg)
+		t.lineStart = append(t.lineStart, b.Len())
+		if seg.Start < 0 || seg.Start >= last {
+			break
+		}
+		v := seg.Value(source)
+		for j := range v {
+			t.offsets = append(t.offsets, seg.Start+j)
+		}
+		b.Write(v)
+	}
+	t.s = b.String()
+	return t
+}
+
+// restOf returns rest(block) from a per-block cache. Building the remainder
+// afresh at every `<` and `{` made inline scanning quadratic in the block's
+// length. It falls back to rest when the position is not a plain suffix of a
+// cached line.
+func restOf(parent gast.Node, block gtext.Reader, pc parser.Context) (string, []int) {
+	st := pc.Get(stateKey).(*parseState)
+	for parent != nil && parent.Type() != gast.TypeBlock {
+		parent = parent.Parent()
+	}
+	line, seg := block.Position()
+	if parent == nil || seg.Padding != 0 {
+		return rest(block)
+	}
+	if st.rests == nil {
+		st.rests = map[gast.Node]*blockText{}
+	}
+	t := st.rests[parent]
+	if t == nil {
+		t = newBlockText(block.Source(), parent.Lines())
+		st.rests[parent] = t
+	}
+	if line >= len(t.lineStart) {
+		return rest(block)
+	}
+	ls := t.segs[line]
+	if ls.Padding != 0 || seg.Start < ls.Start || seg.Stop != ls.Stop {
+		return rest(block)
+	}
+	if l, _ := block.PeekLine(); l == nil {
+		return "", nil
+	}
+	i := t.lineStart[line] + seg.Start - ls.Start
+	if i > len(t.s) {
+		return rest(block)
+	}
+	return t.s[i:], t.offsets[i:]
+}
+
 // rest collects the remainder of an inline block from the reader position,
 // with each byte's absolute source offset.
 func rest(block gtext.Reader) (string, []int) {
@@ -260,11 +345,14 @@ type textTagParser struct{}
 func (textTagParser) Trigger() []byte { return []byte{'<'} }
 
 func (textTagParser) Parse(parent gast.Node, block gtext.Reader, pc parser.Context) gast.Node {
-	s, offsets := rest(block)
+	if pc.Get(stateKey).(*parseState).failed() {
+		return nil
+	}
+	s, offsets := restOf(parent, block, pc)
 	if len(offsets) == 0 {
 		return nil
 	}
-	sc := &scanner{s: s}
+	sc := &scanner{s: s, budget: pc.Get(stateKey).(*parseState).budget}
 	tag, ok, err := sc.scanTag()
 	if err != nil {
 		record(pc, 2, offsets[0], err)
@@ -290,11 +378,14 @@ type textExprParser struct{}
 func (textExprParser) Trigger() []byte { return []byte{'{'} }
 
 func (textExprParser) Parse(parent gast.Node, block gtext.Reader, pc parser.Context) gast.Node {
-	s, offsets := rest(block)
+	if pc.Get(stateKey).(*parseState).failed() {
+		return nil
+	}
+	s, offsets := restOf(parent, block, pc)
 	if len(offsets) == 0 {
 		return nil
 	}
-	sc := &scanner{s: s}
+	sc := &scanner{s: s, budget: pc.Get(stateKey).(*parseState).budget}
 	if _, err := sc.scanExpression(false, true); err != nil {
 		record(pc, 2, offsets[0], err)
 		return nil
@@ -329,12 +420,39 @@ func newMarkdown() goldmark.Markdown {
 			util.Prioritized(parser.NewEmphasisParser(), 500),
 			util.Prioritized(autolinkParser{}, 999),
 		),
-		parser.WithParagraphTransformers(parser.DefaultParagraphTransformers()...),
+		parser.WithParagraphTransformers(append(parser.DefaultParagraphTransformers(), util.Prioritized(tableLimit{}, 150))...),
 	)
 	return goldmark.New(goldmark.WithParser(p), goldmark.WithExtensions(extension.Table, extension.Strikethrough, extension.TaskList, extension.Footnote))
 }
 
 var markdown = newMarkdown()
+
+// tableLimit runs before goldmark's table transformer (priority 200) and
+// refuses a table too large to render. goldmark pads every row to the
+// delimiter row's width, so a short source can build millions of cells.
+type tableLimit struct{}
+
+func (tableLimit) Transform(node *gast.Paragraph, reader gtext.Reader, pc parser.Context) {
+	lines := node.Lines()
+	if lines.Len() < 2 {
+		return
+	}
+	second := lines.At(1)
+	delimiter := bytes.TrimSpace(second.Value(reader.Source()))
+	if len(bytes.Trim(delimiter, "|-: \t")) > 0 || bytes.IndexByte(delimiter, '-') < 0 {
+		return
+	}
+	delimiter = bytes.TrimSuffix(bytes.TrimPrefix(delimiter, []byte("|")), []byte("|"))
+	columns := bytes.Count(delimiter, []byte("|")) + 1
+	rows := lines.Len() - 1
+	if columns <= maxTableColumns && columns*rows <= maxTableCells {
+		return
+	}
+	record(pc, 1, lines.At(0).Start, &syntaxError{msg: fmt.Sprintf("Table has %d columns and %d rows; tables are limited to %d columns and %d cells", columns, rows, maxTableColumns, maxTableCells)})
+	// Detaching the paragraph stops later transformers, so the table is
+	// never built; the parse has already failed.
+	node.Parent().RemoveChild(node.Parent(), node)
+}
 
 // ---------- positions ----------
 
@@ -396,7 +514,8 @@ type mdNode struct {
 	nameNull bool
 	attrs    []jsxAttr
 
-	unresolved bool // text whose escapes and character references are pending
+	unresolved bool     // text whose escapes and character references are pending
+	more       []string // text merged into value, joined once by resolveAll
 
 	token      string // micromark token type, for error messages
 	tag        *jsxTag
@@ -421,7 +540,9 @@ func (b *builder) append(n *mdNode) {
 	t := b.top()
 	if n.typ == "text" && len(t.children) > 0 {
 		if last := t.children[len(t.children)-1]; last.typ == "text" && last.unresolved == n.unresolved {
-			last.value += n.value
+			// Appending to value directly copied it on every merge, which
+			// is quadratic when goldmark splits text at each `[` or `!`.
+			last.more = append(last.more, n.value)
 			return
 		}
 	}
@@ -429,6 +550,9 @@ func (b *builder) append(n *mdNode) {
 }
 
 func (b *builder) enter(n *mdNode) {
+	if len(b.stack) > maxNesting {
+		b.fail(nestingError())
+	}
 	b.append(n)
 	b.stack = append(b.stack, n)
 }
@@ -833,10 +957,11 @@ type parsedMdx struct {
 // parseMdx parses source into an mdast tree, or reports the first error the
 // TypeScript parser would throw.
 func parseMdx(source string) (result parsedMdx) {
-	d := dedent(source)
+	budget := newWorkBudget()
+	d := dedent(source, budget)
 	src := []byte(d.source)
 	pc := parser.NewContext()
-	st := &parseState{source: src}
+	st := &parseState{source: src, text: d.source, budget: budget}
 	pc.Set(stateKey, st)
 	doc := markdown.Parser().Parse(gtext.NewReader(src), parser.WithContext(pc))
 	if len(st.errs) > 0 {
@@ -910,6 +1035,10 @@ func parseMdx(source string) (result parsedMdx) {
 // resolveAll applies escapes and character references once adjacent goldmark
 // text segments have merged, so references split across segments decode.
 func resolveAll(n *mdNode) {
+	if n.more != nil {
+		n.value += strings.Join(n.more, "")
+		n.more = nil
+	}
 	if n.unresolved {
 		n.value, n.unresolved = resolveText(n.value), false
 	}

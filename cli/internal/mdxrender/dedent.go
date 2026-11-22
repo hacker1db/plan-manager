@@ -77,15 +77,34 @@ func closesFence(s, marker string) bool {
 
 // openingTag reports a line holding only an opening (not self-closing) tag,
 // returning its name and how many lines the tag spans.
-func openingTag(lines []srcLine, i int) (string, int) {
-	var rest strings.Builder
-	for j := i; j < len(lines); j++ {
-		rest.WriteString(lines[j].text)
-	}
-	sc := &scanner{s: rest.String()}
-	tag, ok, err := sc.scanTag()
-	if err != nil || !ok || tag.close || tag.selfClosing || tag.name == "" {
-		return "", 0
+//
+// The tag is scanned in a window of lines that doubles while the scan crashes
+// at the window's end. Scanning the whole remainder at every `<` line was
+// quadratic in the plan's length. A scan that succeeds, declines, or crashes
+// before the window's end reads the same characters either way.
+func openingTag(lines []srcLine, i int, budget *workBudget) (string, int) {
+	var tag *jsxTag
+	var sc *scanner
+	for n := 1; ; n *= 2 {
+		end := min(i+n, len(lines))
+		var window strings.Builder
+		for j := i; j < end; j++ {
+			window.WriteString(lines[j].text)
+		}
+		if !budget.spend(window.Len()) {
+			return "", 0
+		}
+		sc = &scanner{s: window.String(), budget: budget}
+		var ok bool
+		var err error
+		tag, ok, err = sc.scanTag()
+		if err != nil && sc.i >= len(sc.s) && end < len(lines) {
+			continue
+		}
+		if err != nil || !ok || tag.close || tag.selfClosing || tag.name == "" {
+			return "", 0
+		}
+		break
 	}
 	tail := sc.s[sc.i:]
 	if nl := strings.IndexByte(tail, '\n'); nl >= 0 {
@@ -106,8 +125,17 @@ func tagLine(s, prefix, name string) bool {
 	return r < 0 || r == '>' || r == '/' || isLineEndingOrSpace(r) || r == '{'
 }
 
-func dedentRange(lines []srcLine, from, to int) {
+// maxDedentWork bounds the lines dedentRange visits. Finding each element's
+// closing tag scans ahead, so deeply nested or unclosed elements cost
+// quadratic work; past the bound the remaining elements keep their source
+// indentation.
+const maxDedentWork = 4_000_000
+
+func dedentRange(lines []srcLine, from, to int, work *int, budget *workBudget) {
 	for i := from; i < to; {
+		if *work <= 0 || budget.exhausted() {
+			return
+		}
 		if marker := fence(lines[i].text); marker != "" {
 			for i++; i < to && !closesFence(lines[i].text, marker); i++ {
 			}
@@ -118,7 +146,7 @@ func dedentRange(lines []srcLine, from, to int) {
 			i++
 			continue
 		}
-		name, span := openingTag(lines[:to], i)
+		name, span := openingTag(lines[:to], i, budget)
 		if name == "" {
 			i++
 			continue
@@ -126,6 +154,7 @@ func dedentRange(lines []srcLine, from, to int) {
 		start := i + span
 		closing, depth := -1, 0
 		for j := start; j < to && closing < 0; j++ {
+			*work--
 			if marker := fence(lines[j].text); marker != "" {
 				for j++; j < to && !closesFence(lines[j].text, marker); j++ {
 				}
@@ -163,14 +192,16 @@ func dedentRange(lines []srcLine, from, to int) {
 				lines[j].off += n
 			}
 		}
-		dedentRange(lines, start, closing)
+		*work -= closing - start
+		dedentRange(lines, start, closing, work, budget)
 		i = closing + 1
 	}
 }
 
-func dedent(src string) *dedented {
+func dedent(src string, budget *workBudget) *dedented {
 	lines := splitSourceLines(src)
-	dedentRange(lines, 0, len(lines))
+	work := maxDedentWork
+	dedentRange(lines, 0, len(lines), &work, budget)
 	d := &dedented{lines: lines}
 	var b strings.Builder
 	for _, l := range lines {

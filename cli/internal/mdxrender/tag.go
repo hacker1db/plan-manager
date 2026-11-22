@@ -41,9 +41,10 @@ type syntaxError struct{ msg string }
 func (e *syntaxError) Error() string { return e.msg }
 
 type scanner struct {
-	s   string
-	i   int
-	off int // absolute offset of s[0]
+	s      string
+	i      int
+	off    int // absolute offset of s[0]
+	budget *workBudget
 }
 
 func (sc *scanner) eof() bool { return sc.i >= len(sc.s) }
@@ -373,6 +374,12 @@ var (
 // emptyExpression mirrors events-to-acorn's empty(): only whitespace and
 // comments.
 func emptyExpression(s string) bool {
+	// Comments start with `/`, so any other first character survives their
+	// removal. This keeps the common case linear instead of running both
+	// regular expressions over the whole candidate at every `}`.
+	if t := strings.TrimLeftFunc(s, isUnicodeWhitespace); t != "" && t[0] != '/' {
+		return false
+	}
 	s = lineComment.ReplaceAllString(blockComment.ReplaceAllString(s, ""), "")
 	for _, r := range s {
 		if !isUnicodeWhitespace(r) {
@@ -385,10 +392,34 @@ func emptyExpression(s string) bool {
 // scanExpression scans `{...}` at sc.i. Like micromark, it tries acorn at
 // every `}` and keeps going until one parses, crashing at the end of input.
 // The returned node is the expression for attribute values.
+//
+// Trying acorn at every `}` re-parses the whole prefix each time, which is
+// quadratic in a large prop. So one forward parse of the raw remainder runs
+// first: every `}` it consumes closes an object, block, template, string, or
+// comment opened inside the expression, so the prefix up to that brace is
+// incomplete and acorn would reject it. Only braces from where that parse
+// stopped, or from the last token it accepted before failing, are tried.
+// The raw text differs from the scanned text only in indentation after line
+// endings, which never changes where tokens end.
 func (sc *scanner) scanExpression(spread, allowEmpty bool) (*jsNode, error) {
 	sc.i++
 	var src strings.Builder
 	var lastCrash error
+	skipBefore := -1
+	if !spread {
+		_, end, err := parseExpressionAt(sc.s[sc.i:])
+		switch {
+		case err == nil:
+			skipBefore = sc.i + end
+		case err.atEnd:
+			skipBefore, end = sc.i+err.consumed, len(sc.s)-sc.i
+		default:
+			skipBefore, end = sc.i+err.consumed, err.consumed
+		}
+		if !sc.budget.spend(end) {
+			return nil, errTooComplex
+		}
+	}
 	for {
 		r, size := sc.peek()
 		switch {
@@ -403,7 +434,14 @@ func (sc *scanner) scanExpression(spread, allowEmpty bool) (*jsNode, error) {
 			for n := 0; n < 2 && !sc.eof() && isMarkdownSpace(rune(sc.s[sc.i])); n++ {
 				sc.i++
 			}
+		case r == '}' && sc.i < skipBefore:
+			lastCrash = &syntaxError{msg: "Could not parse expression with acorn"}
+			src.WriteByte('}')
+			sc.i++
 		case r == '}':
+			if !sc.budget.spend(src.Len()) {
+				return nil, errTooComplex
+			}
 			node, err := parseMdxExpression(src.String(), spread, allowEmpty)
 			if err == nil {
 				sc.i++
