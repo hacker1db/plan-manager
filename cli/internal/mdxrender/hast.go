@@ -391,8 +391,11 @@ func (s *toHast) table(n *mdNode) *hNode {
 		var cells []*hNode
 		for c := 0; c < length; c++ {
 			var a []hAttr
+			// A class, not an inline style: the dashboard's Content
+			// Security Policy blocks inline styles. The stylesheet defines
+			// pm-align-left, -center and -right.
 			if c < len(n.align) && n.align[c] != "" {
-				a = attrs("style", "text-align:"+n.align[c])
+				a = attrs("class", "pm-align-"+n.align[c])
 			}
 			cell := el(tag, a)
 			if c < len(row.children) {
