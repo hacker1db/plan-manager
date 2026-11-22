@@ -1,6 +1,7 @@
 package mdxrender
 
 import (
+	"fmt"
 	"sort"
 	"strings"
 
@@ -699,10 +700,15 @@ var htmlEscaper = strings.NewReplacer("&", "&amp;", "<", "&lt;", ">", "&gt;", `"
 type serializer struct {
 	b        strings.Builder
 	problems []string
+	overflow bool
 }
 
 func (s *serializer) write(n *hNode, parent string) {
-	if n == nil {
+	if n == nil || s.overflow {
+		return
+	}
+	if s.b.Len() > maxHTMLBytes {
+		s.overflow = true
 		return
 	}
 	switch {
@@ -739,14 +745,19 @@ func (s *serializer) write(n *hNode, parent string) {
 
 // render is PlanMdx: it renders source to HTML and collects block problems.
 func render(source string) (string, []string) {
-	parsed := parseMdx(source)
 	s := &serializer{}
-	if parsed.parseError != "" {
-		message := "MDX could not be parsed: " + parsed.parseError
-		s.problems = append(s.problems, message)
+	fallback := func(message string) (string, []string) {
+		s = &serializer{problems: []string{message}}
 		s.write(blockError(message, false), "")
-		s.write(el("pre", attrs("class", "markdown-fallback"), txt(source)), "")
+		s.writeFallback(source)
 		return s.b.String(), s.problems
+	}
+	if bracketDepth(source) > maxBracketNesting {
+		return fallback(fmt.Sprintf("MDX could not be parsed: brackets are nested more than %d levels deep", maxBracketNesting))
+	}
+	parsed := parseMdx(source)
+	if parsed.parseError != "" {
+		return fallback("MDX could not be parsed: " + parsed.parseError)
 	}
 	h := &toHast{footnotes: parsed.footnotes, footnoteCounts: map[string]int{}}
 	nodes := h.one(parsed.root, nil)
@@ -756,5 +767,14 @@ func render(source string) (string, []string) {
 	for _, n := range nodes {
 		s.write(n, "")
 	}
+	if s.overflow {
+		return fallback(fmt.Sprintf("Rendered plan is larger than %d bytes", maxHTMLBytes))
+	}
 	return s.b.String(), s.problems
+}
+
+// writeFallback shows the source as escaped text, bypassing the output cap;
+// the source itself is bounded by the plan file size limit.
+func (s *serializer) writeFallback(source string) {
+	s.b.WriteString(`<pre class="markdown-fallback">` + htmlEscaper.Replace(source) + "</pre>")
 }

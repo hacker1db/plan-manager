@@ -95,6 +95,7 @@ type toHast struct {
 	footnotes      map[string]*mdNode
 	footnoteOrder  []string
 	footnoteCounts map[string]int
+	loose          map[*mdNode]bool // listLoose per list, computed once
 }
 
 func (s *toHast) placeholder(r *blockRecord, children []*hNode) *hNode {
@@ -327,7 +328,16 @@ func taskInput(checked bool) *hNode {
 
 func (s *toHast) listItem(n, parent *mdNode) *hNode {
 	results := s.all(n)
-	loose := listLoose(parent)
+	// Every item asks whether its list is loose; scanning all siblings
+	// each time was quadratic in the list's length.
+	loose, ok := s.loose[parent]
+	if !ok {
+		if s.loose == nil {
+			s.loose = map[*mdNode]bool{}
+		}
+		loose = listLoose(parent)
+		s.loose[parent] = loose
+	}
 	var a []hAttr
 	if n.checked >= 0 {
 		var paragraph *hNode

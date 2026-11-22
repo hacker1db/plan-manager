@@ -220,9 +220,14 @@ func prettyJSON(v value) string {
 }
 
 type jsonParser struct {
-	s string
-	i int
+	s     string
+	i     int
+	depth int
 }
+
+// maxJSONDepth bounds nesting in example JSON, for the same stack-safety
+// reason as maxJSDepth; deeper text is shown as written.
+const maxJSONDepth = 200
 
 func (p *jsonParser) ws() {
 	for p.i < len(p.s) && strings.IndexByte(" \t\n\r", p.s[p.i]) >= 0 {
@@ -231,9 +236,11 @@ func (p *jsonParser) ws() {
 }
 
 func (p *jsonParser) value() (value, bool) {
-	if p.i >= len(p.s) {
+	if p.i >= len(p.s) || p.depth >= maxJSONDepth {
 		return nil, false
 	}
+	p.depth++
+	defer func() { p.depth-- }()
 	switch c := p.s[p.i]; {
 	case c == '{':
 		p.i++

@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -167,9 +168,35 @@ func IsArchivedPath(path string) bool {
 	return abs(filepath.Dir(path)) == abs(ArchiveDir())
 }
 
+// MaxPlanBytes caps how much of a plan file is read. Rendering and metadata
+// parsing are at least linear in the file size, so an unbounded file lets one
+// plan stall or exhaust the local dashboard.
+const MaxPlanBytes = 2 << 20
+
+// ErrTooLarge reports a plan file larger than MaxPlanBytes.
+var ErrTooLarge = fmt.Errorf("plan file is larger than %d bytes", MaxPlanBytes)
+
+// ReadFile reads a plan file, refusing one larger than MaxPlanBytes without
+// reading it all into memory.
+func ReadFile(path string) ([]byte, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	data, err := io.ReadAll(io.LimitReader(f, MaxPlanBytes+1))
+	if err != nil {
+		return nil, err
+	}
+	if len(data) > MaxPlanBytes {
+		return nil, fmt.Errorf("%s: %w", filepath.Base(path), ErrTooLarge)
+	}
+	return data, nil
+}
+
 // Read loads and normalizes a plan file.
 func Read(path string) (*Plan, error) {
-	data, err := os.ReadFile(path)
+	data, err := ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
