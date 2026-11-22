@@ -52,6 +52,21 @@ func TestModerateNestingStillParses(t *testing.T) {
 	}
 }
 
+// `**` is right-associative: each operator in a chain recursed without
+// counting toward the depth limit.
+func TestExponentChainCountsTowardDepth(t *testing.T) {
+	if _, _, err := parseExpressionAt("2 ** 3 ** 2 + [[1 ** 2]]"); err != nil {
+		t.Fatalf("short chain rejected: %s", err.msg)
+	}
+	if _, _, err := parseExpressionAt(strings.Repeat("1**", 1000) + "1"); err == nil {
+		t.Fatal("1000-operator ** chain accepted")
+	}
+	src := "<Flow steps={" + strings.Repeat("1**", 600_000) + "1} />"
+	if html, _ := render(src); !strings.Contains(html, "pm-block-error") {
+		t.Fatalf("no error card: %.200s", html)
+	}
+}
+
 func nestedList(levels int) string {
 	var b strings.Builder
 	for i := 0; i < levels; i++ {

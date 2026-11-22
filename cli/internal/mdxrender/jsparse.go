@@ -758,7 +758,11 @@ func (p *jsParser) parseBinaryRest(left *jsNode, start, minPrec int) *jsNode {
 		if op == "**" {
 			nextMin = prec - 1
 		}
+		// `**` is right-associative, so a chain recurses once per operator;
+		// count it toward maxJSDepth like any other nesting.
+		p.enter()
 		right = p.parseBinaryRest(right, rightStart, nextMin)
+		p.leave()
 		typ := "BinaryExpression"
 		if op == "||" || op == "&&" || op == "??" {
 			typ = "LogicalExpression"
