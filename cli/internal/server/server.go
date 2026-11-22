@@ -1031,12 +1031,8 @@ func (s *Server) saveBody(w http.ResponseWriter, r *http.Request, id string) {
 		np, err := s.write(p, p.Meta, next)
 		return result{state: "updated", plan: np}, err
 	})
-	if lockConflict(err) {
-		writeError(w, 409, err.Error())
-		return
-	}
 	if err != nil {
-		writeError(w, 500, "internal server error")
+		writeFailure(w, err)
 		return
 	}
 	switch res.state {

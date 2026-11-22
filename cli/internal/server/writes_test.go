@@ -58,6 +58,9 @@ func TestDashboardRefusesNewerTrackingSchema(t *testing.T) {
 	if status, res := ts.do("POST", "/api/plans/future_plan/archive", ""); status != 409 {
 		t.Fatalf("archive: %d %s", status, res)
 	}
+	if status, res := ts.do("POST", "/api/plans/future_plan/body", `{"body":"edited\n","revision":"`+plan.Revision+`"}`); status != 409 || !strings.Contains(res, "tracking schema 99") {
+		t.Fatalf("body: %d %s", status, res)
+	}
 	if ts.read("future.md") != before {
 		t.Fatal("refused writes modified the plan")
 	}
