@@ -146,6 +146,8 @@ Stage changes are guarded. Work starts only after the submitted plan is approved
 
 These commands append events to a validated `tracking` block in the frontmatter; nothing is rewritten in place. The first event on an existing plan records how it was migrated (an `active` plan starts in `planning`, a `completed` one keeps a legacy completion with unknown review history). Retrying a command with the same `--idempotency-key` changes nothing. A merged PR never moves the stage on its own, and `plan status` refuses to contradict the tracked stage. Each machine gets a random installation ID in `~/.config/plan-manager/installation.json`, so two machines with the same hostname stay distinct. Unknown frontmatter fields are preserved on every write, and a plan written by a newer tracking schema refuses writes from an older `plan` instead of losing data.
 
+The tracking block records where work happened, in plain text. Each event stores its actor, which is your OS username unless you pass `--actor`. `plan session attach` also stores the machine's hostname and display name (`PLAN_MACHINE_NAME` overrides the display name), OS and architecture, and the repository, worktree path, branch and commit you pass it. The frontmatter is part of the plan file, so these values reach anyone you share the file with, and `plan push` uploads them to the hosted site with the rest of the plan.
+
 ### Dashboard
 
 `plan serve` starts the dashboard as a background service. `plan serve --foreground` runs it in the current terminal instead. The server listens only on `127.0.0.1` and checks the `plans.localhost` host name.

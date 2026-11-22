@@ -42,6 +42,8 @@ plan auth login
 plan push --all
 ```
 
+`plan push` uploads the whole plan file, frontmatter included. For tracked plans that frontmatter holds the journey history: event actors (OS usernames by default), and for attached sessions the machine hostname, OS, worktree path, branch and commit. Review a plan's `tracking` block before pushing it if those details should stay local.
+
 Create a public WorkOS Connect application named `Plan Manager CLI` with CLI Auth enabled. Assign `openid`, `offline_access`, and `plans:write`. The CLI uses the device authorization and token endpoints on the configured AuthKit domain; it does not open a localhost callback or carry a client secret. `GET /api/v1` exposes only versioned, nonsecret client configuration. The API accepts a CLI access token only after RS256 signature, exact issuer, audience, client ID, `plans:write` scope, and owner-subject checks.
 
 The CLI targets `https://planmanager.hacker1db.dev` by default; set `PLAN_MANAGER_URL` to use another deployment. `plan auth login` prints a user code and WorkOS verification URL, then stores the returned access and rotating refresh pair in macOS Keychain. `plan auth logout` removes the local credential; revoke the WorkOS grant separately when provider-side invalidation is required. Version-1 Clerk records require a new login.
