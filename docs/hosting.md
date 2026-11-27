@@ -68,9 +68,14 @@ Existing `pm_...` Plan Manager tokens remain an explicit compatibility bridge. T
 | `DATABASE_URL` | production, preview, development | secret | non-empty | production: sensitive; preview: sensitive; development: encrypted | Neon Postgres connection string. |
 | `BLOB_READ_WRITE_TOKEN` | production, preview, development | secret | non-empty | production: sensitive; preview: sensitive; development: encrypted | Private Vercel Blob read/write token. |
 | `PLAN_MANAGER_TOKEN_PEPPER` | production, preview, development | secret | non-empty | production: sensitive; preview: sensitive; development: encrypted | Server-side pepper for hashing CLI upload tokens. |
-| `VERCEL_TOKEN` | GitHub environment: env-audit | secret | non-empty | GitHub environment secret | Personal Vercel token for trusted workflows (GitHub environment secret, never in PR CI). |
-| `VERCEL_PROJECT_ID_PRODUCTION` | GitHub environment: env-audit | config | non-empty | GitHub environment secret | ID of the Git-disconnected production Vercel project (GitHub environment variable). |
-| `VERCEL_PROJECT_ID_PREVIEW` | GitHub environment: env-audit | config | non-empty | GitHub environment secret | ID of the Git-connected preview Vercel project (GitHub environment variable). |
+| `PLAN_MANAGER_HEALTH_DETAIL_TOKEN` | production | secret | at least 32 characters | production: sensitive | Bearer token for /api/health/detail; the same value is held by the production-release GitHub environment for release checks. |
+| `VERCEL_TOKEN` | GitHub environment: env-audit, preview-smoke, production-release | secret | non-empty | GitHub environment secret | Personal Vercel token for trusted workflows (GitHub environment secret, never in PR CI). |
+| `VERCEL_PROJECT_ID_PRODUCTION` | GitHub environment: env-audit, production-release | config | non-empty | GitHub environment secret | ID of the Git-disconnected production Vercel project (GitHub environment variable). |
+| `VERCEL_PROJECT_ID_PREVIEW` | GitHub environment: env-audit, preview-smoke | config | non-empty | GitHub environment secret | ID of the Git-connected preview Vercel project (GitHub environment variable). |
+| `VERCEL_ORG_ID` | GitHub environment: production-release | config | non-empty | GitHub environment secret | Vercel owner ID (personal account or team) used to link the production project for vercel build. |
+| `PRODUCTION_DOMAIN` | GitHub environment: production-release | config | non-empty | GitHub environment secret | Custom production domain the release verifies after promote and rollback. |
+| `VERCEL_PROTECTION_BYPASS_PRODUCTION` | GitHub environment: production-release | secret | non-empty | GitHub environment secret | Production project's Protection Bypass for Automation secret, to probe staged deployments. |
+| `VERCEL_PROTECTION_BYPASS_PREVIEW` | GitHub environment: preview-smoke | secret | non-empty | GitHub environment secret | Preview project's Protection Bypass for Automation secret (treated as exposed to PR code). |
 
 <!-- env-contract:end -->
 
@@ -134,6 +139,6 @@ pnpm test
 pnpm build
 ```
 
-Roll back through the existing Vercel project's deployment history. Revoking an upload token or taking the hosted service offline leaves local Markdown intact. Database and Blob backups require their own retention policy; Git backs up application source, not hosted plan data. Local mocked checks do not make the migration production-ready; live preview and production verification remain required.
+Production releases, promotion, and rollback are run by `release.yml`; for an incident, follow "Manual rollback" in [`docs/operations/ci-cd.md`](operations/ci-cd.md). Revoking an upload token or taking the hosted service offline leaves local Markdown intact. Database and Blob backups require their own retention policy; Git backs up application source, not hosted plan data. Local mocked checks do not make the migration production-ready; live preview and production verification remain required.
 
 SvelteKit 3 requires all private deployment variables to be declared in `src/env.ts`, which is generated from `config/env.contract.json`; never edit it by hand. The runtime is Node 22; local tooling requires Node >=22.17.0.

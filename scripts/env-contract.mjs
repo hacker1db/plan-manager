@@ -14,7 +14,7 @@ export const VALIDATOR_IDS = ['nonEmpty', 'csvNonEmpty', 'minLength']
 export const STORES = ['vercel', 'github-environment']
 export const SENSITIVITIES = ['secret', 'config']
 export const EXPOSURES = ['server', 'ci']
-export const GROUPS = ['hosted', 'cli', 'release']
+export const GROUPS = ['hosted', 'cli', 'health', 'release']
 const VARIABLE_FIELDS = ['name', 'store', 'requiredIn', 'githubEnvironments', 'sensitivity', 'exposure', 'group', 'validator', 'ciFixture', 'owner', 'docs', 'description']
 const REQUIRED_FIELDS = VARIABLE_FIELDS.filter(field => field !== 'githubEnvironments')
 

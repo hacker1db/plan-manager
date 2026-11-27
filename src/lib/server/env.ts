@@ -1,4 +1,4 @@
-import { CLI_RUNTIME_VARIABLES, HOSTED_RUNTIME_VARIABLES, type EnvValidator } from "./env.contract"
+import { CLI_RUNTIME_VARIABLES, HEALTH_RUNTIME_VARIABLES, HOSTED_RUNTIME_VARIABLES, type EnvValidator } from "./env.contract"
 
 type EnvironmentSource = Readonly<Record<string, string | undefined>>
 let activeSource: EnvironmentSource = process.env
@@ -128,4 +128,12 @@ export function workosCliClaimsCanAccess(
   const config = getCliOAuthConfiguration(source)
   const scopes = typeof scope === "string" ? scope.split(/\s+/).filter(Boolean) : []
   return typeof userId === "string" && isAllowedOwner(userId, source) && clientId === config.clientId && scopes.includes(config.scope)
+}
+
+// Bearer token for /api/health/detail. Throws (names only) when it is missing or too short, so the
+// endpoint fails closed instead of accepting a weak or empty token.
+export function getHealthDetailToken(source: Readonly<Record<string, string | undefined>> = environmentSource()): string {
+  const missing = HEALTH_RUNTIME_VARIABLES.filter(variable => !satisfies(variable.validator, source[variable.name])).map(variable => variable.name)
+  if (missing.length > 0) throw new HostedConfigurationError(missing)
+  return source.PLAN_MANAGER_HEALTH_DETAIL_TOKEN!
 }

@@ -88,6 +88,14 @@
           "production"
         ],
         "type": "sensitive"
+      },
+      {
+        "id": "env_plan_manager_health_detail_token_production",
+        "key": "PLAN_MANAGER_HEALTH_DETAIL_TOKEN",
+        "target": [
+          "production"
+        ],
+        "type": "sensitive"
       }
     ]
   },

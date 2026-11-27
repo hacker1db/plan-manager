@@ -35,6 +35,11 @@ ${entries('hosted')}
 export const CLI_RUNTIME_VARIABLES = [
 ${entries('cli')}
 ] as const satisfies readonly ContractVariable[]
+
+// Required by the /api/health/detail endpoint, in contract order.
+export const HEALTH_RUNTIME_VARIABLES = [
+${entries('health')}
+] as const satisfies readonly ContractVariable[]
 `
 }
 

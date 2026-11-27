@@ -57,6 +57,26 @@ operator guide says so.
 | `ci/prevent-env-build-failures` | Merged as #104 (`.github/workflows/hosted-build.yml`, `scripts/ci-production-build.mjs`, `test/hosted/build-env.test.ts`). | Reused: the fixture production build and the guard regression tests (unchanged). PR B folds `hosted-build.yml` into `ci.yml`. Dropped: reading fixture keys from `.env.example` (now from the contract). |
 | `chore/preview-branch-workflow` (issue #96, not merged) | Adds `scripts/promote.sh`, a second promotion path. | Superseded by `release.yml` as the only promotion writer. Not edited here; the owner should close that branch or rebase it without `promote.sh`. |
 
+## Implementation notes and deviations
+
+- No ajv dependency: `scripts/env-contract.mjs` validates the contract by hand, and a test keeps it
+  in step with `config/env.contract.schema.json`.
+- The build guard keeps today's checks exactly (non-empty, owner list, cookie length); the runtime
+  keeps its stricter URL-shape checks. Adding URL checks to the build is a possible follow-up.
+- `PLAN_MANAGER_HEALTH_DETAIL_TOKEN` is added with the health endpoint (release PR), not in PR A,
+  so PR A cannot break the next production build; the contract-change gate makes the owner
+  provision it first.
+- PR CI uses no caches at all (simpler than restore-only) and cancels superseded runs only for
+  PRs, so every push to `main` reaches `release.yml`.
+- No lint job: the repository has no lint script.
+- Pandoc 3.13 (checksum-pinned) is installed in CI because the CLI contract suites need it.
+- The release `workflow_dispatch` dry run was dropped: the fake-client release suite runs in every
+  CI run, and a dry run cannot exercise real credentials or alias jobs either (Sol, round 3). The
+  drift audit keeps its dry run.
+- The Vercel CLI for releases is pinned in `ci/vercel-cli/package-lock.json` and installed with
+  `npm ci`, so every package is integrity-checked.
+- Preview smoke reports a commit status rather than a check run.
+
 ## Round-3 votes (verbatim summaries)
 
 ### Sol

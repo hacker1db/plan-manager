@@ -20,6 +20,7 @@ const PLACEHOLDERS = {
   DATABASE_URL: "postgres://placeholder-database",
   BLOB_READ_WRITE_TOKEN: "placeholder-blob-token",
   PLAN_MANAGER_TOKEN_PEPPER: "placeholder-pepper",
+  PLAN_MANAGER_HEALTH_DETAIL_TOKEN: "placeholder-health-detail-token-0123456789",
 }
 
 function run(env: Record<string, string>) {

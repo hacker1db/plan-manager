@@ -1,0 +1,134 @@
+# Staged production release: the ONLY path that deploys or promotes production. The production
+# Vercel project is disconnected from Git (operator prerequisite), so no PR-controlled code or
+# vercel.json is ever built inside it; this trusted workflow builds main itself.
+#
+# Trigger: ci.yml finished successfully for a push to main in this repository. `preflight` checks
+# the real Production variable names first (names only, fails closed). The `release` job
+# waits for the owner's approval in the `production-release` environment (branch policy: main), then:
+# build main with production settings, deploy it staged (--skip-domain), and hand over to
+# scripts/ci/release.mjs for checks, promote and ID-pinned rollback. See docs/operations/ci-cd.md.
+name: release
+
+on:
+  workflow_run:
+    workflows: [ci]
+    types: [completed]
+    branches: [main]
+
+permissions: {}
+
+jobs:
+  supersede:
+    name: Cancel superseded releases
+    if: >-
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: write # cancel older release runs that are still waiting for approval
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22.x
+          package-manager-cache: false
+      - env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/ci/release.mjs --cancel-superseded
+
+  preflight:
+    name: Production env preflight
+    # Names-only check of the real production project against the contract of the commit being
+    # released, BEFORE approval and before anything is built or deployed. Fails closed.
+    needs: supersede
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: env-audit
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22.x
+          package-manager-cache: false
+      - env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_TEAM_ID: ${{ vars.VERCEL_TEAM_ID }}
+          VERCEL_PROJECT_ID_PRODUCTION: ${{ vars.VERCEL_PROJECT_ID_PRODUCTION }}
+        run: node scripts/ci/env-drift.mjs --preflight
+
+  release:
+    name: release
+    needs: [supersede, preflight]
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment: production-release
+    concurrency:
+      group: release-prod
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      issues: write # release and rollback alert issues
+    env:
+      RELEASE_SHA: ${{ github.event.workflow_run.head_sha }}
+      VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID_PRODUCTION }}
+      VERCEL_CLI: ${{ github.workspace }}/ci/vercel-cli/node_modules/.bin/vercel
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
+      - name: Re-check production env names (approval may have waited)
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_TEAM_ID: ${{ vars.VERCEL_TEAM_ID }}
+          VERCEL_PROJECT_ID_PRODUCTION: ${{ vars.VERCEL_PROJECT_ID_PRODUCTION }}
+        run: node scripts/ci/env-drift.mjs --preflight
+      - uses: ./.github/actions/setup
+      - name: Install the pinned Vercel CLI (lockfile integrity-checked)
+        run: |
+          npm ci --prefix ci/vercel-cli --no-fund --no-audit
+          "$VERCEL_CLI" --version
+      - name: Pull production project settings
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          "$VERCEL_CLI" pull --yes --environment=production --token "$VERCEL_TOKEN"
+      - name: Build main with production settings (runs the fail-closed env guard)
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          "$VERCEL_CLI" build --prod --token "$VERCEL_TOKEN"
+      - name: Deploy staged (no domain assignment)
+        id: deploy
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          url="$("$VERCEL_CLI" deploy --prebuilt --prod --skip-domain --token "$VERCEL_TOKEN" \
+            --meta planManagerRef=main --meta "planManagerSha=$RELEASE_SHA" --meta "planManagerRun=$GITHUB_RUN_ID")"
+          echo "url=${url#https://}" >> "$GITHUB_OUTPUT"
+      - name: Check, promote, and roll back on failure
+        env:
+          DEPLOYMENT_URL: ${{ steps.deploy.outputs.url }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_TEAM_ID: ${{ vars.VERCEL_TEAM_ID }}
+          VERCEL_PROJECT_ID_PRODUCTION: ${{ vars.VERCEL_PROJECT_ID_PRODUCTION }}
+          PRODUCTION_DOMAIN: ${{ vars.PRODUCTION_DOMAIN }}
+          VERCEL_PROTECTION_BYPASS_PRODUCTION: ${{ secrets.VERCEL_PROTECTION_BYPASS_PRODUCTION }}
+          PLAN_MANAGER_HEALTH_DETAIL_TOKEN: ${{ secrets.PLAN_MANAGER_HEALTH_DETAIL_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/ci/release.mjs --deployment-url "$DEPLOYMENT_URL"
+      - name: Remove pulled production settings
+        if: always()
+        run: rm -rf .vercel
