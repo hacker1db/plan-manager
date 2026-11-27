@@ -2,7 +2,9 @@ package server
 
 import (
 	"bytes"
+	"html"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -58,5 +60,59 @@ func TestSortByTouchedNewestFirst(t *testing.T) {
 	}
 	if strings.Join(got, ",") != "edited in obsidian,new,old" {
 		t.Fatalf("order = %v", got)
+	}
+}
+
+func TestSanitizeHTMLURLSchemeAllowlist(t *testing.T) {
+	bad := []string{
+		`<a href="&#1;javascript:alert(1)">b</a>`,
+		"<a href=\"\x01javascript:alert(1)\">b</a>",
+		`<a href="java&#9;script:alert(1)">b</a>`,
+		`<a href="java&#x0A;script:alert(1)">b</a>`,
+		`<a href=" JaVaScRiPt:alert(1)">b</a>`,
+		`<a href='&#106;avascript:alert(1)'>b</a>`,
+		`<a href=javascript:alert(1)>b</a>`,
+		`<img src="vbscript:msgbox(1)">`,
+		`<img src="data:text/html,<script>alert(1)</script>">`,
+		`<a xlink:href="javascript:alert(1)">b</a>`,
+		`<img srcset="javascript:alert(1) 1x">`,
+	}
+	for _, in := range bad {
+		out := SanitizeHTML(in)
+		low := strings.ToLower(html.UnescapeString(out))
+		if strings.Contains(low, "script:") || strings.Contains(low, "data:") || strings.Contains(low, "srcset") {
+			t.Errorf("SanitizeHTML(%q) = %q", in, out)
+		}
+	}
+	good := []string{
+		`<a href="https://example.com/a?b=c#d">x</a>`,
+		`<a href="http://example.com">x</a>`,
+		`<a href="mailto:me@example.com">x</a>`,
+		`<a href="#section">x</a>`,
+		`<a href="/plans/x">x</a>`,
+		`<a href="notes/a:b">x</a>`,
+		`<img src="image.png" alt="a">`,
+	}
+	for _, in := range good {
+		if out := SanitizeHTML(in); out != in {
+			t.Errorf("SanitizeHTML(%q) changed a safe URL: %q", in, out)
+		}
+	}
+	// Text that only looks like an attribute is left alone.
+	if in := `<p>use href="javascript:x" carefully</p>`; SanitizeHTML(in) != in {
+		t.Errorf("text changed: %q", SanitizeHTML(in))
+	}
+}
+
+func TestRenderMarkdownBlocksControlCharacterJavascriptLink(t *testing.T) {
+	if _, err := exec.LookPath("pandoc"); err != nil {
+		t.Skip("pandoc unavailable")
+	}
+	out, err := RenderMarkdown("[b](&#1;javascript:alert(1)) [ok](https://example.com)")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(strings.ToLower(out), "javascript") || !strings.Contains(out, `href="https://example.com"`) {
+		t.Fatalf("rendered = %q", out)
 	}
 }

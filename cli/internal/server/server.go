@@ -12,6 +12,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html"
 	"io"
 	"io/fs"
 	"net"
@@ -1151,11 +1152,11 @@ var (
 	pairedTags    []*regexp.Regexp
 	openTags      = regexp.MustCompile(`(?i)<(?:script|style|iframe|object|embed|form|button|meta|base)\b[^>]*/?>`)
 	eventHandlers = regexp.MustCompile(`(?i)\s+on[a-z0-9_-]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)`)
-	unsafeURLsDQ  = regexp.MustCompile(`(?i)\s+(href|src)\s*=\s*"\s*(?:javascript|vbscript|data\s*:\s*text/html)[^"']*"`)
-	unsafeURLsSQ  = regexp.MustCompile(`(?i)\s+(href|src)\s*=\s*'\s*(?:javascript|vbscript|data\s*:\s*text/html)[^"']*'`)
+	startTag      = regexp.MustCompile(`<[A-Za-z][^>]*>`)
+	urlAttr       = regexp.MustCompile("(?i)(\\s)(href|src|xlink:href|action|formaction|poster|background|cite|ping)\\s*=\\s*(\"[^\"]*\"|'[^']*'|[^\\s\"'=<>`]+)")
+	srcsetAttr    = regexp.MustCompile(`(?i)\s(?:srcset|imagesrcset)\s*=\s*(?:"[^"]*"|'[^']*'|[^\s"'=<>]+)`)
 	inputPrefix   = regexp.MustCompile(`(?i)^<input\s*`)
 	inputSuffix   = regexp.MustCompile(`/?\s*>$`)
-	unsafeURLRepl = ` $1="#"`
 )
 
 func init() {
@@ -1182,6 +1183,36 @@ func SanitizeHTML(v string) string {
 	}
 	v = openTags.ReplaceAllString(v, "")
 	v = eventHandlers.ReplaceAllString(v, "")
-	v = unsafeURLsDQ.ReplaceAllString(v, unsafeURLRepl)
-	return unsafeURLsSQ.ReplaceAllString(v, unsafeURLRepl)
+	return startTag.ReplaceAllStringFunc(v, sanitizeTagURLs)
+}
+
+// sanitizeTagURLs replaces every URL attribute in one start tag whose decoded
+// value is not relative or an allowed scheme. It decodes character references
+// and strips what browsers ignore (leading/trailing C0 controls and spaces,
+// embedded tabs and newlines) before checking, so "&#1;javascript:" and
+// "java&#9;script:" are caught.
+func sanitizeTagURLs(tag string) string {
+	tag = srcsetAttr.ReplaceAllString(tag, "")
+	return urlAttr.ReplaceAllStringFunc(tag, func(attr string) string {
+		m := urlAttr.FindStringSubmatch(attr)
+		raw := m[3]
+		if len(raw) >= 2 && (raw[0] == '"' || raw[0] == '\'') {
+			raw = raw[1 : len(raw)-1]
+		}
+		if mdxrender.URLTransform(browserURL(html.UnescapeString(raw))) == "" {
+			return m[1] + m[2] + `="#"`
+		}
+		return attr
+	})
+}
+
+// browserURL applies the URL parser's input cleanup.
+func browserURL(v string) string {
+	v = strings.TrimFunc(v, func(r rune) bool { return r <= 0x20 })
+	return strings.Map(func(r rune) rune {
+		if r == '\t' || r == '\n' || r == '\r' {
+			return -1
+		}
+		return r
+	}, v)
 }
