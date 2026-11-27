@@ -12,6 +12,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html"
 	"io"
 	"io/fs"
 	"net"
@@ -68,6 +69,9 @@ type Options struct {
 	NoWatch bool
 	// Zero values use the defaults.
 	WatchDebounce, StabilityDelay, ReconcileInterval time.Duration
+	// AccessToken is the per-user dashboard secret (see access.go). When empty,
+	// a random token is used, so nothing outside this process can authenticate.
+	AccessToken string
 }
 
 type Server struct {
@@ -77,6 +81,9 @@ type Server struct {
 	home, archive string
 	host          string
 	csrf          string
+	accessToken   string
+	ticketMu      sync.Mutex
+	tickets       map[string]time.Time
 	httpServer    *http.Server
 	watcher       *fsnotify.Watcher
 
@@ -137,6 +144,13 @@ func Start(opts Options) (*Server, error) {
 	token := make([]byte, 32)
 	_, _ = rand.Read(token)
 	s.csrf = hex.EncodeToString(token)
+	s.tickets = map[string]time.Time{}
+	s.accessToken = opts.AccessToken
+	if s.accessToken == "" {
+		access := make([]byte, 32)
+		_, _ = rand.Read(access)
+		s.accessToken = hex.EncodeToString(access)
+	}
 	s.snapshot = s.captureSnapshot()
 
 	ln, err := net.Listen("tcp", net.JoinHostPort(opts.Host, strconv.Itoa(opts.Port)))
@@ -553,8 +567,12 @@ func (s *Server) sameOrigin(w http.ResponseWriter, r *http.Request) bool {
 	return true
 }
 
+// authorized gates mutations: the caller needs dashboard access and the CSRF token.
 func (s *Server) authorized(w http.ResponseWriter, r *http.Request) bool {
-	if r.Header.Get("X-Csrf-Token") != s.csrf {
+	if !s.requireAccess(w, r) {
+		return false
+	}
+	if !equalSecret(r.Header.Get("X-Csrf-Token"), s.csrf) {
 		writeError(w, 403, "invalid csrf token")
 		return false
 	}
@@ -660,15 +678,30 @@ func (s *Server) handle(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	case get && path == "/_session":
-		writeJSON(w, 200, map[string]any{"csrfToken": s.csrf, "sequence": seq, "fingerprint": fingerprint})
+		if s.requireAccess(w, r) {
+			writeJSON(w, 200, map[string]any{"csrfToken": s.csrf, "sequence": seq, "fingerprint": fingerprint})
+		}
+		return
+	case post && path == "/_ticket":
+		s.issueTicket(w, r)
+		return
+	case get && path == "/_auth":
+		s.serveAuth(w, r)
 		return
 	case get && path == "/_events":
-		s.serveEvents(w, r)
+		if s.requireAccess(w, r) {
+			s.serveEvents(w, r)
+		}
 		return
 	case get && path == "/api/t3/projects":
-		s.serveT3Projects(w, r)
+		if s.requireAccess(w, r) {
+			s.serveT3Projects(w, r)
+		}
 		return
 	case get && (path == "/api/plans" || path == "/api/search"):
+		if !s.requireAccess(w, r) {
+			return
+		}
 		list, bad := s.index()
 		sortByTouched(list)
 		q := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("q")))
@@ -683,7 +716,9 @@ func (s *Server) handle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if m := detailRoute.FindStringSubmatch(path); get && m != nil {
-		s.serveDetail(w, unescape(m[1]), seq)
+		if s.requireAccess(w, r) {
+			s.serveDetail(w, unescape(m[1]), seq)
+		}
 		return
 	}
 	if m := t3Route.FindStringSubmatch(path); post && m != nil {
@@ -1117,11 +1152,11 @@ var (
 	pairedTags    []*regexp.Regexp
 	openTags      = regexp.MustCompile(`(?i)<(?:script|style|iframe|object|embed|form|button|meta|base)\b[^>]*/?>`)
 	eventHandlers = regexp.MustCompile(`(?i)\s+on[a-z0-9_-]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)`)
-	unsafeURLsDQ  = regexp.MustCompile(`(?i)\s+(href|src)\s*=\s*"\s*(?:javascript|vbscript|data\s*:\s*text/html)[^"']*"`)
-	unsafeURLsSQ  = regexp.MustCompile(`(?i)\s+(href|src)\s*=\s*'\s*(?:javascript|vbscript|data\s*:\s*text/html)[^"']*'`)
+	startTag      = regexp.MustCompile(`<[A-Za-z][^>]*>`)
+	urlAttr       = regexp.MustCompile("(?i)(\\s)(href|src|xlink:href|action|formaction|poster|background|cite|ping)\\s*=\\s*(\"[^\"]*\"|'[^']*'|[^\\s\"'=<>`]+)")
+	srcsetAttr    = regexp.MustCompile(`(?i)\s(?:srcset|imagesrcset)\s*=\s*(?:"[^"]*"|'[^']*'|[^\s"'=<>]+)`)
 	inputPrefix   = regexp.MustCompile(`(?i)^<input\s*`)
 	inputSuffix   = regexp.MustCompile(`/?\s*>$`)
-	unsafeURLRepl = ` $1="#"`
 )
 
 func init() {
@@ -1148,6 +1183,36 @@ func SanitizeHTML(v string) string {
 	}
 	v = openTags.ReplaceAllString(v, "")
 	v = eventHandlers.ReplaceAllString(v, "")
-	v = unsafeURLsDQ.ReplaceAllString(v, unsafeURLRepl)
-	return unsafeURLsSQ.ReplaceAllString(v, unsafeURLRepl)
+	return startTag.ReplaceAllStringFunc(v, sanitizeTagURLs)
+}
+
+// sanitizeTagURLs replaces every URL attribute in one start tag whose decoded
+// value is not relative or an allowed scheme. It decodes character references
+// and strips what browsers ignore (leading/trailing C0 controls and spaces,
+// embedded tabs and newlines) before checking, so "&#1;javascript:" and
+// "java&#9;script:" are caught.
+func sanitizeTagURLs(tag string) string {
+	tag = srcsetAttr.ReplaceAllString(tag, "")
+	return urlAttr.ReplaceAllStringFunc(tag, func(attr string) string {
+		m := urlAttr.FindStringSubmatch(attr)
+		raw := m[3]
+		if len(raw) >= 2 && (raw[0] == '"' || raw[0] == '\'') {
+			raw = raw[1 : len(raw)-1]
+		}
+		if mdxrender.URLTransform(browserURL(html.UnescapeString(raw))) == "" {
+			return m[1] + m[2] + `="#"`
+		}
+		return attr
+	})
+}
+
+// browserURL applies the URL parser's input cleanup.
+func browserURL(v string) string {
+	v = strings.TrimFunc(v, func(r rune) bool { return r <= 0x20 })
+	return strings.Map(func(r rune) rune {
+		if r == '\t' || r == '\n' || r == '\r' {
+			return -1
+		}
+		return r
+	}, v)
 }

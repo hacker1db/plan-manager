@@ -530,6 +530,10 @@ func encodeURIComponent(s string) string {
 
 var safeProtocol = regexp.MustCompile(`(?i)^(https?|ircs?|mailto|xmpp)$`)
 
+// URLTransform returns v when it is relative or uses an allowed scheme
+// (http, https, irc, ircs, mailto, xmpp), and "" otherwise.
+func URLTransform(v string) string { return urlTransform(v) }
+
 // urlTransform is react-markdown's defaultUrlTransform.
 func urlTransform(v string) string {
 	colon := strings.IndexByte(v, ':')

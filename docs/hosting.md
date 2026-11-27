@@ -12,7 +12,7 @@ Commit application source, migrations, tests, `pnpm-lock.yaml`, and `.env.exampl
 
 The canonical browser UI lives in `src/dashboard/`. Hosted library and detail pages package the same HTML shells and JavaScript used by the local server, and generate their stylesheet, scripts, and favicon from that directory before web development and builds. Hosted APIs adapt authenticated cloud data to the browser contract; local filesystem and editor actions remain local-only. Do not maintain a second hosted dashboard implementation or a separate app package.
 
-The stable SvelteKit 3 toolchain requires Node.js 22.17 or newer. Vercel is pinned to Node.js 24 in `vite.config.ts`; keep local development compatible.
+The stable SvelteKit 3 toolchain requires Node.js 22.17 or newer. Vercel runs the Node.js 22 runtime (`nodejs22.x` in `vite.config.ts`); keep local development compatible.
 
 ## Local development
 
@@ -46,7 +46,7 @@ Create a public WorkOS Connect application named `Plan Manager CLI` with CLI Aut
 
 The CLI targets `https://planmanager.hacker1db.dev` by default; set `PLAN_MANAGER_URL` to use another deployment. `plan auth login` prints a user code and WorkOS verification URL, then stores the returned access and rotating refresh pair in macOS Keychain. `plan auth logout` removes the local credential; revoke the WorkOS grant separately when provider-side invalidation is required. Version-1 Clerk records require a new login.
 
-Existing `pm_...` Plan Manager tokens remain an explicit compatibility bridge. They are scoped (`plans:write` only), expiring, revocable, and hashed at rest, but they are bearer credentials with no WorkOS session or TOTP binding: a `pm_` token bypasses WorkOS MFA entirely, so treat it like a password. `POST /api/v1/tokens` rejects an expiry more than 90 days from now. `GET /api/v1/tokens` (owner session only) lists each token's id, scopes, expiry, revocation time, creation time and last use, and never returns the secret hash; revoke unused or unexpected tokens with `DELETE /api/v1/tokens/<id>`. `plan auth login --stdin` is only for those tokens. Do not mint one to bypass failed WorkOS login. Deployment Protection credentials are separate from Plan Manager credentials. See [`auth.md`](../auth.md) for the full threat boundary.
+Existing `pm_...` Plan Manager tokens remain an explicit compatibility bridge. They are scoped (`plans:write` only), expiring, revocable, and hashed at rest, but they are bearer credentials with no WorkOS session or TOTP binding: a `pm_` token bypasses WorkOS MFA entirely, so treat it like a password. `POST /api/v1/tokens` rejects an expiry more than 90 days from now. `GET /api/v1/tokens` (owner session only) lists each token's id, scopes, expiry, revocation time, creation time and last use, and never returns the secret hash; revoke unused or unexpected tokens with `DELETE /api/v1/tokens/<id>`. `plan auth login --stdin` is only for those tokens. Do not mint one to bypass failed WorkOS login. Deployment Protection credentials are separate from Plan Manager credentials.
 
 ## Vercel environment configuration
 

@@ -323,3 +323,105 @@ func TestPushSendsRevisionOfThePushedMarkdown(t *testing.T) {
 		t.Fatalf("pushed Markdown = %q, want %q", sent.Markdown, lf)
 	}
 }
+
+// fakeSwitchableWorkOS serves /api/v1 with a client ID and issuer that the test can change.
+func fakeSwitchableWorkOS(t *testing.T, clientID *string, issuerOverride *string) (*httptest.Server, *int) {
+	t.Helper()
+	devices := 0
+	var srv *httptest.Server
+	mux := http.NewServeMux()
+	mux.HandleFunc("/api/v1", func(w http.ResponseWriter, r *http.Request) {
+		issuer := srv.URL
+		if *issuerOverride != "" {
+			issuer = *issuerOverride
+		}
+		json.NewEncoder(w).Encode(map[string]any{
+			"version": 2, "clientId": *clientID, "issuerUrl": issuer,
+			"audience": "https://plans.example/api/v1", "scope": "plans:write",
+			"deviceAuthorizationEndpoint": issuer + "/oauth2/device_authorization",
+			"tokenEndpoint":               issuer + "/oauth2/token",
+			"jwksUrl":                     issuer + "/oauth2/jwks",
+		})
+	})
+	mux.HandleFunc("/oauth2/device_authorization", func(w http.ResponseWriter, r *http.Request) {
+		devices++
+		json.NewEncoder(w).Encode(map[string]any{"device_code": "device", "user_code": "CODE", "verification_uri": "https://" + r.Host + "/activate", "expires_in": 600})
+	})
+	mux.HandleFunc("/oauth2/token", func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode(map[string]any{"access_token": "access", "refresh_token": "refresh", "token_type": "Bearer", "expires_in": 3600})
+	})
+	srv = httptest.NewTLSServer(mux)
+	t.Cleanup(srv.Close)
+	previousClient := httpClient
+	httpClient = srv.Client()
+	httpClient.CheckRedirect = rejectRedirect
+	t.Cleanup(func() { httpClient = previousClient })
+	t.Setenv("PLAN_MANAGER_URL", srv.URL)
+	return srv, &devices
+}
+
+func TestLoginPinsIssuerAndClientIDAtFirstLogin(t *testing.T) {
+	withKeychain(t)
+	clientID, issuer := "client_cli", ""
+	srv, devices := fakeSwitchableWorkOS(t, &clientID, &issuer)
+	site, _ := GetSite()
+	if err := Login(site, &bytes.Buffer{}); err != nil {
+		t.Fatal(err)
+	}
+	pins, err := loadPins()
+	if err != nil || pins.Sites[site.URL] != (authPin{IssuerURL: srv.URL, ClientID: "client_cli"}) {
+		t.Fatalf("pins = %+v, %v", pins, err)
+	}
+	if info, _ := os.Stat(pinsPath()); info.Mode().Perm() != 0o600 {
+		t.Fatalf("pin file mode %#o", info.Mode().Perm())
+	}
+	// Same issuer and client: later logins work.
+	if err := Login(site, &bytes.Buffer{}); err != nil {
+		t.Fatal(err)
+	}
+	if *devices != 2 {
+		t.Fatalf("device authorizations = %d", *devices)
+	}
+
+	// A changed client ID is refused before any device authorization starts.
+	clientID = "client_attacker"
+	if err := Login(site, &bytes.Buffer{}); err == nil || !strings.Contains(err.Error(), "different WorkOS issuer or client ID") {
+		t.Fatalf("changed client ID: %v", err)
+	}
+	clientID = "client_cli"
+	// A changed issuer is refused too.
+	issuer = "https://evil.example"
+	if err := Login(site, &bytes.Buffer{}); err == nil || !strings.Contains(err.Error(), "different WorkOS issuer or client ID") {
+		t.Fatalf("changed issuer: %v", err)
+	}
+	if *devices != 2 {
+		t.Fatalf("device flow started for a changed issuer or client: %d", *devices)
+	}
+	// The pin is unchanged by refused logins.
+	pins, _ = loadPins()
+	if pins.Sites[site.URL] != (authPin{IssuerURL: srv.URL, ClientID: "client_cli"}) {
+		t.Fatalf("pin changed: %+v", pins.Sites[site.URL])
+	}
+}
+
+func TestPinsAreScopedPerSite(t *testing.T) {
+	withKeychain(t)
+	a := Site{URL: "https://a.example"}
+	b := Site{URL: "https://b.example"}
+	if err := savePin(a, oauthConfig{IssuerURL: "https://issuer-a.example", ClientID: "client_a"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := checkPin(b, oauthConfig{IssuerURL: "https://issuer-b.example", ClientID: "client_b"}); err != nil {
+		t.Fatalf("another site's pin applied: %v", err)
+	}
+	if err := checkPin(a, oauthConfig{IssuerURL: "https://issuer-a.example", ClientID: "client_b"}); err == nil {
+		t.Fatal("changed client accepted")
+	}
+	// savePin never overwrites an existing pin.
+	if err := savePin(a, oauthConfig{IssuerURL: "https://other.example", ClientID: "client_x"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := checkPin(a, oauthConfig{IssuerURL: "https://issuer-a.example", ClientID: "client_a"}); err != nil {
+		t.Fatalf("pin overwritten: %v", err)
+	}
+}

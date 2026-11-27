@@ -24,6 +24,7 @@ func TestMDXPlansRenderInProcess(t *testing.T) {
 	defer s.Close()
 	req, _ := http.NewRequest(http.MethodGet, "http://127.0.0.1:"+strconv.Itoa(s.Port)+"/api/plans/mdx_plan", nil)
 	req.Host = "plans.localhost:" + strconv.Itoa(s.Port)
+	req.Header.Set("Authorization", "Bearer "+s.accessToken)
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		t.Fatal(err)

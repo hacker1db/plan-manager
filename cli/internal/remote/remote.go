@@ -425,6 +425,67 @@ func oauthConfiguration(site Site) (oauthConfig, error) {
 	return cfg, nil
 }
 
+// authPin is the WorkOS issuer and CLI client ID recorded at the first login
+// to a site. The CLI reads them from the site's /api/v1, so without a pin a
+// compromised or impersonated site could send the device flow (and the user's
+// approval) to an issuer it controls.
+type authPin struct {
+	IssuerURL string `json:"issuerUrl"`
+	ClientID  string `json:"clientId"`
+}
+
+type authPins struct {
+	Version int                `json:"version"`
+	Sites   map[string]authPin `json:"sites"`
+}
+
+func pinsPath() string { return filepath.Join(configDir(), "auth-pins.json") }
+
+func loadPins() (*authPins, error) {
+	pins := &authPins{Version: 1, Sites: map[string]authPin{}}
+	found, err := readJSON(pinsPath(), pins)
+	if err != nil {
+		return nil, err
+	}
+	if found && (pins.Version != 1 || pins.Sites == nil) {
+		return nil, fmt.Errorf("Unable to read %s: unsupported version", pinsPath())
+	}
+	return pins, nil
+}
+
+// checkPin refuses an issuer or client ID that differs from the one pinned for site.
+func checkPin(site Site, cfg oauthConfig) error {
+	pins, err := loadPins()
+	if err != nil {
+		return err
+	}
+	pin, ok := pins.Sites[site.URL]
+	if !ok || (pin.IssuerURL == cfg.IssuerURL && pin.ClientID == cfg.ClientID) {
+		return nil
+	}
+	return fmt.Errorf("Plan Manager at %s now names a different WorkOS issuer or client ID than at first login "+
+		"(pinned issuer %s, client %s; offered issuer %s, client %s). Refusing to sign in. "+
+		"If this change is expected, remove the %q entry from %s and run \"plan auth login\" again.",
+		site.URL, pin.IssuerURL, pin.ClientID, cfg.IssuerURL, cfg.ClientID, site.URL, pinsPath())
+}
+
+// savePin records the issuer and client ID for site if none is pinned yet.
+func savePin(site Site, cfg oauthConfig) error {
+	pins, err := loadPins()
+	if err != nil {
+		return err
+	}
+	if _, ok := pins.Sites[site.URL]; ok {
+		return nil
+	}
+	pins.Sites[site.URL] = authPin{IssuerURL: cfg.IssuerURL, ClientID: cfg.ClientID}
+	if err := os.MkdirAll(configDir(), 0o700); err != nil {
+		return err
+	}
+	data, _ := json.MarshalIndent(pins, "", "  ")
+	return os.WriteFile(pinsPath(), append(data, '\n'), 0o600)
+}
+
 func postFormStatus(u string, form url.Values, v any) (int, error) {
 	req, _ := http.NewRequest(http.MethodPost, u, strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -449,6 +510,9 @@ func postFormStatus(u string, form url.Values, v any) (int, error) {
 func Login(site Site, out io.Writer) error {
 	cfg, err := oauthConfiguration(site)
 	if err != nil {
+		return err
+	}
+	if err := checkPin(site, cfg); err != nil {
 		return err
 	}
 	var authorization deviceAuthorization
@@ -529,6 +593,9 @@ func Login(site Site, out io.Writer) error {
 	data, _ := json.Marshal(cred)
 	if err := storeCredential(site, string(data)); err != nil {
 		return err
+	}
+	if err := savePin(site, cfg); err != nil {
+		return fmt.Errorf("Signed in, but could not record the WorkOS issuer pin: %w", err)
 	}
 	fmt.Fprintf(out, "Signed in to %s and stored the WorkOS credential in macOS Keychain.\n", site.URL)
 	return nil
