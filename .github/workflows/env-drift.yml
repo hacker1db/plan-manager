@@ -1,0 +1,105 @@
+# Trusted checks that run from main only and read real configuration. They never check out pull
+# request code and never install dependencies (the scripts use Node built-ins only).
+#   audit:    Vercel configuration vs config/env.contract.json and production isolation, by name,
+#             target and storage type only. Needs the env-audit environment's Vercel token.
+#   dry-run:  the same audit wiring against a recorded response file; no token.
+#   watchdog: read-only release watchdog; the clock starts at release approval.
+# Failures open or update one deduplicated issue per alert. See docs/operations/ci-cd.md.
+name: env-drift
+
+on:
+  schedule:
+    - cron: "17 6 * * *" # daily drift audit
+    - cron: "*/30 * * * *" # release watchdog
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Run the drift audit against the recorded fixture instead of Vercel
+        type: boolean
+        default: false
+
+permissions: {}
+
+concurrency:
+  group: env-drift-${{ github.event.schedule || github.event_name }}
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    name: Drift audit
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'push' || github.event.schedule == '17 6 * * *' ||
+       (github.event_name == 'workflow_dispatch' && !inputs.dry_run))
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: env-audit
+    permissions:
+      contents: read
+      actions: read # verify release run provenance of production deployments
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22.x
+          package-manager-cache: false
+      - name: Audit Vercel configuration (names, targets and types only)
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_TEAM_ID: ${{ vars.VERCEL_TEAM_ID }}
+          VERCEL_PROJECT_ID_PRODUCTION: ${{ vars.VERCEL_PROJECT_ID_PRODUCTION }}
+          VERCEL_PROJECT_ID_PREVIEW: ${{ vars.VERCEL_PROJECT_ID_PREVIEW }}
+          PRODUCTION_ISOLATION_SINCE: ${{ vars.PRODUCTION_ISOLATION_SINCE }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/ci/env-drift.mjs --report "$RUNNER_TEMP/drift.md"
+      - name: Job summary
+        if: always()
+        run: if [ -f "$RUNNER_TEMP/drift.md" ]; then cat "$RUNNER_TEMP/drift.md" >> "$GITHUB_STEP_SUMMARY"; fi
+
+  dry-run:
+    name: Drift audit (dry run)
+    if: github.event_name == 'workflow_dispatch' && inputs.dry_run
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22.x
+          package-manager-cache: false
+      - run: node scripts/ci/env-drift.mjs --recording test/fixtures/vercel-drift-recording.json --report "$RUNNER_TEMP/drift.md"
+      - if: always()
+        run: if [ -f "$RUNNER_TEMP/drift.md" ]; then cat "$RUNNER_TEMP/drift.md" >> "$GITHUB_STEP_SUMMARY"; fi
+
+  watchdog:
+    name: Release watchdog
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      (github.event.schedule == '*/30 * * * *' || (github.event_name == 'workflow_dispatch' && !inputs.dry_run))
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22.x
+          package-manager-cache: false
+      - env:
+          GITHUB_TOKEN: ${{ github.token }}
+          WATCHDOG_MINUTES: "60"
+        run: node scripts/ci/release-watchdog.mjs

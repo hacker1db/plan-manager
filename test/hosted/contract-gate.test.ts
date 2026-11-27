@@ -79,5 +79,5 @@ test("a changed build check, a newly production-required name, and a new GitHub 
 test("a base without a contract treats every production requirement as new", async () => {
   const result = await gate(structuredClone(base), [], { variables: [] })
   assert.equal(result.code, 1)
-  for (const variable of base.variables) assert.match(result.output, new RegExp(`${variable.name}: new variable`))
+  for (const variable of base.variables) assert.match(result.output, new RegExp(`${variable.name}: (new variable required in Vercel production|newly required in GitHub environment)`))
 })
