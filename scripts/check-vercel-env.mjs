@@ -1,13 +1,13 @@
 // Compares the variable NAMES configured in Vercel against what the hosted build requires, per
 // environment target, before a deploy fails. Reads only `vercel env ls --format json` metadata
-// (key, target, type); it never requests, decrypts or prints a value.
+// (key, target, type); it never requests, decrypts or prints a value. Required names per target come
+// from config/env.contract.json.
 //
 //   vercel env ls --format json | node scripts/check-vercel-env.mjs [--target production]
 //   pnpm check:vercel-env            (runs `vercel env ls` for the linked project)
 import { spawnSync } from 'node:child_process'
-import { hostedRequiredKeys } from './hosted-env-keys.mjs'
+import { TARGETS, loadContract, requiredNames } from './env-contract.mjs'
 
-const TARGETS = ['production', 'preview', 'development']
 const args = process.argv.slice(2)
 const targetIndex = args.indexOf('--target')
 const targets = targetIndex >= 0 ? [args[targetIndex + 1]] : TARGETS
@@ -47,9 +47,10 @@ for (const entry of entries) {
   for (const target of entryTargets) configured.get(target)?.add(entry.key)
 }
 
-const required = await hostedRequiredKeys()
+const contract = loadContract()
 let failed = false
 for (const target of targets) {
+  const required = requiredNames(contract, target)
   const missing = required.filter(key => !configured.get(target).has(key))
   if (missing.length === 0) {
     process.stdout.write(`${target}: all ${required.length} hosted variable names present.\n`)

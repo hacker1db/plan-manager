@@ -1,12 +1,15 @@
 // Fails the web build if server-only code, secret variable names, or source maps
 // reach browser assets. Source maps would publish the original server-adjacent source.
+// Besides the fixed list below, every secret name in config/env.contract.json and its CI fixture
+// value are forbidden, so a CI fixture build catches a secret value inlined into the client.
+import { loadContract } from './env-contract.mjs'
 import { readdir, readFile } from 'node:fs/promises'
 import { join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)))
 const client = resolve(root, process.argv[2] ?? '.svelte-kit/output/client')
-const FORBIDDEN = [
+const STATIC_FORBIDDEN = [
   'CLERK_SECRET_KEY',
   'WORKOS_API_KEY',
   'WORKOS_COOKIE_PASSWORD',
@@ -21,6 +24,12 @@ const FORBIDDEN = [
   'renderToStaticMarkup',
   '@neondatabase',
 ]
+const secrets = loadContract().variables.filter(variable => variable.sensitivity === 'secret')
+const FORBIDDEN = [...new Set([
+  ...STATIC_FORBIDDEN,
+  ...secrets.map(variable => variable.name),
+  ...secrets.map(variable => variable.ciFixture).filter(value => typeof value === 'string'),
+])]
 
 async function* files(directory) {
   for (const entry of await readdir(directory, { withFileTypes: true })) {
