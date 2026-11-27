@@ -1,3 +1,5 @@
+import { CLI_RUNTIME_VARIABLES, HOSTED_RUNTIME_VARIABLES, type EnvValidator } from "./env.contract"
+
 type EnvironmentSource = Readonly<Record<string, string | undefined>>
 let activeSource: EnvironmentSource = process.env
 export function setEnvironmentSource(source: EnvironmentSource) { activeSource = source }
@@ -33,15 +35,13 @@ export class HostedConfigurationError extends Error {
   }
 }
 
-const REQUIRED_KEYS = [
-  "WORKOS_CLIENT_ID",
-  "WORKOS_API_KEY",
-  "WORKOS_COOKIE_PASSWORD",
-  "WORKOS_REDIRECT_URI",
-  "DATABASE_URL",
-  "BLOB_READ_WRITE_TOKEN",
-  "PLAN_MANAGER_TOKEN_PEPPER",
-] as const
+// Names and validators come from config/env.contract.json (see scripts/generate-env-contract.mjs).
+function satisfies(validator: EnvValidator, value: string | undefined): boolean {
+  if (typeof value !== "string" || value.trim() === "") return false
+  if (validator.id === "csvNonEmpty") return value.split(",").some(item => item.trim() !== "")
+  if (validator.id === "minLength") return value.length >= validator.min
+  return true
+}
 
 function uniqueList(value: string): string[] {
   return [...new Set(value.split(",").map(item => item.trim()).filter(Boolean))]
@@ -78,12 +78,8 @@ export function isAllowedOwner(userId: string | null | undefined, source: Readon
 
 export function getHostedEnvironment(source: Readonly<Record<string, string | undefined>> = environmentSource()): HostedEnvironment {
   const ownerWorkosUserIds = getOwnerWorkosUserIds(source)
-  const missing = [
-    ...REQUIRED_KEYS.filter(key => !source[key]?.trim()),
-    ...(ownerWorkosUserIds.length === 0 ? ["PLAN_MANAGER_OWNER_WORKOS_USER_IDS"] : []),
-    ...((source.WORKOS_COOKIE_PASSWORD?.length ?? 0) < 32 ? ["WORKOS_COOKIE_PASSWORD"] : []),
-  ]
-  if (missing.length > 0) throw new HostedConfigurationError([...new Set(missing)])
+  const missing = HOSTED_RUNTIME_VARIABLES.filter(variable => !satisfies(variable.validator, source[variable.name])).map(variable => variable.name)
+  if (missing.length > 0) throw new HostedConfigurationError(missing)
   return {
     workosClientId: source.WORKOS_CLIENT_ID!,
     workosApiKey: source.WORKOS_API_KEY!,
@@ -106,14 +102,10 @@ export function ownerConfigured(source: Readonly<Record<string, string | undefin
 }
 
 export function getCliOAuthConfiguration(source: Readonly<Record<string, string | undefined>> = environmentSource()): WorkOSCliConfiguration {
-  const clientId = source.PLAN_MANAGER_WORKOS_CLI_CLIENT_ID?.trim()
-  const audience = source.PLAN_MANAGER_WORKOS_CLI_AUDIENCE?.trim()
-  if (!clientId || !audience) {
-    throw new HostedConfigurationError([
-      ...(!clientId ? ["PLAN_MANAGER_WORKOS_CLI_CLIENT_ID"] : []),
-      ...(!audience ? ["PLAN_MANAGER_WORKOS_CLI_AUDIENCE"] : []),
-    ])
-  }
+  const missing = CLI_RUNTIME_VARIABLES.filter(variable => !satisfies(variable.validator, source[variable.name])).map(variable => variable.name)
+  if (missing.length > 0) throw new HostedConfigurationError(missing)
+  const clientId = source.PLAN_MANAGER_WORKOS_CLI_CLIENT_ID!.trim()
+  const audience = source.PLAN_MANAGER_WORKOS_CLI_AUDIENCE!.trim()
   const issuerUrl = httpsUrl(source.PLAN_MANAGER_WORKOS_AUTHKIT_DOMAIN, "PLAN_MANAGER_WORKOS_AUTHKIT_DOMAIN", true)
   return {
     version: 2,

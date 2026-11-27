@@ -50,7 +50,28 @@ Existing `pm_...` Plan Manager tokens remain an explicit compatibility bridge. T
 
 ## Vercel environment configuration
 
-Set these exact variables independently for Development, Preview, and Production: `WORKOS_CLIENT_ID`, `WORKOS_API_KEY`, `WORKOS_COOKIE_PASSWORD`, `WORKOS_REDIRECT_URI`, `PLAN_MANAGER_OWNER_WORKOS_USER_IDS`, `PLAN_MANAGER_WORKOS_AUTHKIT_DOMAIN`, `PLAN_MANAGER_WORKOS_CLI_CLIENT_ID`, and `PLAN_MANAGER_WORKOS_CLI_AUDIENCE`. Preserve the existing `DATABASE_URL`, `BLOB_READ_WRITE_TOKEN`, and `PLAN_MANAGER_TOKEN_PEPPER`. Values in source and tickets must remain placeholders such as `<set-in-vercel>`.
+`config/env.contract.json` is the single list of every variable the hosted app, its production build guard, the Vercel inventory check, and CI rely on. For each name it records where it is required, whether it is a secret, the check the build applies, the minimum Vercel storage type, an obviously fake CI fixture, and an owner. `src/lib/server/env.contract.ts`, `src/env.ts`, `.env.example`, and the table below are generated from it with `pnpm contract:generate`; `pnpm contract:check` fails when any of them is stale. To add or change a variable, edit the contract, regenerate, and set the variable in Vercel before merging. Values in source and tickets must remain placeholders such as `<set-in-vercel>`.
+
+<!-- env-contract:begin -->
+<!-- Generated from config/env.contract.json by scripts/generate-env-contract.mjs. Do not edit; run `pnpm contract:generate`. -->
+
+| Name | Required in | Sensitivity | Build check | Minimum Vercel storage type | Purpose |
+| --- | --- | --- | --- | --- | --- |
+| `WORKOS_CLIENT_ID` | production, preview, development | config | non-empty | production: plain; preview: plain; development: plain | WorkOS AuthKit client ID for browser sessions. |
+| `WORKOS_API_KEY` | production, preview, development | secret | non-empty | production: sensitive; preview: sensitive; development: encrypted | WorkOS API key for the environment (server-only secret). |
+| `WORKOS_COOKIE_PASSWORD` | production, preview, development | secret | at least 32 characters | production: sensitive; preview: sensitive; development: encrypted | Session cookie encryption password, at least 32 characters. |
+| `WORKOS_REDIRECT_URI` | production, preview, development | config | non-empty | production: plain; preview: plain; development: plain | Exact browser callback URL ending in /callback. |
+| `PLAN_MANAGER_OWNER_WORKOS_USER_IDS` | production, preview, development | config | comma-separated, at least one item | production: plain; preview: plain; development: plain | Comma-separated WorkOS user IDs allowed to use the app. |
+| `PLAN_MANAGER_WORKOS_AUTHKIT_DOMAIN` | production, preview, development | config | non-empty | production: plain; preview: plain; development: plain | HTTPS origin of the AuthKit domain used for CLI device login. |
+| `PLAN_MANAGER_WORKOS_CLI_CLIENT_ID` | production, preview, development | config | non-empty | production: plain; preview: plain; development: plain | Client ID of the public Plan Manager CLI Connect application. |
+| `PLAN_MANAGER_WORKOS_CLI_AUDIENCE` | production, preview, development | config | non-empty | production: plain; preview: plain; development: plain | Audience configured for the CLI application. |
+| `DATABASE_URL` | production, preview, development | secret | non-empty | production: sensitive; preview: sensitive; development: encrypted | Neon Postgres connection string. |
+| `BLOB_READ_WRITE_TOKEN` | production, preview, development | secret | non-empty | production: sensitive; preview: sensitive; development: encrypted | Private Vercel Blob read/write token. |
+| `PLAN_MANAGER_TOKEN_PEPPER` | production, preview, development | secret | non-empty | production: sensitive; preview: sensitive; development: encrypted | Server-side pepper for hashing CLI upload tokens. |
+
+<!-- env-contract:end -->
+
+Secrets must use the **Sensitive** storage type in Production and Preview (Vercel does not offer Sensitive for Development, so Development uses Encrypted). The build check is only a shape check; the runtime additionally validates URL shapes (`WORKOS_REDIRECT_URI` must end in `/callback`, `PLAN_MANAGER_WORKOS_AUTHKIT_DOMAIN` must be an HTTPS origin).
 
 | Environment | Browser callback | Approved post-logout URL | CLI details |
 | --- | --- | --- | --- |
@@ -95,8 +116,8 @@ For rollback, retain the last known-good Clerk deployment and its associated Ver
 
 The `hosted-build` GitHub Actions workflow (`.github/workflows/hosted-build.yml`) runs on every pull request and on pushes to `main`. It has no secrets and only `contents: read` permission, so it is safe to run on pull requests from forks. It runs:
 
-- `test/hosted/build-env.test.ts`. These tests check that the production guard fails, naming only the variable, when any required variable is missing or blank. This includes the four from the failed deploy: `WORKOS_API_KEY`, `PLAN_MANAGER_OWNER_WORKOS_USER_IDS`, `PLAN_MANAGER_WORKOS_CLI_CLIENT_ID`, and `PLAN_MANAGER_WORKOS_CLI_AUDIENCE`. They also check that the guard never prints a value, and that `.env.example` lists every variable the guard requires.
-- `node scripts/ci-production-build.mjs`. This runs `pnpm build:web` with `VERCEL_ENV=production` and fake values for every key in `.env.example`. If you add a required variable without adding it to `.env.example`, this build fails before merge.
+- `test/hosted/build-env.test.ts`. These tests check that the production guard fails, naming only the variable, when any required variable is missing or blank. This includes the four from the failed deploy: `WORKOS_API_KEY`, `PLAN_MANAGER_OWNER_WORKOS_USER_IDS`, `PLAN_MANAGER_WORKOS_CLI_CLIENT_ID`, and `PLAN_MANAGER_WORKOS_CLI_AUDIENCE`. They also check that the guard never prints a value, and that the guard, the runtime, `.env.example`, and the contract require exactly the same names.
+- `node scripts/ci-production-build.mjs`. This runs `pnpm build:web` with `VERCEL_ENV=production` and the fake `ciFixture` value of every variable in `config/env.contract.json`. A required variable added to the contract without a fixture is rejected by the contract loader, so the build fails before merge.
 
 Run the same checks locally with the two commands above.
 
@@ -117,4 +138,4 @@ pnpm build
 
 Roll back through the existing Vercel project's deployment history. Revoking an upload token or taking the hosted service offline leaves local Markdown intact. Database and Blob backups require their own retention policy; Git backs up application source, not hosted plan data. Local mocked checks do not make the migration production-ready; live preview and production verification remain required.
 
-SvelteKit 3 requires all private deployment variables to be declared in `src/env.ts`. Keep the WorkOS variables declared there when changing deployment configuration. The runtime is Node 22; local tooling requires Node >=22.17.0.
+SvelteKit 3 requires all private deployment variables to be declared in `src/env.ts`, which is generated from `config/env.contract.json`; never edit it by hand. The runtime is Node 22; local tooling requires Node >=22.17.0.

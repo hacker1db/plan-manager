@@ -25,6 +25,8 @@
     "test:lib": "TSX_TSCONFIG_PATH=tsconfig.tests.json node --import tsx --test 'test/lib/*.js'",
     "test:cli": "cd cli && go test ./...",
     "check:vercel-env": "node scripts/check-vercel-env.mjs --fetch",
+    "contract:check": "node scripts/generate-env-contract.mjs --check",
+    "contract:generate": "node scripts/generate-env-contract.mjs",
     "db:migrate": "node --env-file=.env.local --import tsx scripts/migrate-hosted.ts",
     "test:contracts": "sh cli/scripts/contracts.sh"
   },
