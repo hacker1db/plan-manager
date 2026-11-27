@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	neturl "net/url"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -36,7 +37,8 @@ func newOpenCmd(opts *options) *cobra.Command {
 
 func runOpen(c *cobra.Command, opts *options, args []string) error {
 	port := config.Port()
-	url := config.DashboardURL(port)
+	dashboard := config.DashboardURL(port)
+	next := "/"
 	if len(args) > 0 {
 		if err := plans.InitStorage(); err != nil {
 			return err
@@ -45,14 +47,24 @@ func runOpen(c *cobra.Command, opts *options, args []string) error {
 		if err != nil {
 			return err
 		}
-		url = config.PlanURL(p.Meta.ID)
+		next = "/plans/" + neturl.PathEscape(p.Meta.ID)
+	}
+	url := dashboard + next
+	token, err := server.LoadOrCreateAccessToken(server.TokenPath(config.ConfigDir()))
+	if err != nil {
+		return &exitcode.Error{Code: exitcode.DependencyUnavailable, Raw: true, Msg: "Could not read the dashboard token: " + err.Error()}
 	}
 	if _, err := service.Ensure(port, config.Host(), config.PlanHome()); err != nil {
 		return &exitcode.Error{Code: exitcode.CodeOf(err), Raw: true, Msg: "Could not start plan dashboard: " + err.Error()}
 	}
-	if err := service.OpenURL(url); err != nil {
+	// The browser signs in with a single-use ticket; the token stays out of the URL.
+	signIn, err := server.SignInURL(dashboard, port, token, next)
+	if err != nil {
+		return &exitcode.Error{Code: exitcode.DependencyUnavailable, Raw: true, Msg: "Could not sign in to the plan dashboard: " + err.Error()}
+	}
+	if err := service.OpenURL(signIn); err != nil {
 		fmt.Fprintf(os.Stderr, "Could not open browser: %s\n", err)
-		fmt.Fprintf(c.OutOrStdout(), "Dashboard: %s\n", url)
+		fmt.Fprintf(c.OutOrStdout(), "Dashboard: %s\nSign in once (single use, expires in 60s): %s\n", url, signIn)
 	}
 	return nil
 }
@@ -100,8 +112,12 @@ func newServeCmd(opts *options) *cobra.Command {
 				fmt.Fprintf(c.OutOrStdout(), "Plan dashboard %s at %s\n", verb, st.DashboardURL)
 				return nil
 			}
+			token, err := server.LoadOrCreateAccessToken(server.TokenPath(config.ConfigDir()))
+			if err != nil {
+				return exitcode.New(exitcode.DependencyUnavailable, "Could not read the dashboard token: %s", err.Error())
+			}
 			srv, err := server.Start(server.Options{
-				Port: port, Host: host, PlanHome: config.PlanHome(),
+				Port: port, Host: host, PlanHome: config.PlanHome(), AccessToken: token,
 				NoWatch:           os.Getenv("PLAN_WATCH") == "0",
 				WatchDebounce:     envMillis("PLAN_WATCH_DEBOUNCE_MS"),
 				StabilityDelay:    envMillis("PLAN_STABILITY_DELAY_MS"),

@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import { mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -9,6 +10,20 @@ import { startServer } from '../../dist/server/server.js'
 
 const fixtures = []
 const servers = []
+
+// The dashboard requires the per-user access token (XDG_CONFIG_HOME/plan-manager/
+// dashboard-token, created by the server) on /_session and every mutation.
+// This suite's fetch sends it, so the assertions below exercise the CSRF and
+// origin checks layered on top; rawFetch sends no credentials.
+const rawFetch = globalThis.fetch
+function accessToken() {
+  return readFileSync(join(process.env.XDG_CONFIG_HOME, 'plan-manager', 'dashboard-token'), 'utf8').trim()
+}
+function fetch(input, init = {}) {
+  const headers = new Headers(init.headers)
+  if (!headers.has('Authorization')) headers.set('Authorization', `Bearer ${accessToken()}`)
+  return rawFetch(input, { ...init, headers })
+}
 
 afterEach(async () => {
   await Promise.all(servers.splice(0).map(server => server.close()))
@@ -195,6 +210,29 @@ test('Host and Origin checks enforce exact same-origin without CORS', async () =
   })
   assert.equal(preflight.status, 403)
   assert.equal(preflight.headers.get('access-control-allow-origin'), null)
+})
+
+test('session and mutations require the dashboard access token', async () => {
+  const root = await fixture()
+  const filePath = join(root, 'test.md')
+  const original = markdown()
+  await writeFile(filePath, original)
+  const { base } = await running({ planHome: root })
+
+  assert.equal((await rawFetch(`${base}/_session`)).status, 401)
+  assert.equal((await rawFetch(`${base}/_session`, { headers: { Authorization: 'Bearer wrong' } })).status, 401)
+  for (const path of ['/api/plans', '/api/search?q=test', '/api/plans/plan_test', '/_events']) {
+    assert.equal((await rawFetch(`${base}${path}`)).status, 401, path)
+  }
+  assert.equal((await rawFetch(`${base}/_health`)).status, 200)
+  const session = await fetch(`${base}/_session`).then(response => response.json())
+  const anonymous = await rawFetch(`${base}/api/plans/plan_test/status`, {
+    method: 'POST',
+    body: JSON.stringify({ status: 'completed' }),
+    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': session.csrfToken },
+  })
+  assert.equal(anonymous.status, 401)
+  assert.equal(await readFile(filePath, 'utf8'), original)
 })
 
 test('mutations require CSRF and leave files unchanged when rejected', async () => {

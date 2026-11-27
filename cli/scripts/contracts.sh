@@ -74,4 +74,6 @@ export function startServer(options = {}) {
 EOF
 
 cd "$work"
+# The dashboard reads (and creates) its access token under XDG_CONFIG_HOME.
+export XDG_CONFIG_HOME="$work/config"
 node --test --test-timeout=30000 --test-skip-pattern="pnpm dev" test/cli/*.test.js
