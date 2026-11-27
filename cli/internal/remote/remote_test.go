@@ -131,6 +131,79 @@ func TestDeviceLoginStoresVersionedCredentialWithoutPrintingDeviceCode(t *testin
 	}
 }
 
+// WorkOS returns verification_uri_complete with a user_code query (RFC 8628
+// section 3.3.1). Login must accept it; production login failed with "Verification
+// URI must be an HTTPS URL" because the query was rejected.
+func TestDeviceLoginAcceptsVerificationURICompleteWithUserCodeQuery(t *testing.T) {
+	withKeychain(t)
+	fakeWorkOS(t, func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode(map[string]any{"device_code": "device", "user_code": "ABCD-EFGH", "verification_uri": "https://" + r.Host + "/device", "verification_uri_complete": "https://" + r.Host + "/device?user_code=ABCD-EFGH", "expires_in": 600, "interval": 1})
+	}, func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode(map[string]any{"access_token": "access-token", "refresh_token": "refresh-token", "token_type": "Bearer", "expires_in": 3600})
+	})
+	previousWait := pollWait
+	pollWait = func(time.Duration) {}
+	t.Cleanup(func() { pollWait = previousWait })
+	site, err := GetSite()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var output bytes.Buffer
+	if err := Login(site, &output); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(output.String(), "/device?user_code=ABCD-EFGH") {
+		t.Fatalf("complete verification URI not shown: %s", output.String())
+	}
+}
+
+func TestVerificationURIRejectsUnsafeForms(t *testing.T) {
+	for _, value := range []string{
+		"http://auth.example/device?user_code=A", "https://user:pass@auth.example/device", "https://@auth.example/device",
+		"https://auth.example/device#x", "https://auth.example/device?user_code=A#x", "/device", "javascript:alert(1)",
+		"https:auth.example/device", "https:///device", "https://:443/device?user_code=A", "https://:/device",
+		"https://auth.example/device?user_code=A B", "https://auth.example/device?user_code=A\"", "https://auth.example/device?user_code=A'",
+		"https://auth.example/device?user_code=<x>", "https://auth.example/device?user_code=`id`", "https://auth.example/device?user_code=$(id)\\",
+		"https://auth.example/device?user_code=%ZZ", "https://auth.example/device?user_code=%4", "https://auth.example/device?user_code=\u009b31m",
+		"https://auth.example/device?user_code=\u202eX", "https://auth.example/device?user_code=A\tB",
+	} {
+		if _, err := verificationURI(value); err == nil {
+			t.Errorf("accepted unsafe verification URI %q", value)
+		}
+	}
+	if _, err := verificationURI("https://auth.example/device?user_code=ABCD-EFGH"); err != nil {
+		t.Errorf("rejected valid complete URI: %v", err)
+	}
+}
+
+func TestDeviceLoginRejectsCrossOriginVerificationURIComplete(t *testing.T) {
+	for _, complete := range []string{"https://evil.example/device?user_code=ABCD-EFGH", "https://%s:1/device?user_code=ABCD-EFGH"} {
+		t.Run(complete, func(t *testing.T) {
+			withKeychain(t)
+			tokenCalled := false
+			fakeWorkOS(t, func(w http.ResponseWriter, r *http.Request) {
+				// Same host as the issuer but a different port must still be rejected.
+				value := strings.Replace(complete, "%s", strings.Split(r.Host, ":")[0], 1)
+				json.NewEncoder(w).Encode(map[string]any{"device_code": "device", "user_code": "ABCD-EFGH", "verification_uri": "https://" + r.Host + "/device", "verification_uri_complete": value, "expires_in": 600})
+			}, func(w http.ResponseWriter, r *http.Request) {
+				tokenCalled = true
+			})
+			site, err := GetSite()
+			if err != nil {
+				t.Fatal(err)
+			}
+			var output bytes.Buffer
+			err = Login(site, &output)
+			if err == nil || !strings.Contains(err.Error(), "cross-origin") {
+				t.Fatalf("expected cross-origin rejection, got %v", err)
+			}
+			if tokenCalled || strings.Contains(output.String(), "Open:") {
+				t.Fatalf("login continued after cross-origin verification URI: %s", output.String())
+			}
+		})
+	}
+}
+
 func TestDeviceDenialStoresNothing(t *testing.T) {
 	keychain := withKeychain(t)
 	fakeWorkOS(t, func(w http.ResponseWriter, r *http.Request) {
