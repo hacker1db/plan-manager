@@ -81,6 +81,8 @@ Variable changes do not modify an existing deployment. Redeploy the affected env
 
 For each browser environment, also register the exact `/sign-in` URL as the WorkOS **Sign-in endpoint** (`initiate_login_uri`). The official SvelteKit SDK uses that endpoint for WorkOS-initiated flows and routes failed callbacks to the application's public `/auth/error` page. Keep callback, sign-in, and post-logout origins environment-specific.
 
+Users start at `/login`; unauthenticated page requests redirect there with a `returnTo` path. `/login` and `/sign-in` share one handler (`src/lib/server/sign-in.ts`), so `/sign-in` keeps working as the registered `initiate_login_uri`. `returnTo` accepts only same-origin absolute paths (no `//`, backslashes, control characters, or auth routes); anything else falls back to `/plans`.
+
 ### Read-only inventory observed 2026-10-25
 
 `vercel env ls --format json` against the then-linked `hacker1dbs-projects/plan-manager` project (now `zerobitdev/plan-manager`) was used only to list variable names, targets, and storage types. It did not retrieve any values. None of the previously inventoried WorkOS variables existed in Development, Preview, or Production. The SvelteKit conversion adds `WORKOS_API_KEY` and replaces `NEXT_PUBLIC_WORKOS_REDIRECT_URI` with server-only `WORKOS_REDIRECT_URI`; re-check names before any approved setup.
