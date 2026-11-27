@@ -1,0 +1,21 @@
+name: Set up toolchain
+description: Install pnpm, Node.js and (optionally) Go at the versions the repository pins, without caches.
+inputs:
+  go:
+    description: Also install Go from cli/go.mod.
+    default: "false"
+runs:
+  using: composite
+  steps:
+    - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+    - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      with:
+        node-version: 22.x
+        package-manager-cache: false
+    - if: inputs.go == 'true'
+      uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      with:
+        go-version-file: cli/go.mod
+        cache: false
+    - shell: bash
+      run: pnpm install --frozen-lockfile

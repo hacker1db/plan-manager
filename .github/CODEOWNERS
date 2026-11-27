@@ -1,0 +1,5 @@
+# Every path is owned by the repository owner, so no change that could weaken a check (workflows,
+# CI scripts, the environment contract, package.json scripts, source or tests) can merge without the
+# owner's review. Requires the ruleset setting "Require review from Code Owners"; see
+# docs/operations/ci-cd.md.
+* @hacker1db
