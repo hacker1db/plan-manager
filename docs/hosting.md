@@ -60,13 +60,30 @@ Set these exact variables independently for Development, Preview, and Production
 
 When `VERCEL_ENV=production`, `pnpm build` first runs `scripts/check-hosted-env.mjs`, which fails the build and lists (by name only) any missing or invalid hosted variable, so an unconfigured production deployment cannot go live and answer only 503. Preview and local builds skip this check.
 
+Before merging to `main`, compare the names configured in Vercel with what the build requires. This reads only `vercel env ls --format json` metadata (name, target, type) and never requests or prints a value:
+
+```sh
+vercel link --project plan-manager --scope zerobitdev   # once per checkout
+pnpm check:vercel-env                                   # every target, exit 1 if any name is missing
+vercel env ls --format json | node scripts/check-vercel-env.mjs --target production
+```
+
+Presence of a name does not prove its value is valid (the build guard and runtime still check the owner list, cookie-password length, and URL shapes). To fill a gap, an operator with WorkOS and Vercel access takes each real value from the WorkOS Dashboard and adds it with `vercel env add <NAME> production --sensitive`, typing it at the prompt so it never lands in shell history or a ticket. Never add placeholder values to make the build pass. Then redeploy production from the Vercel dashboard or by pushing to `main`.
+
+| Name | Source |
+| --- | --- |
+| `WORKOS_API_KEY` | WorkOS Dashboard → API Keys for the production environment (server-only secret) |
+| `PLAN_MANAGER_OWNER_WORKOS_USER_IDS` | WorkOS Dashboard → Users → owner's `user_...` ID; comma-separate several |
+| `PLAN_MANAGER_WORKOS_CLI_CLIENT_ID` | Client ID of the public `Plan Manager CLI` Connect application |
+| `PLAN_MANAGER_WORKOS_CLI_AUDIENCE` | Audience configured for that CLI application in production |
+
 Variable changes do not modify an existing deployment. Redeploy the affected environment, then verify browser login/logout, non-owner denial, TOTP MFA, CLI device login, token rotation, and an authorized write. Preview must pass before production.
 
 For each browser environment, also register the exact `/sign-in` URL as the WorkOS **Sign-in endpoint** (`initiate_login_uri`). The official SvelteKit SDK uses that endpoint for WorkOS-initiated flows and routes failed callbacks to the application's public `/auth/error` page. Keep callback, sign-in, and post-logout origins environment-specific.
 
 ### Read-only inventory observed 2026-10-25
 
-`vercel env ls --format json` against the already linked `hacker1dbs-projects/plan-manager` project was used only to list variable names, targets, and storage types. It did not retrieve any values. None of the previously inventoried WorkOS variables existed in Development, Preview, or Production. The SvelteKit conversion adds `WORKOS_API_KEY` and replaces `NEXT_PUBLIC_WORKOS_REDIRECT_URI` with server-only `WORKOS_REDIRECT_URI`; re-check names before any approved setup.
+`vercel env ls --format json` against the then-linked `hacker1dbs-projects/plan-manager` project (now `zerobitdev/plan-manager`) was used only to list variable names, targets, and storage types. It did not retrieve any values. None of the previously inventoried WorkOS variables existed in Development, Preview, or Production. The SvelteKit conversion adds `WORKOS_API_KEY` and replaces `NEXT_PUBLIC_WORKOS_REDIRECT_URI` with server-only `WORKOS_REDIRECT_URI`; re-check names before any approved setup.
 
 The project still has the Clerk-era names `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, `PLAN_MANAGER_OWNER_CLERK_USER_ID`, `PLAN_MANAGER_OWNER_CLERK_USER_IDS`, and `PLAN_MANAGER_OAUTH_CLIENT_ID` across their existing environment targets. The existing database, Blob, and `PLAN_MANAGER_TOKEN_PEPPER` variables are present. Exact current client IDs and all secret values were deliberately not read, so they cannot be copied or inferred from this inventory.
 
