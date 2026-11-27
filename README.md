@@ -150,6 +150,8 @@ These commands append events to a validated `tracking` block in the frontmatter;
 
 `plan serve` starts the dashboard as a background service. `plan serve --foreground` runs it in the current terminal instead. The server listens only on `127.0.0.1` and checks the `plans.localhost` host name.
 
+Other local accounts and processes can reach `127.0.0.1` too, so the dashboard also requires a per-user access token. The server creates it on first start in `~/.config/plan-manager/dashboard-token` (mode 0600; it refuses a token file that other users can read) and never sends it over HTTP. `plan open` (or bare `plan`) uses it to get a single-use sign-in link that expires after 60 seconds and sets an HttpOnly cookie in the browser. If the dashboard says "sign-in required", run `plan open`. Scripts can send `Authorization: Bearer <token>`. Mutations also need the per-process CSRF token from `/_session`. `/_health` and the static page shell stay public; plan data, search, and live events need the token. The server and `plan open` must see the same `XDG_CONFIG_HOME`.
+
 ### JSON output and exit codes
 
 Commands that change or return a plan print a versioned envelope when you pass `--json`:
@@ -178,7 +180,7 @@ plan push --all
 plan auth status
 ```
 
-There is a single hosted site, `https://planmanager.hacker1db.dev`; set `PLAN_MANAGER_URL` to point the CLI elsewhere (for example, a preview deployment). Push revisions are saved in `~/.config/plan-manager/site.json`. If the hosted copy changed since your last push, `plan push` refuses to overwrite it and exits with code 5. See [`auth.md`](auth.md) and [`docs/hosting.md`](docs/hosting.md) for WorkOS setup and legacy-token boundaries.
+There is a single hosted site, `https://planmanager.hacker1db.dev`; set `PLAN_MANAGER_URL` to point the CLI elsewhere (for example, a preview deployment). Push revisions are saved in `~/.config/plan-manager/site.json`. The first `plan auth login` to a site records its WorkOS issuer and CLI client ID in `~/.config/plan-manager/auth-pins.json`; a later login refuses a site that names a different issuer or client ID. Remove that site's entry only when the change is expected. If the hosted copy changed since your last push, `plan push` refuses to overwrite it and exits with code 5. See [`docs/hosting.md`](docs/hosting.md) for WorkOS setup and legacy-token boundaries.
 
 ## Configuration
 
