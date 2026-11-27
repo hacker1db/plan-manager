@@ -41,9 +41,18 @@ export function createVercelClient({ token, teamId, fetchImpl = fetch, apiBase =
       return records.map(envMetadata)
     },
     getProject: projectId => request('GET', `/v9/projects/${encodeURIComponent(projectId)}`),
-    async listDeployments(projectId, { since, target, limit = 100 } = {}) {
-      const body = await request('GET', '/v6/deployments', { projectId, since, target, limit })
-      return Array.isArray(body?.deployments) ? body.deployments : []
+    // Pages through every deployment (newest first) until Vercel reports no further page. Fails
+    // closed rather than returning a partial list.
+    async listDeployments(projectId, { since, target, limit = 100, maxPages = 50 } = {}) {
+      const deployments = []
+      let until
+      for (let page = 0; page < maxPages; page++) {
+        const body = await request('GET', '/v6/deployments', { projectId, since, target, limit, until })
+        if (Array.isArray(body?.deployments)) deployments.push(...body.deployments)
+        until = body?.pagination?.next
+        if (!until) return deployments
+      }
+      throw new Error(`more than ${maxPages * limit} deployments; narrow PRODUCTION_ISOLATION_SINCE`)
     },
     getDeployment: idOrUrl => request('GET', `/v13/deployments/${encodeURIComponent(idOrUrl)}`),
     promote: (projectId, deploymentId) => request('POST', `/v10/projects/${encodeURIComponent(projectId)}/promote/${encodeURIComponent(deploymentId)}`),

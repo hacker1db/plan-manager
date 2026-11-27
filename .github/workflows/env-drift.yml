@@ -38,6 +38,7 @@ jobs:
     environment: env-audit
     permissions:
       contents: read
+      actions: read # verify release run provenance of production deployments
       issues: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

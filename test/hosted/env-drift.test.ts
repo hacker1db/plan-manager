@@ -6,7 +6,7 @@ import { root } from "./vite-ssr"
 // @ts-expect-error plain ESM build script without type declarations
 import { loadContract } from "../../scripts/env-contract.mjs"
 // @ts-expect-error plain ESM build script without type declarations
-import { auditConfiguration, collect, renderReport } from "../../scripts/ci/env-drift.mjs"
+import { auditConfiguration, collect, githubProvenance, renderReport } from "../../scripts/ci/env-drift.mjs"
 // @ts-expect-error plain ESM build script without type declarations
 import { createRecordedFetch, createVercelClient, envMetadata } from "../../scripts/ci/vercel-client.mjs"
 // @ts-expect-error plain ESM build script without type declarations
@@ -21,7 +21,7 @@ const LEAK = "must-never-appear-in-any-output"
 
 async function recorded(overrides: Record<string, unknown> = {}) {
   const vercel = createVercelClient({ token: "fake", fetchImpl: createRecordedFetch({ ...structuredClone(recording), ...overrides }) })
-  return collect(vercel, { productionId: "prj_production", previewId: "prj_preview" })
+  return collect(vercel, { productionId: "prj_production", previewId: "prj_preview", verifyProvenance: async () => ({ ok: true }) })
 }
 
 const checks = (problems: any[]) => problems.map(problem => `${problem.check}:${problem.project}:${problem.target ?? ""}:${problem.name ?? ""}`)
@@ -74,7 +74,7 @@ test("isolation: production-target variables in the preview project and a Git-co
 
 test("isolation: any production-project deployment not created by release.yml from main fails", async () => {
   const deployments = [
-    { uid: "dpl_release", target: "production", createdAt: 2_000, meta: { planManagerRef: "main", planManagerSha: SHA } },
+    { uid: "dpl_release", target: "production", createdAt: 2_000, meta: { planManagerRef: "main", planManagerSha: SHA, planManagerRun: "42" } },
     { uid: "dpl_branch_preview", target: null, createdAt: 2_000, meta: { githubCommitRef: "feature/x" } },
     { uid: "dpl_forged_ref", target: "production", createdAt: 2_000, meta: { planManagerRef: "feature/x", planManagerSha: SHA } },
     { uid: "dpl_no_sha", target: "production", createdAt: 2_000, meta: { planManagerRef: "main" } },
@@ -83,6 +83,39 @@ test("isolation: any production-project deployment not created by release.yml fr
   const problems = auditConfiguration({ contract, ...(await recorded({ "GET /v6/deployments": { deployments } })), isolationSince: 1_000 })
   assert.deepEqual(problems.map((problem: any) => problem.detail.split(" ")[1]), ["dpl_branch_preview", "dpl_forged_ref", "dpl_no_sha"])
   assert.equal(auditConfiguration({ contract, ...(await recorded({ "GET /v6/deployments": { deployments } })) }).length, 4, "without a cut-over date every old deployment is flagged (fail closed)")
+  const undated = auditConfiguration({ contract, production: { env: [], project: {}, deployments: [{ uid: "dpl_undated", target: "production", meta: {} }] }, preview: { env: [] } }).filter((p: any) => p.check === "non-main-deployment")
+  assert.match(undated[0].detail, /dpl_undated has no creation time/)
+})
+
+test("isolation: release metadata is only trusted after GitHub confirms the run, the commit and the time window", async () => {
+  const created = Date.parse("2026-11-26T10:05:00Z")
+  const deployment = { uid: "dpl_x", target: "production", createdAt: created, meta: { planManagerRef: "main", planManagerSha: SHA, planManagerRun: "42" } }
+  const goodRun = { path: ".github/workflows/release.yml", head_branch: "main", head_sha: SHA, repository: { full_name: "hacker1db/plan-manager" }, status: "completed", run_started_at: "2026-11-26T10:00:00Z", updated_at: "2026-11-26T10:10:00Z" }
+  const github = (run: any, compare = "ahead") => ({ repository: "hacker1db/plan-manager", request: async (_method: string, path: string) => path.includes("/compare/") ? { status: compare } : run })
+  assert.deepEqual(await githubProvenance(github(goodRun))(deployment), { ok: true })
+  const cases: [string, any, string?, any?][] = [
+    ["wrong workflow", { ...goodRun, path: ".github/workflows/ci.yml" }],
+    ["wrong branch", { ...goodRun, head_branch: "feature/x" }],
+    ["wrong commit", { ...goodRun, head_sha: "f".repeat(40) }],
+    ["other repository", { ...goodRun, repository: { full_name: "fork/plan-manager" } }],
+    ["created before the run", { ...goodRun, run_started_at: "2026-11-26T10:06:00Z" }],
+    ["created long after the run", { ...goodRun, updated_at: "2026-11-26T09:00:00Z", run_started_at: "2026-11-26T08:00:00Z" }],
+    ["commit not on main", goodRun, "diverged"],
+    ["no run ID", goodRun, "ahead", { ...deployment, meta: { ...deployment.meta, planManagerRun: undefined } }],
+  ]
+  for (const [label, run, compare, target] of cases) assert.equal((await githubProvenance(github(run, compare))(target ?? deployment)).ok, false, label)
+  const failing = { repository: "hacker1db/plan-manager", request: async () => { throw new Error("GitHub API failed with HTTP 404") } }
+  assert.deepEqual(await githubProvenance(failing)(deployment), { ok: false, reason: "GitHub API failed with HTTP 404" })
+  const problems = auditConfiguration({ contract, production: { env: [], project: {}, deployments: [{ ...deployment, provenance: { ok: false, reason: "run 42 is not a release.yml run" } }] }, preview: { env: [] } }).filter((p: any) => p.check === "non-main-deployment")
+  assert.match(problems[0].detail, /could not be verified: run 42/)
+})
+
+test("the Vercel client reads every page of deployments and fails closed on too many", async () => {
+  const pages: Record<string, any> = { "": { deployments: [{ uid: "a" }], pagination: { next: 300 } }, "300": { deployments: [{ uid: "b" }], pagination: { next: 200 } }, "200": { deployments: [{ uid: "c" }], pagination: { next: null } } }
+  const fetchImpl = async (url: URL) => new Response(JSON.stringify(pages[url.searchParams.get("until") ?? ""]), { status: 200 })
+  const client = createVercelClient({ token: "t", fetchImpl })
+  assert.deepEqual((await client.listDeployments("prj")).map((d: any) => d.uid), ["a", "b", "c"])
+  await assert.rejects(client.listDeployments("prj", { maxPages: 2 }), /more than 200 deployments/)
 })
 
 test("the Vercel client sends the team only when configured and fails on HTTP errors", async () => {

@@ -120,8 +120,12 @@ token.
 
 Limits: the audit proves names and storage types, never values. GitHub environment secrets cannot
 be listed by the workflow token, so a missing `VERCEL_TOKEN` shows up as a failed run instead.
-A deployment that someone with the token creates by hand with forged metadata would pass the
-`non-main-deployment` check; the token is the boundary.
+Deployment metadata is written by whoever deploys, so the audit checks it against GitHub: the
+named run must be a `release.yml` run on `main` for exactly that commit, the commit must be on
+`main`, and the deployment must have been created while the run was going. Every page of
+deployments is read, and a deployment with no creation time is flagged. Someone holding the token
+could still deploy by hand during a real release run with copied metadata; the token is the final
+boundary.
 
 ## Release watchdog (`env-drift.yml`, job "Release watchdog")
 
