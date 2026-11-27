@@ -114,19 +114,14 @@ For rollback, retain the last known-good Clerk deployment and its associated Ver
 
 ## Preventing failed production deploys
 
-The `hosted-build` GitHub Actions workflow (`.github/workflows/hosted-build.yml`) runs on every pull request and on pushes to `main`. It has no secrets and only `contents: read` permission, so it is safe to run on pull requests from forks. It runs:
+The `ci` GitHub Actions workflow (`.github/workflows/ci.yml`, which replaces the earlier `hosted-build` workflow) runs on every pull request and on pushes to `main`. It has no secrets, no write permissions, and no caches, so it is safe on pull requests from forks. Besides typechecks and tests it runs:
 
-- `test/hosted/build-env.test.ts`. These tests check that the production guard fails, naming only the variable, when any required variable is missing or blank. This includes the four from the failed deploy: `WORKOS_API_KEY`, `PLAN_MANAGER_OWNER_WORKOS_USER_IDS`, `PLAN_MANAGER_WORKOS_CLI_CLIENT_ID`, and `PLAN_MANAGER_WORKOS_CLI_AUDIENCE`. They also check that the guard never prints a value, and that the guard, the runtime, `.env.example`, and the contract require exactly the same names.
-- `node scripts/ci-production-build.mjs`. This runs `pnpm build:web` with `VERCEL_ENV=production` and the fake `ciFixture` value of every variable in `config/env.contract.json`. A required variable added to the contract without a fixture is rejected by the contract loader, so the build fails before merge.
+- `node scripts/ci-production-build.mjs`: `pnpm build:web` with `VERCEL_ENV=production` and the fake `ciFixture` value of every variable in `config/env.contract.json`. It must pass.
+- `node scripts/ci/empty-env-build.mjs`: the same build with no contract variables set. It must fail and name every production-required variable, which proves the guard still fails closed.
+- `test/hosted/build-env.test.ts` and `test/hosted/env-contract.test.ts` (part of `pnpm test`): the guard fails naming only the variable when any one is missing or blank (including the four from the failed deploy: `WORKOS_API_KEY`, `PLAN_MANAGER_OWNER_WORKOS_USER_IDS`, `PLAN_MANAGER_WORKOS_CLI_CLIENT_ID`, `PLAN_MANAGER_WORKOS_CLI_AUDIENCE`), never prints a value, and the guard, the runtime, `.env.example`, and the contract require exactly the same names.
+- The contract-change gate: a PR that adds a production requirement or changes a build check fails until the repository owner confirms the value is provisioned. See [`docs/operations/ci-cd.md`](operations/ci-cd.md#contract-change-gate).
 
-Run the same checks locally with the two commands above.
-
-**Limit:** CI cannot see the real Vercel settings, so it cannot detect a variable missing from Production. Checking that would need a Vercel token in GitHub, and that token would cover every deployment in the project. Do not add one to pull request workflows. To cover this gap:
-
-1. Before you merge a change that adds a required variable, set it in Vercel for Preview and Production. Then confirm the names, never the values, with `vercel env ls production`.
-2. Turn on Vercel failed-deployment notifications (Account or Team Settings → Notifications → Deployment Failures, by email or Slack). A failed production build then alerts you right away. The previous production deployment stays live, because the guard fails the build before promotion.
-
-**Operator setup (manual, needs approval):** In GitHub branch protection for `main`, make `hosted-build / Production-equivalent build` a required status check. Leave approval rules unchanged: CODEOWNERS and last-push approval would block a sole maintainer.
+**Limit:** PR CI cannot see the real Vercel settings. The contract-change gate makes the owner confirm provisioning before merge; the trusted drift audit and release workflows (see `docs/operations/ci-cd.md`) check the real settings after merge. Never add a Vercel token to a pull request workflow. Also turn on Vercel failed-deployment notifications (Account Settings → Notifications → Deployment Failures).
 
 ## Checks and recovery
 
