@@ -74,6 +74,22 @@ Operational setup must therefore add all eight WorkOS names separately to Develo
 
 For rollback, retain the last known-good Clerk deployment and its associated Vercel configuration through the approved observation window. Roll back the deployment if verification fails; the database and Blob data require no reverse migration. Do not configure permanent dual-provider routing. After successful production verification and a separately approved rollback window, revoke Clerk grants/keys and remove the hosted Clerk integration.
 
+## Preventing failed production deploys
+
+The `hosted-build` GitHub Actions workflow (`.github/workflows/hosted-build.yml`) runs on every pull request and on pushes to `main`. It has no secrets and only `contents: read` permission, so it is safe to run on pull requests from forks. It runs:
+
+- `test/hosted/build-env.test.ts`. These tests check that the production guard fails, naming only the variable, when any required variable is missing or blank. This includes the four from the failed deploy: `WORKOS_API_KEY`, `PLAN_MANAGER_OWNER_WORKOS_USER_IDS`, `PLAN_MANAGER_WORKOS_CLI_CLIENT_ID`, and `PLAN_MANAGER_WORKOS_CLI_AUDIENCE`. They also check that the guard never prints a value, and that `.env.example` lists every variable the guard requires.
+- `node scripts/ci-production-build.mjs`. This runs `pnpm build:web` with `VERCEL_ENV=production` and fake values for every key in `.env.example`. If you add a required variable without adding it to `.env.example`, this build fails before merge.
+
+Run the same checks locally with the two commands above.
+
+**Limit:** CI cannot see the real Vercel settings, so it cannot detect a variable missing from Production. Checking that would need a Vercel token in GitHub, and that token would cover every deployment in the project. Do not add one to pull request workflows. To cover this gap:
+
+1. Before you merge a change that adds a required variable, set it in Vercel for Preview and Production. Then confirm the names, never the values, with `vercel env ls production`.
+2. Turn on Vercel failed-deployment notifications (Account or Team Settings → Notifications → Deployment Failures, by email or Slack). A failed production build then alerts you right away. The previous production deployment stays live, because the guard fails the build before promotion.
+
+**Operator setup (manual, needs approval):** In GitHub branch protection for `main`, make `hosted-build / Production-equivalent build` a required status check. Leave approval rules unchanged: CODEOWNERS and last-push approval would block a sole maintainer.
+
 ## Checks and recovery
 
 ```sh

@@ -1,5 +1,6 @@
 import assert from "node:assert/strict"
 import { spawnSync } from "node:child_process"
+import { readFileSync } from "node:fs"
 import { resolve } from "node:path"
 import { test } from "node:test"
 import { root } from "./vite-ssr"
@@ -57,4 +58,31 @@ test("the guard does nothing outside Vercel production", () => {
   assert.equal(run({}).status, 0)
   assert.equal(run({ VERCEL_ENV: "preview" }).status, 0)
   assert.equal(run({ VERCEL_ENV: "development" }).status, 0)
+})
+
+// Regression: these four were missing or invalid in a failed production deploy. Each alone must fail the build.
+for (const key of ["WORKOS_API_KEY", "PLAN_MANAGER_OWNER_WORKOS_USER_IDS", "PLAN_MANAGER_WORKOS_CLI_CLIENT_ID", "PLAN_MANAGER_WORKOS_CLI_AUDIENCE"]) {
+  for (const [label, value] of [["missing", undefined], ["blank", "   "]] as const) {
+    test(`production build fails when ${key} is ${label}, naming only that key`, () => {
+      const env: Record<string, string> = { VERCEL_ENV: "production", ...PLACEHOLDERS }
+      if (value === undefined) delete env[key]
+      else env[key] = value
+      const { status, output } = run(env)
+      assert.notEqual(status, 0)
+      assert.match(output, new RegExp(`- ${key}\\b`))
+      assert.equal((output.match(/^ {2}- /gm) ?? []).length, 1, output)
+      assertNoValues(output)
+    })
+  }
+}
+
+// Contract: .env.example (which the CI production build reads) must list every key the guard requires,
+// so a new required key cannot reach main without the CI fixture, docs, and operators knowing about it.
+test(".env.example lists every variable the production guard requires", () => {
+  const example = readFileSync(resolve(root, ".env.example"), "utf8")
+  const listed = new Set([...example.matchAll(/^([A-Z0-9_]+)=/gm)].map(match => match[1]))
+  const { output } = run({ VERCEL_ENV: "production" })
+  const required = [...output.matchAll(/^ {2}- ([A-Z0-9_]+)$/gm)].map(match => match[1])
+  assert.ok(required.length > 0, output)
+  for (const key of required) assert.ok(listed.has(key), `${key} is required in production but missing from .env.example`)
 })
