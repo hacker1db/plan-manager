@@ -12,8 +12,13 @@ export function safeReturnTo(value: string | null | undefined): string {
   if (/[\\\u0000-\u001f\u007f]/.test(value)) return DEFAULT_RETURN_TO
   let parsed: URL
   try { parsed = new URL(value, BASE) } catch { return DEFAULT_RETURN_TO }
-  if (parsed.origin !== BASE || AUTH_PATHS.has(parsed.pathname) || parsed.pathname.startsWith('/auth/')) return DEFAULT_RETURN_TO
-  return `${parsed.pathname}${parsed.search}${parsed.hash}`
+  // Validate the NORMALIZED path, not the raw input: dot segments ("/.//x", "/%2e//x") collapse to
+  // "//x", which a browser reads as a protocol-relative URL to another host.
+  const path = parsed.pathname
+  if (parsed.origin !== BASE || !path.startsWith('/') || path.startsWith('//')) return DEFAULT_RETURN_TO
+  const route = path.toLowerCase().replace(/\/+$/, '') || '/'
+  if (AUTH_PATHS.has(route) || route === '/auth' || route.startsWith('/auth/')) return DEFAULT_RETURN_TO
+  return `${path}${parsed.search}${parsed.hash}`
 }
 
 /** `/login?returnTo=<safe path>` for an unauthenticated request to `url`. */

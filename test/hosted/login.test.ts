@@ -65,6 +65,13 @@ test("safeReturnTo keeps same-origin paths only", async () => {
   const {safeReturnTo} = await load("/src/lib/server/sign-in.ts")
   for (const bad of [null, undefined, "", "plans", "/sign-out", "/" + "a".repeat(3000), "/\u0000x"]) assert.equal(safeReturnTo(bad), "/plans", String(bad))
   assert.equal(safeReturnTo("/plans/abc?x=1#y"), "/plans/abc?x=1#y")
+  // Dot segments normalize to a protocol-relative "//host" path; must be rejected after parsing.
+  for (const bad of ["/.//evil.example", "/./\u002f/evil.example", "/%2e//evil.example", "/%2E//evil.example", "/a/..//evil.example", "/x/../..//evil.example"]) {
+    const result = safeReturnTo(bad)
+    assert.equal(result, "/plans", bad)
+    assert.equal(result.startsWith("//"), false, bad)
+  }
+  for (const loop of ["/login/", "/LOGIN", "/Sign-In", "/auth", "/auth/", "/./login", "/x/../callback"]) assert.equal(safeReturnTo(loop), "/plans", loop)
 })
 
 test("unauthenticated redirects point at /login with a safe returnTo", async () => {
