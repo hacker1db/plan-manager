@@ -59,6 +59,16 @@ jobs:
       - uses: ./.github/actions/setup
         with:
           go: "true"
+      - name: Install Pandoc (the CLI contract suites render Markdown with it)
+        env:
+          PANDOC_VERSION: "3.13"
+          PANDOC_SHA256: 7e3736f255090296ca5d1a14291a76b9b3c43cd385011b1621a4d0c16091a70f
+        run: |
+          deb="$RUNNER_TEMP/pandoc.deb"
+          curl -fsSL -o "$deb" "https://github.com/jgm/pandoc/releases/download/${PANDOC_VERSION}/pandoc-${PANDOC_VERSION}-1-amd64.deb"
+          echo "${PANDOC_SHA256}  $deb" | sha256sum -c -
+          sudo dpkg -i "$deb"
+          pandoc --version | head -1
       - run: pnpm test
       - run: pnpm test:contracts
 
