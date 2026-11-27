@@ -288,6 +288,20 @@ func httpsEndpoint(value, label string) (string, error) {
 	return strings.TrimSuffix(u.String(), "/"), nil
 }
 
+// verificationURI validates the page the user opens to approve a device login.
+// Unlike API endpoints it may carry a query: WorkOS returns
+// verification_uri_complete as https://<authkit>/device?user_code=..., and
+// RFC 8628 section 3.3.1 defines that form. Credentials, fragments and
+// non-HTTPS schemes are still rejected; Login separately pins the origin to
+// the issuer.
+func verificationURI(value string) (*url.URL, error) {
+	u, err := url.Parse(value)
+	if err != nil || u.Scheme != "https" || u.Host == "" || u.User != nil || u.Fragment != "" {
+		return nil, errors.New("Verification URI must be an HTTPS URL")
+	}
+	return u, nil
+}
+
 // TokenFromKeychain returns a usable bearer token, refreshing an expired
 // OAuth access token when needed.
 // The credential must be bound to exactly site's origin; nothing is refreshed
@@ -527,11 +541,11 @@ func Login(site Site, out io.Writer) error {
 	if verification == "" {
 		verification = authorization.VerificationURI
 	}
-	verification, err = httpsEndpoint(verification, "Verification URI")
+	verificationURL, err := verificationURI(verification)
 	if err != nil {
 		return err
 	}
-	verificationURL, _ := url.Parse(verification)
+	verification = verificationURL.String()
 	issuerURL, _ := url.Parse(cfg.IssuerURL)
 	if verificationURL.Scheme+"://"+verificationURL.Host != issuerURL.Scheme+"://"+issuerURL.Host {
 		return errors.New("WorkOS returned a cross-origin verification URI")
