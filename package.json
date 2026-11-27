@@ -24,6 +24,7 @@
     "test:web": "node scripts/sync-dashboard-style.mjs && svelte-kit sync && node --import tsx --test 'test/hosted/**/*.test.ts' 'test/hosted/**/*.test.tsx'",
     "test:lib": "TSX_TSCONFIG_PATH=tsconfig.tests.json node --import tsx --test 'test/lib/*.js'",
     "test:cli": "cd cli && go test ./...",
+    "check:vercel-env": "node scripts/check-vercel-env.mjs --fetch",
     "db:migrate": "node --env-file=.env.local --import tsx scripts/migrate-hosted.ts",
     "test:contracts": "sh cli/scripts/contracts.sh"
   },
