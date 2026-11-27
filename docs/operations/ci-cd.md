@@ -148,6 +148,9 @@ already exists (that is what happened with #104). Until cut-over:
    serving; fix the variable and redeploy.
 
 After cut-over the release workflow's preflight job blocks the deploy itself (see "Release").
+First live check after the owner sets up `env-audit`: run **Actions → env-drift → Run workflow**
+(not dry run). Expected today: `missing` `PLAN_MANAGER_OWNER_WORKOS_USER_IDS` in Production,
+plus `git-connected` and historical `non-main-deployment` rows.
 
 ## Release watchdog (`env-drift.yml`, job "Release watchdog")
 
@@ -192,6 +195,12 @@ for a push to `main`:
 
 1. **Cancel superseded releases** (no secrets): cancels older release runs that are still
    waiting for approval, so they cannot hold the release lock.
+   **Production env preflight** (environment `env-audit`, before you are asked to approve):
+   checks, by name only, that the production project's Production target has every variable
+   the contract of the commit being released requires. It fails closed on a missing name, an API
+   error, or a missing token, and the release job depends on it, so nothing is built or deployed.
+   This closes the #104 failure class without relying on the `env-provisioned` attestation. The
+   release job repeats the check right after approval.
 2. **release** waits for your approval in the `production-release` environment. Approve it under the
    run's **Review deployments**. Only one release runs at a time (`release-prod`).
 3. It builds that exact `main` commit with the production project's settings (`vercel pull`,

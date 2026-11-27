@@ -2,7 +2,8 @@
 # Vercel project is disconnected from Git (operator prerequisite), so no PR-controlled code or
 # vercel.json is ever built inside it; this trusted workflow builds main itself.
 #
-# Trigger: ci.yml finished successfully for a push to main in this repository. The `release` job
+# Trigger: ci.yml finished successfully for a push to main in this repository. `preflight` checks
+# the real Production variable names first (names only, fails closed). The `release` job
 # waits for the owner's approval in the `production-release` environment (branch policy: main), then:
 # build main with production settings, deploy it staged (--skip-domain), and hand over to
 # scripts/ci/release.mjs for checks, promote and ID-pinned rollback. See docs/operations/ci-cd.md.
@@ -41,9 +42,34 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: node scripts/ci/release.mjs --cancel-superseded
 
+  preflight:
+    name: Production env preflight
+    # Names-only check of the real production project against the contract of the commit being
+    # released, BEFORE approval and before anything is built or deployed. Fails closed.
+    needs: supersede
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: env-audit
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22.x
+          package-manager-cache: false
+      - env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_TEAM_ID: ${{ vars.VERCEL_TEAM_ID }}
+          VERCEL_PROJECT_ID_PRODUCTION: ${{ vars.VERCEL_PROJECT_ID_PRODUCTION }}
+        run: node scripts/ci/env-drift.mjs --preflight
+
   release:
     name: release
-    needs: supersede
+    needs: [supersede, preflight]
     runs-on: ubuntu-latest
     timeout-minutes: 45
     environment: production-release
@@ -63,6 +89,12 @@ jobs:
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
           persist-credentials: false
+      - name: Re-check production env names (approval may have waited)
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_TEAM_ID: ${{ vars.VERCEL_TEAM_ID }}
+          VERCEL_PROJECT_ID_PRODUCTION: ${{ vars.VERCEL_PROJECT_ID_PRODUCTION }}
+        run: node scripts/ci/env-drift.mjs --preflight
       - uses: ./.github/actions/setup
       - name: Install the pinned Vercel CLI (lockfile integrity-checked)
         run: |
