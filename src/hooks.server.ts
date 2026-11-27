@@ -4,11 +4,12 @@ import * as env from '$app/env/private'
 import { setEnvironmentSource, getHostedEnvironment, HostedConfigurationError, isAllowedOwner } from '#lib/server/env.ts'
 import { apiAccessDenial, isApiPath } from '#lib/server/api-access.ts'
 import { withSecurityHeaders } from '#lib/server/headers.ts'
+import { loginLocation } from '#lib/server/sign-in.ts'
 
 setEnvironmentSource(env)
 
 const publicAssets = new Set(['/app.js', '/plan.js', '/dashboard-icon.png', '/globals.css'])
-const authRoutes = new Set(['/sign-in', '/callback', '/sign-out', '/auth/error'])
+const authRoutes = new Set(['/login', '/sign-in', '/callback', '/sign-out', '/auth/error'])
 let workosHandle: Handle | null = null
 
 try {
@@ -45,7 +46,7 @@ const route: Handle = async ({ event, resolve }) => {
         // Handlers still run their own requireOwnerResponse/requireWriteToken guards.
         return apiAccessDenial(event.request.method, path, authenticatedEvent.locals.auth.user) ?? resolve(authenticatedEvent)
       }
-      if (!authenticatedEvent.locals.auth.user) return new Response(null, { status: 303, headers: { location: '/sign-in' } })
+      if (!authenticatedEvent.locals.auth.user) return new Response(null, { status: 303, headers: { location: loginLocation(event.url) } })
       if (!isAllowedOwner(authenticatedEvent.locals.auth.user.id)) return new Response('Forbidden', { status: 403 })
       return resolve(authenticatedEvent)
     },
