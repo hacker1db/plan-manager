@@ -97,3 +97,67 @@ That identity was not available to the agent that opened these PRs, so they are 
 (a separate GitHub account with write access, used only by agents), every owner-authored PR needs
 the bypass. If the owner pushes to an agent PR, the last-push rule blocks the owner's approval:
 have the agent push a follow-up commit, or open a fresh agent-authored PR.
+
+## Drift audit (`env-drift.yml`, job "Drift audit")
+
+Runs from `main` only: daily, on every push to `main`, and on demand. It never checks out PR code
+and installs no dependencies. It reads the variable list of both Vercel projects **without
+decrypting** (only name, target and storage type are kept; any value field is dropped first) and
+fails when:
+
+| Check | Meaning | Fix |
+| --- | --- | --- |
+| `missing` | A contract variable is absent for a target. Production is checked in the production project; Preview and Development in the preview project. | Add it in Vercel with the real value. |
+| `storage-type` | The type is weaker than the contract minimum (secrets must be **Sensitive** in Production and Preview, **Encrypted** in Development). | Remove and re-add it with `--sensitive`. |
+| `preview-production-target` | The preview project holds a Production-target variable. Its production target must stay empty so an accidental production build there fails closed. | Remove the Production target from that variable in the preview project. |
+| `git-connected` | The production project is still connected to Git, so PR branches could build inside it. | Disconnect it (cut-over step 6). |
+| `non-main-deployment` | A production-project deployment created after `PRODUCTION_ISOLATION_SINCE` was not made by `release.yml` from `main`. | Investigate as an incident: who deployed, and with which code. |
+
+A failure opens (or updates) one issue titled **Alert: Vercel configuration drift**; the next
+passing run comments and closes it. Run **Actions → env-drift → Run workflow** with **dry_run**
+ticked to exercise the same code against `test/fixtures/vercel-drift-recording.json` without a
+token.
+
+Limits: the audit proves names and storage types, never values. GitHub environment secrets cannot
+be listed by the workflow token, so a missing `VERCEL_TOKEN` shows up as a failed run instead.
+A deployment that someone with the token creates by hand with forged metadata would pass the
+`non-main-deployment` check; the token is the boundary.
+
+## Release watchdog (`env-drift.yml`, job "Release watchdog")
+
+Runs every 30 minutes with a read-only token. The clock starts when the owner **approves** the
+release (the gated `release` job starts), so a release waiting for approval never alarms. It
+alerts (issue **Alert: production release watchdog**) when: a release was approved more than 60
+minutes ago and has not finished; the release for `main` failed or was cancelled; CI passed on
+`main` more than 30 minutes ago and no release run started; or a release run for an older commit
+is still waiting for approval (it holds the release lock: reject it under the run's
+**Review deployments**). Until `release.yml` is on `main` the watchdog reports "nothing to watch".
+
+## GitHub environments
+
+| Environment | Deployment branches | Required reviewers | Secrets | Variables |
+| --- | --- | --- | --- | --- |
+| `env-audit` | `main` only | none | `VERCEL_TOKEN` | `VERCEL_PROJECT_ID_PRODUCTION`, `VERCEL_PROJECT_ID_PREVIEW`, `PRODUCTION_ISOLATION_SINCE`, `VERCEL_TEAM_ID` (only if the projects are in a team) |
+
+The contract lists these names (`store: github-environment`), so adding one trips the
+contract-change gate.
+
+### Operator prerequisites (drift audit)
+
+1. **Preview project.** Create a Vercel project `plan-manager-preview` from this GitHub
+   repository (same root, framework and commands; `vercel.json` is shared and needs no change).
+   In its Settings → Environments → Production, set the production branch to a branch that will
+   never exist (for example `vercel-preview-project-unused`), so pushes to `main` do not build a
+   production deployment there. Add Preview and Development variables from the contract table in
+   `docs/hosting.md`, using preview-only resources (a WorkOS staging environment, a separate
+   database branch, a separate Blob store). Add **no** Production-target variables.
+2. **Vercel token (assumption A2).** In Vercel → Account Settings → Tokens, create a token named
+   `plan-manager-github-actions` with a 90-day expiry. On Hobby a token cannot be limited to one
+   project; it can act on every project in your account, which is why it lives only in
+   `main`-only environments. Put a calendar reminder to rotate it.
+3. **Environment `env-audit`.** GitHub → Settings → Environments → New environment `env-audit`.
+   Deployment branches and tags: **Selected branches**, add `main`. No reviewers. Add the secret
+   `VERCEL_TOKEN` and the variables in the table above. Project IDs are in each Vercel project's
+   Settings → General. Leave `PRODUCTION_ISOLATION_SINCE` unset until cut-over step 6.
+4. **Notifications.** GitHub → Settings → Notifications → Actions: notify on failed workflows
+   only. Alert issues also notify you as the repository owner.

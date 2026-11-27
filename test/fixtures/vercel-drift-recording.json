@@ -1,0 +1,292 @@
+{
+  "GET /v10/projects/prj_production/env": {
+    "envs": [
+      {
+        "id": "env_workos_client_id_production",
+        "key": "WORKOS_CLIENT_ID",
+        "target": [
+          "production"
+        ],
+        "type": "encrypted"
+      },
+      {
+        "id": "env_workos_api_key_production",
+        "key": "WORKOS_API_KEY",
+        "target": [
+          "production"
+        ],
+        "type": "sensitive"
+      },
+      {
+        "id": "env_workos_cookie_password_production",
+        "key": "WORKOS_COOKIE_PASSWORD",
+        "target": [
+          "production"
+        ],
+        "type": "sensitive"
+      },
+      {
+        "id": "env_workos_redirect_uri_production",
+        "key": "WORKOS_REDIRECT_URI",
+        "target": [
+          "production"
+        ],
+        "type": "encrypted"
+      },
+      {
+        "id": "env_plan_manager_owner_workos_user_ids_production",
+        "key": "PLAN_MANAGER_OWNER_WORKOS_USER_IDS",
+        "target": [
+          "production"
+        ],
+        "type": "encrypted"
+      },
+      {
+        "id": "env_plan_manager_workos_authkit_domain_production",
+        "key": "PLAN_MANAGER_WORKOS_AUTHKIT_DOMAIN",
+        "target": [
+          "production"
+        ],
+        "type": "encrypted"
+      },
+      {
+        "id": "env_plan_manager_workos_cli_client_id_production",
+        "key": "PLAN_MANAGER_WORKOS_CLI_CLIENT_ID",
+        "target": [
+          "production"
+        ],
+        "type": "encrypted"
+      },
+      {
+        "id": "env_plan_manager_workos_cli_audience_production",
+        "key": "PLAN_MANAGER_WORKOS_CLI_AUDIENCE",
+        "target": [
+          "production"
+        ],
+        "type": "encrypted"
+      },
+      {
+        "id": "env_database_url_production",
+        "key": "DATABASE_URL",
+        "target": [
+          "production"
+        ],
+        "type": "sensitive"
+      },
+      {
+        "id": "env_blob_read_write_token_production",
+        "key": "BLOB_READ_WRITE_TOKEN",
+        "target": [
+          "production"
+        ],
+        "type": "sensitive"
+      },
+      {
+        "id": "env_plan_manager_token_pepper_production",
+        "key": "PLAN_MANAGER_TOKEN_PEPPER",
+        "target": [
+          "production"
+        ],
+        "type": "sensitive"
+      }
+    ]
+  },
+  "GET /v10/projects/prj_preview/env": {
+    "envs": [
+      {
+        "id": "env_workos_client_id_preview",
+        "key": "WORKOS_CLIENT_ID",
+        "target": [
+          "preview"
+        ],
+        "type": "encrypted"
+      },
+      {
+        "id": "env_workos_client_id_development",
+        "key": "WORKOS_CLIENT_ID",
+        "target": [
+          "development"
+        ],
+        "type": "encrypted"
+      },
+      {
+        "id": "env_workos_api_key_preview",
+        "key": "WORKOS_API_KEY",
+        "target": [
+          "preview"
+        ],
+        "type": "sensitive"
+      },
+      {
+        "id": "env_workos_api_key_development",
+        "key": "WORKOS_API_KEY",
+        "target": [
+          "development"
+        ],
+        "type": "encrypted"
+      },
+      {
+        "id": "env_workos_cookie_password_preview",
+        "key": "WORKOS_COOKIE_PASSWORD",
+        "target": [
+          "preview"
+        ],
+        "type": "sensitive"
+      },
+      {
+        "id": "env_workos_cookie_password_development",
+        "key": "WORKOS_COOKIE_PASSWORD",
+        "target": [
+          "development"
+        ],
+        "type": "encrypted"
+      },
+      {
+        "id": "env_workos_redirect_uri_preview",
+        "key": "WORKOS_REDIRECT_URI",
+        "target": [
+          "preview"
+        ],
+        "type": "encrypted"
+      },
+      {
+        "id": "env_workos_redirect_uri_development",
+        "key": "WORKOS_REDIRECT_URI",
+        "target": [
+          "development"
+        ],
+        "type": "encrypted"
+      },
+      {
+        "id": "env_plan_manager_owner_workos_user_ids_preview",
+        "key": "PLAN_MANAGER_OWNER_WORKOS_USER_IDS",
+        "target": [
+          "preview"
+        ],
+        "type": "encrypted"
+      },
+      {
+        "id": "env_plan_manager_owner_workos_user_ids_development",
+        "key": "PLAN_MANAGER_OWNER_WORKOS_USER_IDS",
+        "target": [
+          "development"
+        ],
+        "type": "encrypted"
+      },
+      {
+        "id": "env_plan_manager_workos_authkit_domain_preview",
+        "key": "PLAN_MANAGER_WORKOS_AUTHKIT_DOMAIN",
+        "target": [
+          "preview"
+        ],
+        "type": "encrypted"
+      },
+      {
+        "id": "env_plan_manager_workos_authkit_domain_development",
+        "key": "PLAN_MANAGER_WORKOS_AUTHKIT_DOMAIN",
+        "target": [
+          "development"
+        ],
+        "type": "encrypted"
+      },
+      {
+        "id": "env_plan_manager_workos_cli_client_id_preview",
+        "key": "PLAN_MANAGER_WORKOS_CLI_CLIENT_ID",
+        "target": [
+          "preview"
+        ],
+        "type": "encrypted"
+      },
+      {
+        "id": "env_plan_manager_workos_cli_client_id_development",
+        "key": "PLAN_MANAGER_WORKOS_CLI_CLIENT_ID",
+        "target": [
+          "development"
+        ],
+        "type": "encrypted"
+      },
+      {
+        "id": "env_plan_manager_workos_cli_audience_preview",
+        "key": "PLAN_MANAGER_WORKOS_CLI_AUDIENCE",
+        "target": [
+          "preview"
+        ],
+        "type": "encrypted"
+      },
+      {
+        "id": "env_plan_manager_workos_cli_audience_development",
+        "key": "PLAN_MANAGER_WORKOS_CLI_AUDIENCE",
+        "target": [
+          "development"
+        ],
+        "type": "encrypted"
+      },
+      {
+        "id": "env_database_url_preview",
+        "key": "DATABASE_URL",
+        "target": [
+          "preview"
+        ],
+        "type": "sensitive"
+      },
+      {
+        "id": "env_database_url_development",
+        "key": "DATABASE_URL",
+        "target": [
+          "development"
+        ],
+        "type": "encrypted"
+      },
+      {
+        "id": "env_blob_read_write_token_preview",
+        "key": "BLOB_READ_WRITE_TOKEN",
+        "target": [
+          "preview"
+        ],
+        "type": "sensitive"
+      },
+      {
+        "id": "env_blob_read_write_token_development",
+        "key": "BLOB_READ_WRITE_TOKEN",
+        "target": [
+          "development"
+        ],
+        "type": "encrypted"
+      },
+      {
+        "id": "env_plan_manager_token_pepper_preview",
+        "key": "PLAN_MANAGER_TOKEN_PEPPER",
+        "target": [
+          "preview"
+        ],
+        "type": "sensitive"
+      },
+      {
+        "id": "env_plan_manager_token_pepper_development",
+        "key": "PLAN_MANAGER_TOKEN_PEPPER",
+        "target": [
+          "development"
+        ],
+        "type": "encrypted"
+      }
+    ]
+  },
+  "GET /v9/projects/prj_production": {
+    "id": "prj_production",
+    "name": "plan-manager"
+  },
+  "GET /v6/deployments": {
+    "deployments": [
+      {
+        "uid": "dpl_recorded_release",
+        "target": "production",
+        "createdAt": 1795700000000,
+        "meta": {
+          "planManagerRef": "main",
+          "planManagerSha": "1be8da5cc6135acef20e69b617499a13fbd8d307",
+          "planManagerRun": "1"
+        }
+      }
+    ]
+  }
+}

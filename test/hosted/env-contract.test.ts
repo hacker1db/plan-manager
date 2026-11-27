@@ -132,7 +132,7 @@ test("the client bundle check fails on any secret name or secret fixture value",
   const dir = mkdtempSync(join(tmpdir(), "bundle-"))
   try {
     for (const variable of contract.variables.filter((v: any) => v.sensitivity === "secret")) {
-      for (const needle of [variable.name, variable.ciFixture]) {
+      for (const needle of [variable.name, variable.ciFixture].filter(value => typeof value === "string")) {
         writeFileSync(join(dir, "app.js"), `console.log(${JSON.stringify(needle)})`)
         const result = spawnSync(process.execPath, [resolve(root, "scripts/check-client-bundle.mjs"), dir], { encoding: "utf8" })
         assert.equal(result.status, 1, `${variable.name}: ${result.stdout}`)
