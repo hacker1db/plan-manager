@@ -54,6 +54,16 @@ for (const route of ["login", "sign-in"]) {
     assert.equal(await returnToFor(route, "/plans/plan_1234?tab=notes#c2"), "/plans/plan_1234?tab=notes#c2")
   })
 
+  test(`/${route} redirects (not 500) when returnTo percent-expands past AuthKit's cookie limit`, async () => {
+    for (const big of ["/plans?" + '"'.repeat(850), "/" + "\u00e9".repeat(420), "/plans?" + " ".repeat(850) + "x"]) {
+      assert.equal(await returnToFor(route, big), "/plans", big.slice(0, 12))
+    }
+  })
+
+  test(`/${route} rejects percent-encoded auth routes`, async () => {
+    for (const loop of ["/%6cogin", "/%63allback", "/%61uth/error", "/%73ign-in"]) assert.equal(await returnToFor(route, loop), "/plans", loop)
+  })
+
   test(`/${route} rejects open redirects and falls back to /plans`, async () => {
     for (const bad of ["https://evil.example/x", "//evil.example/x", "/\\evil.example", "\\\\evil.example", "javascript:alert(1)", "/\tevil", "/login", "/sign-in?returnTo=/x", "/callback", "/auth/error"]) {
       assert.equal(await returnToFor(route, bad), "/plans", bad)
@@ -71,6 +81,11 @@ test("safeReturnTo keeps same-origin paths only", async () => {
     assert.equal(result, "/plans", bad)
     assert.equal(result.startsWith("//"), false, bad)
   }
+  // Percent-encoded auth routes are dispatched by SvelteKit after decodeURI; must not loop.
+  for (const loop of ["/%6cogin", "/%6Cogin?returnTo=%2F%256cogin", "/%73ign-in", "/%63allback", "/%61uth/error", "/plans/%E0%A4%A"]) assert.equal(safeReturnTo(loop), "/plans", loop)
+  // Inputs that percent-expand past the cap after parsing fall back instead of overflowing AuthKit's cookie.
+  for (const big of ["/plans?" + '"'.repeat(850), "/" + "\u00e9".repeat(420), "/plans?" + " ".repeat(850) + "x"]) assert.equal(safeReturnTo(big), "/plans", big.slice(0, 12))
+  assert.equal(safeReturnTo("/plans/caf%C3%A9"), "/plans/caf%C3%A9")
   for (const loop of ["/login/", "/LOGIN", "/Sign-In", "/auth", "/auth/", "/./login", "/x/../callback"]) assert.equal(safeReturnTo(loop), "/plans", loop)
 })
 
