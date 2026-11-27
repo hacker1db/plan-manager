@@ -31,7 +31,7 @@ test("the recorded, compliant configuration has no drift", async () => {
 })
 
 test("environment listings keep metadata only; values are dropped before anything else sees them", async () => {
-  assert.deepEqual(envMetadata({ key: "A", target: "production", type: "plain", value: LEAK, decrypted: true, id: "env_1" }), { key: "A", target: ["production"], type: "plain", id: "env_1" })
+  assert.deepEqual(envMetadata({ key: "A", target: "production", type: "plain", value: LEAK, decrypted: true, id: "env_1" }), { key: "A", target: ["production"], type: "plain", id: "env_1", gitBranch: null, customEnvironmentIds: [] })
   const productionEnv = structuredClone(recording["GET /v10/projects/prj_production/env"])
   for (const record of productionEnv.envs) record.value = LEAK
   productionEnv.envs.find((record: any) => record.key === "WORKOS_API_KEY").type = "plain"
@@ -51,8 +51,8 @@ test("a missing production variable, an encrypted preview secret, and a missing 
   const problems = auditConfiguration({ contract, ...(await recorded({ "GET /v10/projects/prj_production/env": productionEnv, "GET /v10/projects/prj_preview/env": previewEnv })) })
   assert.deepEqual(checks(problems), [
     "missing:production:production:PLAN_MANAGER_WORKOS_CLI_AUDIENCE",
-    "storage-type:preview:preview:DATABASE_URL",
     "missing:preview:development:WORKOS_CLIENT_ID",
+    "storage-type:preview:preview:DATABASE_URL",
   ])
 })
 

@@ -118,7 +118,14 @@ passing run comments and closes it. Run **Actions → env-drift → Run workflow
 ticked to exercise the same code against `test/fixtures/vercel-drift-recording.json` without a
 token.
 
-Limits: the audit proves names and storage types, never values. GitHub environment secrets cannot
+Only an unscoped record for exactly that target counts: a variable scoped to one Git branch
+(`gitBranch`), a custom environment, or a record with no target does not satisfy Production.
+Problems are listed with `missing` first, and at most 20 historical deployments are listed, so a
+missing variable is never buried.
+
+Limits: the audit proves names and storage types, never values. A name set to a blank value, or a
+cookie password shorter than 32 characters, passes the audit; the production build guard
+(`scripts/check-hosted-env.mjs`) remains the last line of defence and still fails such a build. GitHub environment secrets cannot
 be listed by the workflow token, so a missing `VERCEL_TOKEN` shows up as a failed run instead.
 Deployment metadata is written by whoever deploys, so the audit checks it against GitHub: the
 named run must be a `release.yml` run on `main` for exactly that commit, the commit must be on
@@ -126,6 +133,21 @@ named run must be a `release.yml` run on `main` for exactly that commit, the com
 deployments is read, and a deployment with no creation time is flagged. Someone holding the token
 could still deploy by hand during a real release run with copied metadata; the token is the final
 boundary.
+
+### Interim gap until the release cut-over
+
+Until the production project is disconnected from Git (cut-over step 7), **Vercel deploys every
+merge to `main` straight to production**, in parallel with this audit. The audit detects drift
+but cannot stop that deploy, and the contract-change gate fires only when the contract changes.
+A merge that changes no requirement can therefore still fail its production build on drift that
+already exists (that is what happened with #104). Until cut-over:
+
+1. Before every merge to `main`, run `pnpm check:vercel-env` (names only) against the production
+   project and merge only when Production reports every name.
+2. Keep Vercel failed-deployment notifications on. A failed build leaves the previous deployment
+   serving; fix the variable and redeploy.
+
+After cut-over the release workflow's preflight job blocks the deploy itself (see "Release").
 
 ## Release watchdog (`env-drift.yml`, job "Release watchdog")
 

@@ -15,9 +15,20 @@ export class VercelApiError extends Error {
 }
 
 // Keeps only metadata from an environment variable record. Exported for tests.
+// `target` is normalized to an array of strings (Vercel returns an array, but a string or nothing
+// must not throw or count as a target). Branch-scoped (`gitBranch`) and custom-environment records
+// are kept as metadata so callers can exclude them from a target's coverage.
 export function envMetadata(record) {
-  const target = Array.isArray(record?.target) ? record.target : record?.target ? [record.target] : []
-  return { key: String(record?.key ?? ''), target, type: String(record?.type ?? ''), id: String(record?.id ?? '') }
+  const raw = Array.isArray(record?.target) ? record.target : typeof record?.target === 'string' ? [record.target] : []
+  const customEnvironmentIds = Array.isArray(record?.customEnvironmentIds) ? record.customEnvironmentIds.map(String) : []
+  return {
+    key: String(record?.key ?? ''),
+    target: raw.filter(target => typeof target === 'string'),
+    type: String(record?.type ?? ''),
+    id: String(record?.id ?? ''),
+    gitBranch: typeof record?.gitBranch === 'string' && record.gitBranch !== '' ? record.gitBranch : null,
+    customEnvironmentIds,
+  }
 }
 
 export function createVercelClient({ token, teamId, fetchImpl = fetch, apiBase = API }) {

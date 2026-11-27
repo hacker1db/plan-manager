@@ -15,6 +15,8 @@
 //     deployment was created during the run. Every page of deployments is read.
 //
 //   node scripts/ci/env-drift.mjs [--recording <file>] [--report <file>]
+//   node scripts/ci/env-drift.mjs --preflight [--recording <file>]   release preflight (names only,
+//        production project Production target; exit 1 on a missing name or any API error)
 //   env: VERCEL_TOKEN, VERCEL_PROJECT_ID_PRODUCTION, VERCEL_PROJECT_ID_PREVIEW, [VERCEL_TEAM_ID],
 //        [PRODUCTION_ISOLATION_SINCE], [GITHUB_TOKEN, GITHUB_REPOSITORY for the alert issue]
 import { readFileSync, writeFileSync } from 'node:fs'
@@ -31,7 +33,9 @@ const TYPE_RANK = { ...STORAGE_RANK, secret: STORAGE_RANK.encrypted }
 function checkTargets(contract, env, project, targets, problems) {
   for (const target of targets) {
     for (const variable of requiredIn(contract, target)) {
-      const records = env.filter(record => record.key === variable.name && record.target.includes(target))
+      // Only an unscoped record for exactly this target counts: a branch-scoped record (gitBranch)
+      // applies to one preview branch, and a custom-environment record to another environment.
+      const records = env.filter(record => record.key === variable.name && Array.isArray(record.target) && record.target.includes(target) && !record.gitBranch)
       const minimum = minimumStorage(contract, variable, target)
       if (records.length === 0) problems.push({ check: 'missing', project, target, name: variable.name, detail: `required in ${target}` })
       else if (!records.some(record => (TYPE_RANK[record.type] ?? -1) >= STORAGE_RANK[minimum])) {
@@ -41,13 +45,26 @@ function checkTargets(contract, env, project, targets, problems) {
   }
 }
 
-// Pure audit over already-fetched metadata. Returns a list of problems (names and IDs only).
+// Most actionable first, so a missing variable is never buried under historical deployments.
+export const CHECK_ORDER = ['missing', 'storage-type', 'preview-production-target', 'git-connected', 'non-main-deployment']
+const byCheck = (a, b) => CHECK_ORDER.indexOf(a.check) - CHECK_ORDER.indexOf(b.check)
+
+// Release preflight (F1): only what the next production build needs, by name, in the production
+// project's Production target. Fails on a missing name; storage types are reported by the full audit.
+export function productionPreflight({ contract, production }) {
+  const problems = []
+  checkTargets(contract, production.env, 'production', ['production'], problems)
+  return problems.filter(problem => problem.check === 'missing')
+}
+
+// Pure audit over already-fetched metadata. Returns a list of problems (names and IDs only),
+// ordered by CHECK_ORDER (stable within a check).
 export function auditConfiguration({ contract, production, preview, isolationSince = 0 }) {
   const problems = []
   checkTargets(contract, production.env, 'production', ['production'], problems)
   checkTargets(contract, preview.env, 'preview', ['preview', 'development'], problems)
   for (const record of preview.env) {
-    if (record.target.includes('production') && record.type !== 'system') problems.push({ check: 'preview-production-target', project: 'preview', target: 'production', name: record.key, detail: 'the preview project must not hold production-target variables' })
+    if (record.target.includes('production') && !record.gitBranch && record.type !== 'system') problems.push({ check: 'preview-production-target', project: 'preview', target: 'production', name: record.key, detail: 'the preview project must not hold production-target variables' })
   }
   if (production.project?.link) problems.push({ check: 'git-connected', project: 'production', detail: `the production project is connected to Git (${production.project.link.type ?? 'unknown'}); disconnect it so only release.yml deploys` })
   for (const deployment of production.deployments) {
@@ -63,8 +80,10 @@ export function auditConfiguration({ contract, production, preview, isolationSin
     if (!claimsRelease) problems.push({ check: 'non-main-deployment', project: 'production', detail: `deployment ${id} (target ${deployment.target ?? 'preview'}) was not created by release.yml from main` })
     else if (deployment.provenance?.ok !== true) problems.push({ check: 'non-main-deployment', project: 'production', detail: `deployment ${id} claims release.yml metadata that could not be verified: ${deployment.provenance?.reason ?? 'not checked'}` })
   }
-  return problems
+  return problems.sort(byCheck)
 }
+
+const DEPLOYMENT_ROWS = 20
 
 export function renderReport(problems, { dryRun = false } = {}) {
   const lines = [
@@ -74,8 +93,14 @@ export function renderReport(problems, { dryRun = false } = {}) {
     '',
   ]
   if (problems.length) {
+    const counts = CHECK_ORDER.map(check => [check, problems.filter(problem => problem.check === check).length]).filter(([, count]) => count > 0)
+    lines.push(`Summary: ${counts.map(([check, count]) => `${check} ${count}`).join(', ')}.`, '')
     lines.push('| Check | Project | Target | Name | Detail |', '| --- | --- | --- | --- | --- |')
-    for (const problem of problems) lines.push(`| ${problem.check} | ${problem.project} | ${problem.target ?? ''} | ${problem.name ? `\`${problem.name}\`` : ''} | ${problem.detail} |`)
+    // Configuration problems are always listed in full; historical deployments are capped.
+    const deployments = problems.filter(problem => problem.check === 'non-main-deployment')
+    const shown = [...problems.filter(problem => problem.check !== 'non-main-deployment'), ...deployments.slice(0, DEPLOYMENT_ROWS)]
+    for (const problem of shown) lines.push(`| ${problem.check} | ${problem.project} | ${problem.target ?? ''} | ${problem.name ? `\`${problem.name}\`` : ''} | ${problem.detail} |`)
+    if (deployments.length > DEPLOYMENT_ROWS) lines.push('', `${deployments.length - DEPLOYMENT_ROWS} more non-main-deployment rows not shown; set PRODUCTION_ISOLATION_SINCE after cut-over.`)
     lines.push('', 'Fix: see docs/operations/ci-cd.md "Drift audit".')
   }
   return `${lines.join('\n')}\n`
@@ -123,6 +148,35 @@ function arg(name) {
   const index = process.argv.indexOf(name)
   return index >= 0 ? process.argv[index + 1] : undefined
 }
+
+// Names-only check of the production project's Production target against the contract. Throws on
+// any API error so callers fail closed.
+export async function runPreflight(vercel, { contract, productionId }) {
+  if (!productionId) throw new Error('VERCEL_PROJECT_ID_PRODUCTION must be set')
+  return productionPreflight({ contract, production: { env: await vercel.listEnv(productionId) } })
+}
+
+async function preflightMain() {
+  try {
+    const contract = loadContract()
+    const recording = arg('--recording')
+    const vercel = recording
+      ? createVercelClient({ token: 'dry-run', fetchImpl: createRecordedFetch(JSON.parse(readFileSync(recording, 'utf8'))) })
+      : createVercelClient({ token: process.env.VERCEL_TOKEN, teamId: process.env.VERCEL_TEAM_ID })
+    const missing = await runPreflight(vercel, { contract, productionId: recording ? 'prj_production' : process.env.VERCEL_PROJECT_ID_PRODUCTION })
+    if (missing.length) {
+      process.stderr.write(`Production preflight failed: the production project is missing ${missing.length} variable name(s) the build requires:\n${missing.map(problem => `  - ${problem.name}`).join('\n')}\nAdd them in Vercel (Production) before releasing. Names only; values were not read.\n`)
+      process.exit(1)
+    }
+    process.stdout.write('Production preflight passed: every production-required name is set in the production project.\n')
+    process.exit(0)
+  } catch (error) {
+    process.stderr.write(`Production preflight failed closed: ${error.message}\n`)
+    process.exit(1)
+  }
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href && process.argv.includes('--preflight')) await preflightMain()
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const recording = arg('--recording')
