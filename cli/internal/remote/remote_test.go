@@ -158,13 +158,49 @@ func TestDeviceLoginAcceptsVerificationURICompleteWithUserCodeQuery(t *testing.T
 }
 
 func TestVerificationURIRejectsUnsafeForms(t *testing.T) {
-	for _, value := range []string{"http://auth.example/device?user_code=A", "https://user:pass@auth.example/device", "https://auth.example/device#x", "/device", "javascript:alert(1)"} {
+	for _, value := range []string{
+		"http://auth.example/device?user_code=A", "https://user:pass@auth.example/device", "https://@auth.example/device",
+		"https://auth.example/device#x", "https://auth.example/device?user_code=A#x", "/device", "javascript:alert(1)",
+		"https:auth.example/device", "https:///device", "https://:443/device?user_code=A", "https://:/device",
+		"https://auth.example/device?user_code=A B", "https://auth.example/device?user_code=A\"", "https://auth.example/device?user_code=A'",
+		"https://auth.example/device?user_code=<x>", "https://auth.example/device?user_code=`id`", "https://auth.example/device?user_code=$(id)\\",
+		"https://auth.example/device?user_code=%ZZ", "https://auth.example/device?user_code=%4", "https://auth.example/device?user_code=\u009b31m",
+		"https://auth.example/device?user_code=\u202eX", "https://auth.example/device?user_code=A\tB",
+	} {
 		if _, err := verificationURI(value); err == nil {
 			t.Errorf("accepted unsafe verification URI %q", value)
 		}
 	}
 	if _, err := verificationURI("https://auth.example/device?user_code=ABCD-EFGH"); err != nil {
 		t.Errorf("rejected valid complete URI: %v", err)
+	}
+}
+
+func TestDeviceLoginRejectsCrossOriginVerificationURIComplete(t *testing.T) {
+	for _, complete := range []string{"https://evil.example/device?user_code=ABCD-EFGH", "https://%s:1/device?user_code=ABCD-EFGH"} {
+		t.Run(complete, func(t *testing.T) {
+			withKeychain(t)
+			tokenCalled := false
+			fakeWorkOS(t, func(w http.ResponseWriter, r *http.Request) {
+				// Same host as the issuer but a different port must still be rejected.
+				value := strings.Replace(complete, "%s", strings.Split(r.Host, ":")[0], 1)
+				json.NewEncoder(w).Encode(map[string]any{"device_code": "device", "user_code": "ABCD-EFGH", "verification_uri": "https://" + r.Host + "/device", "verification_uri_complete": value, "expires_in": 600})
+			}, func(w http.ResponseWriter, r *http.Request) {
+				tokenCalled = true
+			})
+			site, err := GetSite()
+			if err != nil {
+				t.Fatal(err)
+			}
+			var output bytes.Buffer
+			err = Login(site, &output)
+			if err == nil || !strings.Contains(err.Error(), "cross-origin") {
+				t.Fatalf("expected cross-origin rejection, got %v", err)
+			}
+			if tokenCalled || strings.Contains(output.String(), "Open:") {
+				t.Fatalf("login continued after cross-origin verification URI: %s", output.String())
+			}
+		})
 	}
 }
 

@@ -294,12 +294,43 @@ func httpsEndpoint(value, label string) (string, error) {
 // RFC 8628 section 3.3.1 defines that form. Credentials, fragments and
 // non-HTTPS schemes are still rejected; Login separately pins the origin to
 // the issuer.
+//
+// Go's url.Parse keeps RawQuery verbatim, so the query is checked byte by byte
+// against RFC 3986 query characters: no whitespace, quotes, brackets,
+// backslashes, control or non-ASCII bytes, and only well-formed %XX escapes.
+// The URL is printed to the terminal and passed to open/xdg-open, so anything
+// else could break click-to-open or spoof terminal output.
 func verificationURI(value string) (*url.URL, error) {
 	u, err := url.Parse(value)
-	if err != nil || u.Scheme != "https" || u.Host == "" || u.User != nil || u.Fragment != "" {
+	if err != nil || u.Scheme != "https" || u.Opaque != "" || u.Hostname() == "" || u.User != nil || u.Fragment != "" || u.RawFragment != "" || !validQuery(u.RawQuery) {
 		return nil, errors.New("Verification URI must be an HTTPS URL")
 	}
 	return u, nil
+}
+
+func validQuery(query string) bool {
+	for i := 0; i < len(query); i++ {
+		c := query[i]
+		switch {
+		case c >= 'a' && c <= 'z', c >= 'A' && c <= 'Z', c >= '0' && c <= '9':
+		case strings.IndexByte("-._~!$&'()*+,;=:@/?", c) >= 0:
+			if c == '\'' {
+				return false
+			}
+		case c == '%':
+			if i+2 >= len(query) || !isHex(query[i+1]) || !isHex(query[i+2]) {
+				return false
+			}
+			i += 2
+		default:
+			return false
+		}
+	}
+	return true
+}
+
+func isHex(c byte) bool {
+	return c >= '0' && c <= '9' || c >= 'a' && c <= 'f' || c >= 'A' && c <= 'F'
 }
 
 // TokenFromKeychain returns a usable bearer token, refreshing an expired
