@@ -1,6 +1,7 @@
-// Fails the web build if server-only code or secret variable names reach browser assets.
+// Fails the web build if server-only code, secret variable names, or source maps
+// reach browser assets. Source maps would publish the original server-adjacent source.
 import { readdir, readFile } from 'node:fs/promises'
-import { join, resolve } from 'node:path'
+import { join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)))
@@ -25,20 +26,26 @@ async function* files(directory) {
   for (const entry of await readdir(directory, { withFileTypes: true })) {
     const path = join(directory, entry.name)
     if (entry.isDirectory()) yield* files(path)
-    else if (/\.(js|mjs|css|html|json)$/.test(entry.name)) yield path
+    else yield path
   }
 }
 
 const problems = []
 let scanned = 0
 for await (const file of files(client)) {
+  if (/\.map$/i.test(file)) {
+    problems.push(`${relative(root, file)}: source map`)
+    continue
+  }
+  if (!/\.(js|mjs|css|html|json)$/.test(file)) continue
   scanned++
   const source = await readFile(file, 'utf8')
-  for (const needle of FORBIDDEN) if (source.includes(needle)) problems.push(`${file.slice(root.length + 1)}: ${needle}`)
+  for (const needle of FORBIDDEN) if (source.includes(needle)) problems.push(`${relative(root, file)}: ${needle}`)
+  if (/[#@]\s*sourceMappingURL=/.test(source)) problems.push(`${relative(root, file)}: sourceMappingURL`)
 }
 if (scanned === 0) throw new Error(`No client assets found in ${client}`)
 if (problems.length) {
-  process.stderr.write(`Server-only code reached the client bundle:\n${problems.join('\n')}\n`)
+  process.stderr.write(`Server-only code or source maps reached the client bundle:\n${problems.join('\n')}\n`)
   process.exit(1)
 }
 process.stdout.write(`Client bundle check passed (${scanned} files).\n`)
