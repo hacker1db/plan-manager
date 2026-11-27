@@ -6,6 +6,10 @@ import { apiAccessDenial, isApiPath, isPublicApiRoute, PUBLIC_API_ROUTES } from 
 import { root } from "./vite-ssr"
 
 const DISCOVERY_ROUTE = "src/routes/api/v1/+server.ts"
+const LIVENESS_ROUTE = "src/routes/api/health/+server.ts"
+const HEALTH_DETAIL_ROUTE = "src/routes/api/health/detail/+server.ts"
+// Nonsecret documents with no guard; nothing else may be unguarded.
+const UNGUARDED_ROUTES = new Set([DISCOVERY_ROUTE, LIVENESS_ROUTE])
 const OWNER_ENV = { PLAN_MANAGER_OWNER_WORKOS_USER_IDS: "user_owner" }
 
 async function routeFiles(directory = resolve(root, "src/routes/api")): Promise<string[]> {
@@ -22,9 +26,9 @@ test("every /api route handler calls an owner or bearer guard", async () => {
   const files = await routeFiles()
   assert.ok(files.length >= 10, "expected to find the API route modules")
   for (const file of files) {
-    if (file === DISCOVERY_ROUTE) continue
+    if (UNGUARDED_ROUTES.has(file)) continue
     const source = await readFile(resolve(root, file), "utf8")
-    assert.ok(/requireOwnerResponse\(|requireWriteToken\(/.test(source), `${file} calls neither requireOwnerResponse nor requireWriteToken`)
+    assert.ok(/requireOwnerResponse\(|requireWriteToken\(|requireHealthDetailToken\(/.test(source), `${file} calls neither requireOwnerResponse nor requireWriteToken`)
   }
 })
 
@@ -32,8 +36,13 @@ test("every route exempted from the session check has a bearer guard", async () 
   for (const route of PUBLIC_API_ROUTES) {
     const source = await readFile(resolve(root, route.file), "utf8")
     assert.match(source, new RegExp(`export const ${route.method}\\b`), `${route.file} does not export ${route.method}`)
-    if (route.file === DISCOVERY_ROUTE) {
+    if (UNGUARDED_ROUTES.has(route.file)) {
       assert.equal(route.guard, "none")
+      continue
+    }
+    if (route.file === HEALTH_DETAIL_ROUTE) {
+      assert.equal(route.guard, "requireHealthDetailToken")
+      assert.match(source, /requireHealthDetailToken\(request\)/, `${route.file} is exempt but never calls requireHealthDetailToken`)
       continue
     }
     assert.equal(route.guard, "requireWriteToken", `${route.file} is exempt without a bearer guard`)
@@ -41,8 +50,10 @@ test("every route exempted from the session check has a bearer guard", async () 
   }
 })
 
-test("only GET /api/v1 and PUT /api/v1/plans/<id>/versions are public", () => {
+test("only GET /api/v1, GET /api/health(/detail) and PUT /api/v1/plans/<id>/versions are public", () => {
   assert.equal(isPublicApiRoute("GET", "/api/v1"), true)
+  assert.equal(isPublicApiRoute("GET", "/api/health"), true)
+  assert.equal(isPublicApiRoute("GET", "/api/health/detail"), true)
   assert.equal(isPublicApiRoute("PUT", "/api/v1/plans/plan_1234/versions"), true)
   assert.equal(isPublicApiRoute("PUT", "/api/v1/plans/MQGBEClyjomWNnevlPCgf/versions"), true)
 
@@ -70,6 +81,14 @@ test("only GET /api/v1 and PUT /api/v1/plans/<id>/versions are public", () => {
     ["PUT", "/api/v1/plans/plan/1234/versions"],
     ["PUT", "/x/api/v1/plans/plan_1234/versions"],
     ["GET", "/api/v1x"],
+    ["POST", "/api/health"],
+    ["HEAD", "/api/health"],
+    ["GET", "/api/health/"],
+    ["GET", "/api/healthz"],
+    ["GET", "/api/health/detail/"],
+    ["GET", "/api/health/detail/x"],
+    ["POST", "/api/health/detail"],
+    ["GET", "/api/health/../v1/tokens"],
   ]
   for (const [method, path] of denied) assert.equal(isPublicApiRoute(method, path), false, `${method} ${path} must not be public`)
 })

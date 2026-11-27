@@ -4,7 +4,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join, resolve } from "node:path"
 import { test } from "node:test"
-import { getCliOAuthConfiguration, getHostedEnvironment, HostedConfigurationError } from "../../src/lib/server/env"
+import { getCliOAuthConfiguration, getHealthDetailToken, getHostedEnvironment, HostedConfigurationError } from "../../src/lib/server/env"
 import { root } from "./vite-ssr"
 // @ts-expect-error plain ESM build script without type declarations
 import * as contractLib from "../../scripts/env-contract.mjs"
@@ -28,7 +28,7 @@ function problemsOf(candidate: unknown): string[] {
 
 function runtimeMissing(source: Record<string, string | undefined>): string[] {
   const missing: string[] = []
-  for (const read of [getHostedEnvironment, getCliOAuthConfiguration]) {
+  for (const read of [getHostedEnvironment, getCliOAuthConfiguration, getHealthDetailToken]) {
     try {
       read(source)
     } catch (error) {

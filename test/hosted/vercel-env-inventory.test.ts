@@ -9,6 +9,7 @@ const ALL = [
   "WORKOS_CLIENT_ID", "WORKOS_API_KEY", "WORKOS_COOKIE_PASSWORD", "WORKOS_REDIRECT_URI", "DATABASE_URL",
   "BLOB_READ_WRITE_TOKEN", "PLAN_MANAGER_TOKEN_PEPPER", "PLAN_MANAGER_OWNER_WORKOS_USER_IDS",
   "PLAN_MANAGER_WORKOS_AUTHKIT_DOMAIN", "PLAN_MANAGER_WORKOS_CLI_CLIENT_ID", "PLAN_MANAGER_WORKOS_CLI_AUDIENCE",
+  "PLAN_MANAGER_HEALTH_DETAIL_TOKEN", // production only
 ]
 // The four names absent from Production in the failed dae8a7d and d9cc3c7 deployments.
 const PRODUCTION_GAP = ["WORKOS_API_KEY", "PLAN_MANAGER_OWNER_WORKOS_USER_IDS", "PLAN_MANAGER_WORKOS_CLI_CLIENT_ID", "PLAN_MANAGER_WORKOS_CLI_AUDIENCE"]
@@ -26,7 +27,7 @@ test("reports the exact production gap from a names-only inventory and never ech
   const { status, output } = run({ envs }, "--target", "production")
   assert.equal(status, 1)
   for (const key of PRODUCTION_GAP) assert.match(output, new RegExp(`- ${key}\\b`))
-  assert.match(output, /missing 4 of 11/)
+  assert.match(output, /missing 4 of 12/)
   assert.equal(output.includes("placeholder-must-not-print"), false)
 })
 
@@ -34,7 +35,8 @@ test("passes when every required name exists for each target", () => {
   const envs = ALL.map(key => ({ key, target: ["production", "preview", "development"], type: "encrypted" }))
   const { status, output } = run({ envs })
   assert.equal(status, 0, output)
-  assert.match(output, /production: all 11/)
+  assert.match(output, /production: all 12/)
+  assert.match(output, /preview: all 11/)
 })
 
 test("treats a name set only for another target as missing", () => {

@@ -1,0 +1,41 @@
+# Advisory smoke test of a same-repository PR's preview deployment, after ci.yml finishes.
+# Runs the default-branch definition with default-branch code; never checks out PR code.
+# Fork PRs are skipped. Reports a `preview-smoke` commit status. See docs/operations/ci-cd.md.
+name: preview-smoke
+
+on:
+  workflow_run:
+    workflows: [ci]
+    types: [completed]
+
+permissions: {}
+
+jobs:
+  smoke:
+    name: Preview smoke
+    if: >-
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: preview-smoke
+    permissions:
+      contents: read
+      statuses: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22.x
+          package-manager-cache: false
+      - env:
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          HEAD_REPOSITORY: ${{ github.event.workflow_run.head_repository.full_name }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_TEAM_ID: ${{ vars.VERCEL_TEAM_ID }}
+          VERCEL_PROJECT_ID_PREVIEW: ${{ vars.VERCEL_PROJECT_ID_PREVIEW }}
+          VERCEL_PROTECTION_BYPASS_PREVIEW: ${{ secrets.VERCEL_PROTECTION_BYPASS_PREVIEW }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/ci/preview-smoke.mjs

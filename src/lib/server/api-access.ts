@@ -9,13 +9,18 @@ export type PublicApiRoute = {
   pattern: RegExp
   // Route module that serves it, relative to the repository root.
   file: string
-  // "none" is reserved for the nonsecret discovery document; anything else must be bearer-guarded.
-  guard: "none" | "requireWriteToken"
+  // "none" is reserved for nonsecret documents (CLI discovery, public liveness); anything else must
+  // be bearer-guarded.
+  guard: "none" | "requireWriteToken" | "requireHealthDetailToken"
 }
 
 export const PUBLIC_API_ROUTES: readonly PublicApiRoute[] = [
   // Public, versioned, nonsecret CLI discovery configuration.
   { method: "GET", pattern: /^\/api\/v1$/, file: "src/routes/api/v1/+server.ts", guard: "none" },
+  // Public liveness: only "ok" or "unconfigured", never dependency detail.
+  { method: "GET", pattern: /^\/api\/health$/, file: "src/routes/api/health/+server.ts", guard: "none" },
+  // Release checks: per-dependency booleans, authenticated by the health-detail bearer token in the handler.
+  { method: "GET", pattern: /^\/api\/health\/detail$/, file: "src/routes/api/health/detail/+server.ts", guard: "requireHealthDetailToken" },
   // `plan push`: authenticated by bearer (pm_ token or WorkOS CLI JWT) inside the handler.
   { method: "PUT", pattern: /^\/api\/v1\/plans\/[A-Za-z0-9_-]{8,128}\/versions$/, file: "src/routes/api/v1/plans/[id]/versions/+server.ts", guard: "requireWriteToken" },
 ]

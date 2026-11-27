@@ -14,4 +14,5 @@ export const variables = defineEnvVars({
   DATABASE_URL: optional,
   BLOB_READ_WRITE_TOKEN: optional,
   PLAN_MANAGER_TOKEN_PEPPER: optional,
+  PLAN_MANAGER_HEALTH_DETAIL_TOKEN: optional,
 })

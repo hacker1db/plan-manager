@@ -5,3 +5,15 @@ rules:
     # which rejects it as an invalid action reference. `./` resolves to the same checked-out
     # composite action, so there is no security difference. Revisit when actionlint supports it.
     disable: true
+  dangerous-triggers:
+    # workflow_run is required here and kept deliberately (plan amendment 9):
+    # - release.yml must run only after ci.yml passed on a push to main, with the default-branch
+    #   workflow definition, and hold production credentials that PR workflows must never see.
+    #   It runs only for event == push, head_branch == main, same repository, conclusion success,
+    #   and builds that exact main commit.
+    # - preview-smoke.yml needs a Vercel token to find a PR's preview deployment. It skips fork
+    #   PRs, never checks out or executes PR code, and reads only HTTP status codes and a status
+    #   string from the preview.
+    ignore:
+      - release.yml
+      - preview-smoke.yml

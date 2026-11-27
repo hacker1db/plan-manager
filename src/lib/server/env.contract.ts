@@ -24,3 +24,8 @@ export const CLI_RUNTIME_VARIABLES = [
   { name: "PLAN_MANAGER_WORKOS_CLI_CLIENT_ID", validator: { id: "nonEmpty" } },
   { name: "PLAN_MANAGER_WORKOS_CLI_AUDIENCE", validator: { id: "nonEmpty" } },
 ] as const satisfies readonly ContractVariable[]
+
+// Required by the /api/health/detail endpoint, in contract order.
+export const HEALTH_RUNTIME_VARIABLES = [
+  { name: "PLAN_MANAGER_HEALTH_DETAIL_TOKEN", validator: { id: "minLength", min: 32 } },
+] as const satisfies readonly ContractVariable[]
