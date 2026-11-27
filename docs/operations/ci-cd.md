@@ -110,7 +110,7 @@ fails when:
 | `missing` | A contract variable is absent for a target. Production is checked in the production project; Preview and Development in the preview project. | Add it in Vercel with the real value. |
 | `storage-type` | The type is weaker than the contract minimum (secrets must be **Sensitive** in Production and Preview, **Encrypted** in Development). | Remove and re-add it with `--sensitive`. |
 | `preview-production-target` | The preview project holds a Production-target variable. Its production target must stay empty so an accidental production build there fails closed. | Remove the Production target from that variable in the preview project. |
-| `git-connected` | The production project is still connected to Git, so PR branches could build inside it. | Disconnect it (cut-over step 6). |
+| `git-connected` | The production project is still connected to Git, so PR branches could build inside it. | Disconnect it (cut-over step 7). |
 | `non-main-deployment` | A production-project deployment created after `PRODUCTION_ISOLATION_SINCE` was not made by `release.yml` from `main`. | Investigate as an incident: who deployed, and with which code. |
 
 A failure opens (or updates) one issue titled **Alert: Vercel configuration drift**; the next
