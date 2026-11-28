@@ -8,6 +8,7 @@ dist/
 *.local
 static/app.js
 static/plan.js
+static/webmcp.js
 static/dashboard-icon.png
 src/app.css
 src/lib/hosted/generated-dashboard.ts

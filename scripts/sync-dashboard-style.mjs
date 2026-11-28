@@ -12,7 +12,7 @@ const generatedDir = resolve(root, 'src/lib/hosted')
 await mkdir(publicDir, { recursive: true })
 await mkdir(generatedDir, { recursive: true })
 
-for (const filename of ['app.js', 'plan.js']) {
+for (const filename of ['app.js', 'plan.js', 'webmcp.js']) {
   await cp(resolve(dashboard, filename), resolve(publicDir, filename))
 }
 await cp(resolve(dashboard, 'icon.png'), resolve(publicDir, 'dashboard-icon.png'))

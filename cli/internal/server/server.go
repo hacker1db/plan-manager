@@ -786,7 +786,7 @@ func (s *Server) handle(w http.ResponseWriter, r *http.Request) {
 		case "/style.css":
 			s.serveAsset(w, "style.css", "text/css; charset=utf-8", false)
 			return
-		case "/app.js", "/plan.js":
+		case "/app.js", "/plan.js", "/webmcp.js":
 			s.serveAsset(w, path[1:], "application/javascript; charset=utf-8", false)
 			return
 		}
@@ -806,6 +806,10 @@ func (s *Server) serveAsset(w http.ResponseWriter, name, contentType string, htm
 	if err != nil {
 		writeError(w, 500, "internal server error")
 		return
+	}
+	if name == "plan.html" && os.Getenv("PLAN_WEBMCP_PREVIEW") == "1" {
+		// Opt-in WebMCP preview marker read by webmcp.js; off unless explicitly enabled.
+		data = bytes.Replace(data, []byte(`data-dashboard-environment="local"`), []byte(`data-dashboard-environment="local" data-webmcp="preview"`), 1)
 	}
 	h := w.Header()
 	h.Set("Content-Type", contentType)
