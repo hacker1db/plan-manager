@@ -1400,3 +1400,47 @@ span.pm-block-error { display: inline; margin: 0; padding: 0 0.3em; }
 
 /* Hosted app root wrapper (src/app.html); a class instead of an inline style for the CSP. */
 .sveltekit-root { display: contents; }
+
+/* WebMCP preview panel (webmcp.js); only present when the page is marked data-webmcp="preview". */
+.webmcp-panel { border: 1px solid var(--edge); background: var(--panel); }
+.webmcp-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 9px 12px;
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+.webmcp-label, .webmcp-state { white-space: nowrap; }
+.webmcp-state {
+  padding: 1px 5px;
+  font-size: 0.6rem;
+  letter-spacing: 0.04em;
+  border: 1px solid var(--edge);
+  color: var(--muted);
+  letter-spacing: 0.08em;
+}
+.webmcp-panel[data-state="on"] .webmcp-state { border-color: var(--active); color: var(--active); }
+.webmcp-panel[data-state="error"] .webmcp-state { border-color: var(--danger); color: var(--danger); }
+.webmcp-body { display: grid; gap: 10px; padding: 0 12px 12px; }
+.webmcp-copy { font-size: 0.8rem; line-height: 1.45; color: var(--muted); }
+.webmcp-faint { color: var(--faint); }
+.webmcp-status:empty { display: none; }
+.webmcp-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  font-size: 0.85rem;
+  color: var(--text);
+  cursor: pointer;
+}
+.webmcp-toggle input { width: 18px; height: 18px; accent-color: var(--accent); }
+.webmcp-toggle:has(input:disabled) { color: var(--faint); cursor: not-allowed; }
+.webmcp-list { display: grid; gap: 2px; padding-left: 16px; font-size: 0.8rem; line-height: 1.4; color: var(--muted); }
+.webmcp-exposes { display: grid; gap: 6px; }

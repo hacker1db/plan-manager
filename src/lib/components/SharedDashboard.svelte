@@ -30,9 +30,20 @@
     const script = document.createElement("script")
     script.src = view.kind === "library" ? "/app.js" : "/plan.js"
     document.body.append(script)
+    // WebMCP preview (static/webmcp.js): Vite dev server only; production builds never mark the page.
+    let webmcp: HTMLScriptElement | undefined
+    if (view.kind === "plan" && import.meta.env.DEV) {
+      document.documentElement.dataset.webmcp = "preview"
+      webmcp = document.createElement("script")
+      webmcp.type = "module"
+      webmcp.src = "/webmcp.js"
+      document.body.append(webmcp)
+    }
     return () => {
       if (content) void unmount(content)
       script.remove()
+      webmcp?.remove()
+      delete document.documentElement.dataset.webmcp
     }
   })
 </script>
